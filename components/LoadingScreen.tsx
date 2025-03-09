@@ -11,6 +11,8 @@ export default function LoadingScreen({ isLoading, onTypingDone }: LoadingScreen
   const [displayText, setDisplayText] = useState('')
   const hasTyped = useRef(false)
   
+  const typingDelay = 80  // Increase from default (usually 50-60)
+
   useEffect(() => {
     if (!isLoading || hasTyped.current) return
     
@@ -24,7 +26,7 @@ export default function LoadingScreen({ isLoading, onTypingDone }: LoadingScreen
         hasTyped.current = true
         onTypingDone()
       }
-    }, 60)
+    }, typingDelay)
     
     return () => clearInterval(interval)
   }, [isLoading, onTypingDone])
