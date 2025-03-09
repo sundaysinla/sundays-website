@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
@@ -15,6 +15,7 @@ type GLTFResult = GLTF & {
 
 export default function Logo3D() {
   const containerRef = useRef<HTMLDivElement>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -31,10 +32,12 @@ export default function Logo3D() {
 
     const renderer = new THREE.WebGLRenderer({ 
       antialias: true, 
-      alpha: true
+      alpha: true,
+      powerPreference: "high-performance",
+      precision: "mediump"  // Use medium precision for better mobile performance
     })
     renderer.setSize(window.innerWidth, window.innerHeight)
-    renderer.setPixelRatio(window.devicePixelRatio)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)) // Limit pixel ratio for performance
     renderer.toneMapping = THREE.ACESFilmicToneMapping
     renderer.toneMappingExposure = 1.0
     renderer.setClearColor(0x000000, 0)
@@ -118,6 +121,7 @@ export default function Logo3D() {
       loader.load(
         '/sundays_metallic_logo_only.gltf',
         (gltf) => {
+          setIsLoading(false)
           cleanScene()
           model = gltf.scene
           
@@ -142,6 +146,12 @@ export default function Logo3D() {
           })
           adjustModelScale()
           scene.add(model)
+        },
+        (progress) => {
+          console.log(`Loading model: ${(progress.loaded / progress.total * 100).toFixed(2)}%`)
+        },
+        (error) => {
+          console.error('Error loading model:', error)
         }
       )
     }
@@ -209,5 +219,13 @@ export default function Logo3D() {
     }
   }, [])
 
-  return <div ref={containerRef} className="w-full h-full overflow-visible" />
+  return (
+    <div ref={containerRef} className="w-full h-full overflow-visible">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-black rounded-full animate-spin border-t-transparent" />
+        </div>
+      )}
+    </div>
+  )
 } 
