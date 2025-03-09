@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #ffffff;
+}
+
+.container-grid {
+  position: relative;
+  background-image: linear-gradient(to right, rgba(200, 200, 200, 0.3) 1px, transparent 1px);
+  background-size: 8.33% 100%;
+  background-position: 0 0;
+  background-repeat: repeat;
+}
+
+/* Ensure grid columns align with background lines */
+.grid-cols-12 {
+  grid-template-columns: repeat(12, 1fr);
+}
+
+/* Remove default gap */
+.grid {
+  gap: 0;
+}
+
+::selection {
+  background: #BDFF00;
+}
+
+::-moz-selection {
+  background: #BDFF00;
+}
+
