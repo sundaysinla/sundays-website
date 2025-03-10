@@ -7,6 +7,16 @@ import Image from 'next/image'
 export default function ImageExplosion() {
   const [isHovered, setIsHovered] = useState(false)
 
+  // Array of image options
+  const images = [
+    '/camera.png',
+    '/laptop.png',
+    '/notebook.png',
+    '/paintbrush.png',
+    '/keyboard.png',
+    '/figma.png'
+  ]
+
   const handleMouseEnter = () => {
     setIsHovered(true)
   }
@@ -34,16 +44,19 @@ export default function ImageExplosion() {
 
       <AnimatePresence>
         {isHovered && [...Array(7)].map((_, i) => {
+          // Randomly select an image for each instance
+          const randomImage = images[Math.floor(Math.random() * images.length)]
+          
           // Create a grid with offset
           const column = i % 3
           const row = Math.floor(i / 3)
           
           // Add randomness to base positions - center the distribution
-          const baseX = (((column + (row % 2) * 0.5) / 2) - 0.5) * 500  // Reduced from 600 to 500
-          const startX = baseX - 100 + (Math.random() - 0.5) * 100  // Offset by -50px to shift left
+          const baseX = (((column + (row % 2) * 0.5) / 2) - 0.5) * 800  // Increased from 500 to 800
+          const startX = baseX - 200 + (Math.random() - 0.5) * 300  // Increased random offset
           
-          // Always start from below
-          const startY = 200 + (Math.random() * 100) // Start 200-300px below center
+          // Always start from below with more variation
+          const startY = 150 + (Math.random() * 200) // More varied starting height
           const baseHeight = -50 - (row * 30)
           
           // Make a few smileys shoot much higher - randomly selected
@@ -59,8 +72,8 @@ export default function ImageExplosion() {
               key={i}
               className="absolute left-1/2 top-1/2"
               style={{
-                width: '150px',
-                height: '150px',
+                width: '200px',
+                height: '200px',
                 // transform: 'translate(-50%, -50%)'
               }}
               initial={{ 
@@ -73,34 +86,38 @@ export default function ImageExplosion() {
                 y: [
                   startY,
                   peakHeight,
-                  1200  // Final position off-screen
+                  1500 + (Math.random() * 300)
                 ],
                 x: [
                   startX,
-                  startX,
-                  startX - 50 + (Math.random() - 0.5) * 400  // Shift left by 50px for final position
+                  startX + (Math.random() - 0.5) * 400,
+                  startX - 200 + (Math.random() - 0.5) * 1000
                 ],
-                rotate: rotation,
-                scale: [1, 1, 1]
+                rotate: [
+                  0,
+                  rotation * 0.2,  // Reduced from 3 to 0.5
+                  rotation * 1   // Reduced from 5 to 1.5
+                ],
+                // scale: [1, 1.3, 0.8]
               }}
               transition={{
-                duration: 1,
+                duration: 2.3,  // Increased duration
                 times: [0, 0.4, 1],
                 ease: [0.25, 0.1, 0.25, 1],
                 y: {
-                  duration: 2,
-                  times: [0, 0.3, 1],
-                  ease: [0.32, 0, 0.67, 1] // Custom easing for parabolic motion
+                  duration: 2.3,
+                  times: [0, 0.3, 1],  // Adjusted timing
+                  ease: [0.32, 0, 0.67, 1]
                 },
                 x: {
-                  duration: 2,
-                  times: [0, 0.6, 1],
-                  ease: [0.45, 0, 0.55, 1] // Bezier curve for horizontal movement
+                  duration: 2.3,
+                  times: [0, 0.5, 1],  // Adjusted for smoother horizontal movement
+                  ease: [0.45, 0, 0.55, 1]
                 }
               }}
             >
               <Image
-                src="/smiley.png"
+                src={randomImage}
                 alt=""
                 fill
                 className="object-contain"

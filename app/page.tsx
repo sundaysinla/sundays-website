@@ -37,10 +37,11 @@ export default function SundaysPage() {
 
   const { scrollYProgress } = useScroll({
     target: imageContainerRef,
-    offset: ["start end", "end start"]
+    offset: ["start end", "end start"],
+    smooth: true
   })
 
-  const imageY = useTransform(scrollYProgress, [0, 1], [0, 100])
+  const imageY = useTransform(scrollYProgress, [0, 1], [0, 150])
 
   // Combine refs using callback ref
   const setRefs = useCallback((node: HTMLDivElement | null) => {
@@ -89,7 +90,7 @@ export default function SundaysPage() {
           {/* Header */}
           <div 
             ref={headerRef}
-            className={`col-start-8 col-span-2 py-2 md:py-8 text-xs whitespace-nowrap flex items-center justify-center font-['Office-Times-Sharp-Mono'] relative z-10`}
+            className={`col-start-8 col-span-2 pt-6 md:py-8 text-xs whitespace-nowrap flex items-center justify-center font-['Office-Times-Sharp-Mono'] relative z-10`}
             style={{
               transition: 'all 1s ease-in-out 0.2s',
               opacity: !isLoading && headerInView ? '1' : '0',
@@ -151,7 +152,10 @@ export default function SundaysPage() {
                   href="https://lu.ma/usc" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="border border-black rounded-[12px] px-6 py-3 text-[0.75em] font-['Office-Times-Sharp-Mono'] transition-colors duration-300 ease-out hover:bg-black relative overflow-hidden group"
+                  className="bg-[#EEEBE3] rounded-[8px] md:rounded-[8px] px-4 md:px-5 py-3 text-[0.65em] sm:text-[0.75em] font-['Office-Times-Sharp-Mono'] transition-colors duration-300 ease-out hover:bg-black relative overflow-hidden group"
+                  style={{
+                    textAlign: 'center'
+                  }}
                 >
                   <span className="inline-block transition-transform duration-300 ease-out group-hover:-translate-y-full">
                     JOIN
@@ -167,42 +171,43 @@ export default function SundaysPage() {
           
           {/* Images */}
           <div 
-            className="col-span-full mx-[calc((100vw/16)*1)] mt-[2vh] mb-[6vh]"
+            className="col-span-full mx-[calc((100vw/16)*1)] mt-[-3vh] mb-[0vh] relative overflow-hidden"
             ref={setRefs}
-            style={{ 
-              clipPath: 'ellipse(50% 50% at 50% 50%)',
-              position: 'relative',
-              overflow: 'hidden',
-              opacity: !isLoading ? '1' : '0',
-              transition: 'opacity 0.8s ease-in-out 1.2s'
-            }}
           >
-            <motion.div 
-              style={{ y: imageY }} 
-              className="transform-gpu"
-              initial={{ y: -100 }}  // Start with image shifted up
+            <div 
+              className="w-full relative"
+              style={{ 
+                aspectRatio: '1.5/1',
+                clipPath: 'ellipse(45% 45% at 50% 50%)',
+                opacity: !isLoading ? '1' : '0',
+                transition: 'opacity 0.8s ease-in-out 1.2s',
+              }}
             >
-              <Image
-                src="/students.png"
-                alt="Students working together at a table"
-                width={1200}
-                height={1400}
-                className="w-full scale-[1] origin-top"
-                style={{
-                  objectFit: 'cover',
-                  objectPosition: 'center 30%',
-                  transformOrigin: 'top center',
-                  marginTop: '-75px'
-                }}
-                priority
-              />
-            </motion.div>
+              <motion.div 
+                style={{ y: imageY }}
+                className="transform-gpu w-full h-[140%] absolute inset-0"
+              >
+                <div className="w-full h-full relative" style={{ marginTop: '-25%' }}>
+                  <Image
+                    src="/students-3.png"
+                    alt="Students working together at a table"
+                    fill
+                    className="object-cover scale-90"
+                    sizes="100vw"
+                    style={{
+                      objectPosition: 'center center'
+                    }}
+                    priority
+                  />
+                </div>
+              </motion.div>
+            </div>
           </div>
 
           {/* After the image section */}
-          <div className="col-span-full mt-8 text-center bg-[#F7F6F2] py-64 overflow-hidden">
+          <div className="col-span-full mt-8 text-center bg-[#EEEBE3] py-64 overflow-hidden">
             <h2 
-              className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Mono'] text-[#999] mb-8 transition-opacity duration-500"
+              className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Mono'] text-[#989181] mb-8 transition-opacity duration-500"
               style={{ opacity: isHovered ? 0 : 1 }}
             >
               What have we been jamming on?
