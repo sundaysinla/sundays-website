@@ -170,7 +170,7 @@ export default function SundaysPage() {
               <p className="text-[1em] sm:text-[0.75em] md:text-[0.85em] lg:text-[1em]  font-light font-['Office-Times-Sharp-Mono'] text-[#2A2A24]">
                 Every Sunday, we meet for a few hours to work on our passion projects. Whether it's art, coding, poetry, or anything in-between, Sundays is a space carved out for deep work so you can finish that project you've been itching to start.
               </p>
-              <div className="mt-8 sm:mt-6 flex justify-center mb-[4vh] sm:mb-[6vh]">
+              <div className="mt-8 sm:mt-6 flex justify-center mb-[8vh] sm:mb-[10vh]">
                 <Link 
                   href="https://lu.ma/usc" 
                   target="_blank" 
@@ -194,7 +194,7 @@ export default function SundaysPage() {
           
           {/* Images */}
           <div 
-            className="col-span-full mx-[calc((100vw/16)*1)] mt-[-3vh] mb-[0vh] relative overflow-hidden"
+            className="col-span-full mx-[calc((100vw/16)*1)] mt-[-3vh] sm:mb-[5vh] relative overflow-hidden"
             ref={setRefs}
           >
             <div 
