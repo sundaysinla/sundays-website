@@ -188,7 +188,7 @@ export default function Logo3D() {
       const z = minZ + (ratio * (maxZ - minZ))
       
       // Calculate y position - subtle decrease as screen gets smaller
-      const minY = -1.1  // Starting y position for large screens
+      const minY = -1.15  // Starting y position for large screens
       const maxY = -3.5  // Lowest y position for small screens
       const y = minY + (ratio * (maxY - minY))
       

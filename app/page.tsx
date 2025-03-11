@@ -108,7 +108,7 @@ export default function SundaysPage() {
           {/* Logo row */}
           <div 
             ref={logoRef}
-            className={`col-span-full mt-[-5vh] sm:mt-[-16vh] md:mt-[-5vh] lg:mt-[-7vh] xl:mt-[-16vh] mb-[20vh] sm:mb-[30vh] md:mb-[35vh] lg:mb-[42vh] xl:mb-[50vh]`}
+            className={`col-span-full mt-[-5vh] sm:mt-[-16vh] md:mt-[-4vw] lg:mt-[-8vw] xl:mt-[-15vh] mb-[20vh] sm:mb-[30vh] md:mb-[35vh] lg:mb-[42vh] xl:mb-[50vh]`}
             style={{
               transition: 'all 1s ease-in-out 0.4s',
               opacity: !isLoading && logoInView ? '1' : '0',
