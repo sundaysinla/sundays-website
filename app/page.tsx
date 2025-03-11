@@ -18,6 +18,7 @@ export default function SundaysPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [canHide, setCanHide] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   
   useEffect(() => {
     // Only start the hiding timer after typing is done
@@ -28,6 +29,18 @@ export default function SundaysPage() {
       return () => clearTimeout(timer)
     }
   }, [canHide])
+
+  // Check window width after mount
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 500)
+    
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 500)
+    }
+    
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const [headerRef, headerInView] = useInView({ triggerOnce: true, threshold: 0.1 })
   const [logoRef, logoInView] = useInView({ triggerOnce: true, threshold: 0.1 })
@@ -123,7 +136,18 @@ export default function SundaysPage() {
               position: 'relative',
             }} 
             className="">
-              <Logo3D />
+              {/* Show static image on mobile, 3D model on larger screens */}
+              {isMobile ? (
+                <Image
+                  src="/sundays-mobile.png"
+                  alt="Sundays Logo"
+                  fill
+                  className="object-contain translate-y-[190%] scale-[1.3]"
+                  priority
+                />
+              ) : (
+                <Logo3D />
+              )}
             </div>
           </div>
 
@@ -204,7 +228,7 @@ export default function SundaysPage() {
           </div>
 
           {/* After the image section */}
-          <div className="col-span-full mt-8 text-center bg-[#EEEBE3] py-64 overflow-hidden">
+          <div className="col-span-full mt-8 text-center bg-[#F5F4EF] py-64 overflow-hidden">
             <h2 
               className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Mono'] text-[#989181] mb-8 transition-opacity duration-500"
               style={{ opacity: isHovered ? 0 : 1 }}
@@ -214,7 +238,7 @@ export default function SundaysPage() {
             
             <div className="mx-[calc((100vw/16)*2)] md:mx-[calc((100vw/16)*4)]">
               <ScatterText 
-                text="Music production / Font creation / AI research / Website design / Medical software / Magic tricks / Reading fiction / Writing articles / 3D modeling / Making card games"
+                text="Music production / Font design / AI research / Personal website development / Magic tricks / Writing / 3D modeling / Card game design / Reading fiction / Hoodie design"
                 onHoverChange={(hovering) => setIsHovered(hovering)}
                 className="text-[1em] sm:text-[1.5em] md:text-[2em]"
               />

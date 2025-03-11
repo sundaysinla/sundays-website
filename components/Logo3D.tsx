@@ -159,7 +159,7 @@ export default function Logo3D() {
     // Mouse movement
     const mouseTolerance = 0.1
     const handleMouseMove = (e: MouseEvent) => {
-      if (model) {
+      if (model && window.innerWidth >= 950) {  // Only enable on md breakpoint and up
         const centerX = window.innerWidth * 0.5
         const centerY = window.innerHeight * 0.5
         model.rotation.y = (e.clientX - centerX) / centerX * mouseTolerance
@@ -189,7 +189,7 @@ export default function Logo3D() {
       
       // Calculate y position - subtle decrease as screen gets smaller
       const minY = -1.15  // Starting y position for large screens
-      const maxY = -3.5  // Lowest y position for small screens
+      const maxY = -3.3  // Lowest y position for small screens
       const y = minY + (ratio * (maxY - minY))
       
       camera.position.z = Math.max(minZ, Math.min(maxZ, z))
