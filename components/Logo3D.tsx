@@ -181,15 +181,15 @@ export default function Logo3D() {
       // Calculate camera distance based on screen width
       const baseWidth = 1200
       const minZ = 10   // Closest camera position for large screens
-      const maxZ = 45   // Furthest camera position for small screens
+      const maxZ = 40   // Furthest camera position for small screens
       
       // Invert the ratio so smaller screens get larger z values
       const ratio = 1 - (window.innerWidth / baseWidth)
       const z = minZ + (ratio * (maxZ - minZ))
       
       // Calculate y position - subtle decrease as screen gets smaller
-      const minY = -1.25  // Starting y position for large screens
-      const maxY = -4  // Lowest y position for small screens
+      const minY = -1.1  // Starting y position for large screens
+      const maxY = -3.5  // Lowest y position for small screens
       const y = minY + (ratio * (maxY - minY))
       
       camera.position.z = Math.max(minZ, Math.min(maxZ, z))

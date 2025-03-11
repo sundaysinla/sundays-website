@@ -37,8 +37,7 @@ export default function SundaysPage() {
 
   const { scrollYProgress } = useScroll({
     target: imageContainerRef,
-    offset: ["start end", "end start"],
-    smooth: true
+    offset: ["start end", "end start"]
   })
 
   const imageY = useTransform(scrollYProgress, [0, 1], [0, 150])
@@ -68,7 +67,7 @@ export default function SundaysPage() {
               key={i} 
               className="h-full bg-[#FEFDFB]" 
               style={{
-                backgroundImage: i > 0 ? 'linear-gradient(hsla(30, 6%, 90%, 1) 4px, transparent 2px)' : 'none',
+                backgroundImage: i > 0 ? 'linear-gradient(hsla(30, 6%, 88%, 1) 4px, transparent 2px)' : 'none',
                 backgroundSize: '1px 12px',
                 backgroundPosition: 'left top',
                 backgroundRepeat: 'repeat-y'
@@ -90,7 +89,7 @@ export default function SundaysPage() {
           {/* Header */}
           <div 
             ref={headerRef}
-            className={`col-start-8 col-span-2 pt-6 md:py-8 text-xs whitespace-nowrap flex items-center justify-center font-['Office-Times-Sharp-Mono'] relative z-10`}
+            className={`col-start-8 col-span-2 pt-6 sm:pt-6 md:pt-8 pb-0 lg:py-8 text-xs whitespace-nowrap flex items-center justify-center font-['Office-Times-Sharp-Mono'] relative z-10`}
             style={{
               transition: 'all 1s ease-in-out 0.2s',
               opacity: !isLoading && headerInView ? '1' : '0',
@@ -109,7 +108,7 @@ export default function SundaysPage() {
           {/* Logo row */}
           <div 
             ref={logoRef}
-            className={`col-span-full mt-[-5vh] sm:mt-[-20vh] md:mt-[-15vh] lg:mt-[-8vh] xl:mt-[-16vh] mb-[20vh] sm:mb-[30vh] md:mb-[35vh] lg:mb-[50vh]`}
+            className={`col-span-full mt-[-5vh] sm:mt-[-16vh] md:mt-[-5vh] lg:mt-[-7vh] xl:mt-[-16vh] mb-[20vh] sm:mb-[30vh] md:mb-[35vh] lg:mb-[42vh] xl:mb-[50vh]`}
             style={{
               transition: 'all 1s ease-in-out 0.4s',
               opacity: !isLoading && logoInView ? '1' : '0',
@@ -117,10 +116,10 @@ export default function SundaysPage() {
             }}
           >
             <div style={{ 
-              marginLeft: 'calc((100vw - (15 * 1px)) / 16 - min(100px, 8vw))',
-              marginRight: 'calc((100vw - (15 * 1px)) / 16)',
+              marginLeft: 'calc((100vw - (15 * 1px)) / 16 - min(80px, 6vw))',
+              marginRight: 'calc((100vw - (15 * 1px)) / 16 + min(20px, 2vw))',
               width: '100%',
-              height: 'clamp(10vh, 15vh, 20vh)', // Make height responsive
+              height: 'clamp(5vh, 14vh, 20vh)',
               position: 'relative',
             }} 
             className="">
@@ -132,7 +131,7 @@ export default function SundaysPage() {
           {/* Text */}
           <div 
             ref={textRef}
-              className={`col-span-full`}
+            className={`col-span-full pt-[5vh] md:pt-[3vh] lg:pt-[5vh]`}
             style={{
               transition: 'all 1s ease-in-out 0.6s',
               opacity: !isLoading && textInView ? '1' : '0',
@@ -143,8 +142,8 @@ export default function SundaysPage() {
               // maxWidth: '600px',
               textAlign: 'center',
               padding: '0 0px'
-            }} className="mx-[calc((100vw/16)*2)] md:mx-[calc((100vw/16)*3)] lg:mx-[calc((100vw/16)*5)]">
-              <p className="text-[0.75em] sm:text-[0.75em] md:text-[1em] font-light font-['Office-Times-Sharp-Mono'] text-[#2A2A24]">
+            }} className="mx-[calc((100vw/16)*3)] md:mx-[calc((100vw/16)*5)] lg:mx-[calc((100vw/16)*5)]">
+              <p className="text-[1em] sm:text-[0.75em] md:text-[0.85em] lg:text-[1em]  font-light font-['Office-Times-Sharp-Mono'] text-[#2A2A24]">
                 Every Sunday, we meet for a few hours to work on our passion projects. Whether it's art, coding, poetry, or anything in-between, Sundays is a space carved out for deep work so you can finish that project you've been itching to start.
               </p>
               <div className="mt-8 flex justify-center mb-[6vh]">
@@ -152,7 +151,7 @@ export default function SundaysPage() {
                   href="https://lu.ma/usc" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="bg-[#EEEBE3] rounded-[8px] md:rounded-[8px] px-4 md:px-5 py-3 text-[0.65em] sm:text-[0.75em] font-['Office-Times-Sharp-Mono'] transition-colors duration-300 ease-out hover:bg-black relative overflow-hidden group"
+                  className="bg-[#EEEBE3] rounded-[8px] md:rounded-[8px] px-4 md:px-5 py-3 text-[0.65em] sm:text-[0.75em] md:text-[0.8em] lg:text-[1em] font-['Office-Times-Sharp-Mono'] transition-colors duration-300 ease-out hover:bg-black relative overflow-hidden group"
                   style={{
                     textAlign: 'center'
                   }}
@@ -175,7 +174,7 @@ export default function SundaysPage() {
             ref={setRefs}
           >
             <div 
-              className="w-full relative"
+              className="w-[110%] relative left-[-5%]"
               style={{ 
                 aspectRatio: '1.5/1',
                 clipPath: 'ellipse(45% 45% at 50% 50%)',
@@ -192,7 +191,7 @@ export default function SundaysPage() {
                     src="/students-3.png"
                     alt="Students working together at a table"
                     fill
-                    className="object-cover scale-90"
+                    className="object-cover scale-100"
                     sizes="100vw"
                     style={{
                       objectPosition: 'center center'
