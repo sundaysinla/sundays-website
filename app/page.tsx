@@ -238,7 +238,7 @@ export default function SundaysPage() {
             
             <div className="mx-[calc((100vw/16)*2)] md:mx-[calc((100vw/16)*4)]">
               <ScatterText 
-                text="Music production / Font design / AI research / Personal website development / Magic tricks / Writing / 3D modeling / Card game design / Reading fiction / Hoodie design"
+                text="Music production / Font design / AI research / Personal website / Magic tricks / Writing / 3D modeling / Card game design / Reading fiction / Hoodie design"
                 onHoverChange={(hovering) => setIsHovered(hovering)}
                 className="text-[1em] sm:text-[1.5em] md:text-[2em]"
               />
