@@ -167,15 +167,15 @@ export default function SundaysPage() {
               textAlign: 'center',
               padding: '0 0px'
             }} className="mx-[calc((100vw/16)*2)] md:mx-[calc((100vw/16)*5)] lg:mx-[calc((100vw/16)*5)]">
-              <p className="text-[1em] sm:text-[0.75em] md:text-[0.85em] lg:text-[1em]  font-light font-['Office-Times-Sharp-Mono'] text-[#2A2A24]">
-                Every Sunday, we meet for a few hours to work on our passion projects. Whether it's art, coding, poetry, or anything in-between, Sundays is a space carved out for deep work so you can finish that project you've been itching to start.
+              <p className="text-[1em] sm:text-[0.75em] md:text-[0.9em] lg:text-[1em] font-light font-['Office-Times-Sharp-Regular'] text-[#2A2A24]">
+                Every Sunday, we meet for a few hours to work on our passion projects. Whether it's art, coding, poetry, or anything in-between, Sundays is your space to finish that project you've been itching to start.
               </p>
-              <div className="mt-8 sm:mt-6 flex justify-center mb-[8vh] sm:mb-[10vh]">
+              <div className="mt-12 sm:mt-10 flex justify-center mb-[8vh] sm:mb-[10vh]">
                 <Link 
                   href="https://lu.ma/usc" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="bg-[#EEEBE3] rounded-[8px] md:rounded-[8px] px-4 md:px-5 py-3 text-[0.65em] sm:text-[0.75em] md:text-[0.8em] lg:text-[1em] font-['Office-Times-Sharp-Mono'] transition-colors duration-300 ease-out hover:bg-black relative overflow-hidden group"
+                  className="bg-[#EEEBE3] rounded-[8px] md:rounded-[8px] px-3 md:px-4 py-2 text-[0.4em] sm:text-[0.5em] md:text-[0.6em] lg:text-[0.8em] font-['Office-Times-Sharp-Mono'] transition-colors duration-300 ease-out hover:bg-black relative overflow-hidden group"
                   style={{
                     textAlign: 'center'
                   }}
@@ -208,11 +208,11 @@ export default function SundaysPage() {
             >
               <motion.div 
                 style={{ y: imageY }}
-                className="transform-gpu w-full h-[140%] absolute inset-0"
+                className="transform-gpu w-full h-[150%] absolute inset-0"
               >
                 <div className="w-full h-full relative" style={{ marginTop: '-25%' }}>
                   <Image
-                    src="/students-3.png"
+                    src="/students-6.jpg"
                     alt="Students working together at a table"
                     fill
                     className="object-cover scale-100"
@@ -237,11 +237,14 @@ export default function SundaysPage() {
             </h2>
             
             <div className="mx-[calc((100vw/16)*2)] md:mx-[calc((100vw/16)*4)]">
-              <ScatterText 
+              {/* <ScatterText 
                 text="Music production / Font design / AI research / Personal website / Magic tricks / Writing / 3D modeling / Card game design / Reading fiction / Hoodie design"
                 onHoverChange={(hovering) => setIsHovered(hovering)}
                 className="text-[1em] sm:text-[1.5em] md:text-[2em]"
-              />
+              /> */}
+              <p className="text-[1em] sm:text-[1.5em] md:text-[2em] font-['Office-Times-Sharp-Regular'] text-[#000000]">
+                Music production / Font design / AI research / Personal website / Magic tricks / Writing / 3D modeling / Card game design / Reading fiction / Hoodie design
+              </p>
             </div>
           </div>
 

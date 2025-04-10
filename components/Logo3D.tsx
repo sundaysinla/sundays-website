@@ -34,10 +34,10 @@ export default function Logo3D() {
       antialias: true, 
       alpha: true,
       powerPreference: "high-performance",
-      precision: "mediump"  // Use medium precision for better mobile performance
+      precision: "mediump"  // Changed from highp to mediump
     })
     renderer.setSize(window.innerWidth, window.innerHeight)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)) // Limit pixel ratio for performance
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))  // Reduced from 2 to 1.5
     renderer.toneMapping = THREE.ACESFilmicToneMapping
     renderer.toneMappingExposure = 1.0
     renderer.setClearColor(0x000000, 0)
