@@ -47,6 +47,7 @@ export default function SundaysPage() {
   const [textRef, textInView] = useInView({ triggerOnce: true, threshold: 0.1 })
   const imageContainerRef = useRef<HTMLDivElement | null>(null)
   const { ref: inViewRef, inView: imageContainerInView } = useInView({ triggerOnce: true, threshold: 0.1 })
+  const [jammingRef, jammingInView] = useInView({ triggerOnce: true, threshold: 0.1 })
 
   const { scrollYProgress } = useScroll({
     target: imageContainerRef,
@@ -80,7 +81,7 @@ export default function SundaysPage() {
               key={i} 
               className="h-full bg-[#FEFDFB]" 
               style={{
-                backgroundImage: i > 0 ? 'linear-gradient(hsla(30, 6%, 88%, 1) 4px, transparent 2px)' : 'none',
+                backgroundImage: i > 0 ? 'linear-gradient(#E2D8FF 4px, transparent 2px)' : 'none',
                 backgroundSize: '1px 12px',
                 backgroundPosition: 'left top',
                 backgroundRepeat: 'repeat-y'
@@ -102,7 +103,7 @@ export default function SundaysPage() {
           {/* Header */}
           <div 
             ref={headerRef}
-            className={`col-start-8 col-span-2 pt-6 sm:pt-6 md:pt-8 pb-0 lg:py-8 text-xs whitespace-nowrap flex items-center justify-center font-['Office-Times-Sharp-Mono'] relative z-10`}
+            className={`col-start-8 col-span-2 pt-6 sm:pt-6 md:pt-8 pb-0 lg:py-8 text-xs whitespace-nowrap flex items-center justify-center font-['Monument-Grotesk'] relative z-10`}
             style={{
               transition: 'all 1s ease-in-out 0.2s',
               opacity: !isLoading && headerInView ? '1' : '0',
@@ -175,15 +176,15 @@ export default function SundaysPage() {
                   href="https://lu.ma/usc" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="bg-[#EEEBE3] rounded-[8px] md:rounded-[8px] px-3 md:px-4 py-2 text-[0.4em] sm:text-[0.5em] md:text-[0.6em] lg:text-[0.8em] font-['Office-Times-Sharp-Mono'] transition-colors duration-300 ease-out hover:bg-black relative overflow-hidden group"
+                  className="bg-black rounded-[8px] md:rounded-[8px] px-3 md:px-4 py-2 text-[0.3em] sm:text-[0.4em] md:text-[0.6em] lg:text-[0.8em] font-['Office-Times-Sharp-Mono'] transition-colors duration-300 ease-out hover:bg-[#EEEBE3] relative overflow-hidden group"
                   style={{
                     textAlign: 'center'
                   }}
                 >
-                  <span className="inline-block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+                  <span className="inline-block transition-transform duration-300 ease-out group-hover:-translate-y-full text-[#EEEBE3]">
                     JOIN
                   </span>
-                  <span className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-out translate-y-full group-hover:translate-y-0 text-white">
+                  <span className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-out translate-y-full group-hover:translate-y-0 text-black">
                     JOIN
                   </span>
                 </Link>
@@ -194,25 +195,24 @@ export default function SundaysPage() {
           
           {/* Images */}
           <div 
-            className="col-span-full mx-[calc((100vw/16)*1)] mt-[-3vh] sm:mb-[5vh] relative overflow-hidden"
+            className="col-span-full mx-[calc((100vw/16)*1)] mt-[-3vh] sm:mb-[5vh] relative overflow-hidden rounded-[48px]"
             ref={setRefs}
           >
             <div 
-              className="w-[110%] relative left-[-5%]"
+              className="w-full relative"
               style={{ 
-                aspectRatio: '1.5/1',
-                clipPath: 'ellipse(45% 45% at 50% 50%)',
+                aspectRatio: '1.8/1',
                 opacity: !isLoading ? '1' : '0',
                 transition: 'opacity 0.8s ease-in-out 1.2s',
               }}
             >
               <motion.div 
                 style={{ y: imageY }}
-                className="transform-gpu w-full h-[150%] absolute inset-0"
+                className="transform-gpu w-full h-[140%] absolute inset-0"
               >
                 <div className="w-full h-full relative" style={{ marginTop: '-25%' }}>
                   <Image
-                    src="/students-6.jpg"
+                    src="/students-3.png"
                     alt="Students working together at a table"
                     fill
                     className="object-cover scale-100"
@@ -228,22 +228,25 @@ export default function SundaysPage() {
           </div>
 
           {/* After the image section */}
-          <div className="col-span-full mt-8 text-center bg-[#F5F4EF] py-64 overflow-hidden">
+          <div 
+            ref={jammingRef}
+            className="col-span-full mt-8 text-center bg-[#F5F4EF] py-64 overflow-hidden"
+            style={{
+              transition: 'all 1s ease-in-out 0.8s',
+              opacity: !isLoading && jammingInView ? '1' : '0',
+              transform: !isLoading && jammingInView ? 'translateY(0)' : 'translateY(1rem)'
+            }}
+          >
             <h2 
-              className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Mono'] text-[#989181] mb-8 transition-opacity duration-500"
+              className="text-[12px] md:text-[16px] font-['Monument-Grotesk'] text-[#C0B9A5] mb-8 transition-opacity duration-500"
               style={{ opacity: isHovered ? 0 : 1 }}
             >
               What have we been jamming on?
             </h2>
             
             <div className="mx-[calc((100vw/16)*2)] md:mx-[calc((100vw/16)*4)]">
-              {/* <ScatterText 
-                text="Music production / Font design / AI research / Personal website / Magic tricks / Writing / 3D modeling / Card game design / Reading fiction / Hoodie design"
-                onHoverChange={(hovering) => setIsHovered(hovering)}
-                className="text-[1em] sm:text-[1.5em] md:text-[2em]"
-              /> */}
               <p className="text-[1em] sm:text-[1.5em] md:text-[2em] font-['Office-Times-Sharp-Regular'] text-[#000000]">
-                Music production / Font design / AI research / Personal website / Magic tricks / Writing / 3D modeling / Card game design / Reading fiction / Hoodie design
+                Music production / Font design / AI research / Magic tricks / Writing / Personal website / 3D modeling / Card game design / Reading fiction / Fashion design
               </p>
             </div>
           </div>
@@ -260,15 +263,15 @@ export default function SundaysPage() {
             <div className="space-y-0 mx-[calc((100vw/16)*2)] md:mx-[calc((100vw/16)*4)]">
               <div>
                 <div className="grid grid-cols-2 mb-8">
-                  <h3 className="text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#C3C2BB]">Whereabouts</h3>
-                  <p className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Mono']">Every Sunday at 2pm PST, near USC campus</p>
+                  <h3 className="text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#C0B9A5]">Whereabouts</h3>
+                  <p className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Regular']">Every Sunday at 2pm PST, near USC campus</p>
                 </div>
               </div>
 
               <div>
                 <div className="grid grid-cols-2 mb-8">
-                  <h3 className="text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#C3C2BB]">Why we exist</h3>
-                  <p className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Mono']">
+                  <h3 className="text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#C0B9A5]">Why we exist</h3>
+                  <p className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Regular']">
                     We want to bring together likeminded people who love to make things, in the company of other creatives
                   </p>
                 </div>
@@ -276,19 +279,26 @@ export default function SundaysPage() {
 
               <div>
                 <div className="grid grid-cols-2 mb-8">
-                  <h3 className="text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#C3C2BB]">Jam with us</h3>
-                  <p className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Mono']">Register on <Link href="https://lu.ma/usc" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-60 transition-opacity">Luma</Link>!</p>
+                  <h3 className="text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#C0B9A5]">Jam with us</h3>
+                  <p className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Regular']">Register on <Link 
+                    href="https://lu.ma/usc" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="underline hover:-translate-y-[2px] inline-block transition-all duration-300 ease-out hover:opacity-100"
+                  >
+                    Luma
+                  </Link>!</p>
                 </div>
               </div>
 
               <div>
                 <div className="grid grid-cols-2 mb-24">
-                  <h3 className="text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#C3C2BB]">IG / X / Linkedin</h3>
-                  <p className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Mono']">@sundaysatusc </p>
+                  <h3 className="text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#C0B9A5]">IG / X / Linkedin</h3>
+                  <p className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Regular']">@sundaysatusc </p>
                 </div>
               </div>
 
-              <div className="text-center">
+              <div className="text-center transition-transform duration-500 ease-in-out hover:-translate-y-[8px] hover:duration-[1000ms]">
                 <ImageExplosion />
               </div>
             </div>
