@@ -138,7 +138,7 @@ export default function Logo3D() {
                 clearcoat: 1.0,
                 clearcoatRoughness: 0.0,
                 transmission: 0.0,
-                reflectivity: 1.0,       // reduced further
+                reflectivity: 0.8,       // reduced further
                 opacity: 1
               })
               child.material = material

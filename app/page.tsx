@@ -203,7 +203,8 @@ export default function SundaysPage() {
               style={{ 
                 aspectRatio: '1.8/1',
                 opacity: !isLoading ? '1' : '0',
-                transition: 'opacity 0.8s ease-in-out 1.2s',
+                transform: !isLoading ? 'translateY(0)' : 'translateY(16px)',
+                transition: 'opacity 0.6s ease-in-out 1.0s, transform 1.2s ease-in-out 1.0s',
               }}
             >
               <motion.div 
@@ -232,13 +233,13 @@ export default function SundaysPage() {
             ref={jammingRef}
             className="col-span-full mt-8 text-center bg-[#F5F4EF] py-64 overflow-hidden"
             style={{
-              transition: 'all 1s ease-in-out 0.8s',
+              transition: 'all 1s ease-in-out 0.5s',
               opacity: !isLoading && jammingInView ? '1' : '0',
               transform: !isLoading && jammingInView ? 'translateY(0)' : 'translateY(1rem)'
             }}
           >
             <h2 
-              className="text-[12px] md:text-[16px] font-['Monument-Grotesk'] text-[#C0B9A5] mb-8 transition-opacity duration-500"
+              className="text-[12px] md:text-[16px] font-['Monument-Grotesk'] text-[#C0B9A5] mb-8 transition-opacity duration-300"
               style={{ opacity: isHovered ? 0 : 1 }}
             >
               What have we been jamming on?
