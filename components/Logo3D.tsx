@@ -5,6 +5,10 @@ import * as THREE from 'three'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { Texture, Object3D, Mesh } from 'three'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
+import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js'
 
 // Add type safety
 type GLTFResult = GLTF & {
@@ -34,13 +38,17 @@ export default function Logo3D() {
       antialias: true, 
       alpha: true,
       powerPreference: "high-performance",
-      precision: "mediump"  // Changed from highp to mediump
+      precision: "highp"  // Use high precision
     })
     renderer.setSize(window.innerWidth, window.innerHeight)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))  // Reduced from 2 to 1.5
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))  // Increase pixel ratio but cap it for performance
     renderer.toneMapping = THREE.ACESFilmicToneMapping
     renderer.toneMappingExposure = 1.0
     renderer.setClearColor(0x000000, 0)
+
+    // Enable shadow mapping for smoother edges
+    renderer.shadowMap.enabled = true
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
     containerRef.current.appendChild(renderer.domElement)
 
@@ -132,7 +140,7 @@ export default function Logo3D() {
             if (child instanceof THREE.Mesh) {
               const material = new THREE.MeshPhysicalMaterial({
                 metalness: 1.0,
-                roughness: 0.0,
+                roughness: 0.1,
                 envMap: envMap,
                 envMapIntensity: 0.5,    // significantly reduced from 0.4
                 clearcoat: 1.0,

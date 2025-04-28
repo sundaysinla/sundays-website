@@ -10,6 +10,7 @@ import LoadingScreen from '@/components/LoadingScreen'
 import ScatterText from '@/components/ScatterText'
 import ShuffleText from '@/components/ShuffleText'
 import ImageExplosion from '@/components/ImageExplosion'
+import '../styles/grain.css'
 
 // Dynamic import of the 3D model component to avoid SSR issues
 const Logo3D = dynamic(() => import('../components/Logo3D'), { ssr: false })
@@ -168,7 +169,7 @@ export default function SundaysPage() {
               textAlign: 'center',
               padding: '0 0px'
             }} className="mx-[calc((100vw/16)*2)] md:mx-[calc((100vw/16)*5)] lg:mx-[calc((100vw/16)*5)]">
-              <p className="text-[1em] sm:text-[0.75em] md:text-[0.9em] lg:text-[1em] font-light font-['Office-Times-Sharp-Regular'] text-[#2A2A24]">
+              <p className="text-[1em] sm:text-[0.75em] md:text-[0.9em] lg:text-[1em] font-light font-['Office-Times-Round'] text-[#2A2A24]">
                 Every Sunday, we meet for a few hours to work on our passion projects. Whether it's art, coding, poetry, or anything in-between, Sundays is your space to finish that project you've been itching to start.
               </p>
               <div className="mt-12 sm:mt-10 flex justify-center mb-[8vh] sm:mb-[10vh]">
@@ -195,7 +196,7 @@ export default function SundaysPage() {
           
           {/* Images */}
           <div 
-            className="col-span-full mx-[calc((100vw/16)*1)] mt-[-3vh] sm:mb-[5vh] relative overflow-hidden rounded-[48px]"
+            className="col-span-full mx-[calc((100vw/16)*1)] mt-[-3vh] sm:mb-[5vh] relative overflow-hidden rounded-[100px] grain-container image-gradient"
             ref={setRefs}
           >
             <div 
@@ -213,7 +214,7 @@ export default function SundaysPage() {
               >
                 <div className="w-full h-full relative" style={{ marginTop: '-25%' }}>
                   <Image
-                    src="/students-3.png"
+                    src="/bayer-dithered-image.png"
                     alt="Students working together at a table"
                     fill
                     className="object-cover scale-100"
@@ -247,7 +248,7 @@ export default function SundaysPage() {
             
             <div className="mx-[calc((100vw/16)*2)] md:mx-[calc((100vw/16)*4)]">
               <p className="text-[1em] sm:text-[1.5em] md:text-[2em] font-['Office-Times-Sharp-Regular'] text-[#000000]">
-                Music production / Font design / AI research / Magic tricks / Writing / Personal website / 3D modeling / Card game design / Reading fiction / Fashion design
+                Music production / Font design / AI research / Magic tricks / Writing / 3D modeling / Card game design / Reading fiction / Fashion design / more ...
               </p>
             </div>
           </div>

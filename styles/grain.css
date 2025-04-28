@@ -1,0 +1,40 @@
+@keyframes animateGrain {
+  0%, 100% { transform:translate(0, 0) }
+  10% { transform:translate(-5%,-10%) }
+  20% { transform:translate(-15%,-20%) }
+  30% { transform:translate(-5%,-10%) }
+  40% { transform:translate(-15%,-20%) }
+  50% { transform:translate(-5%,-10%) }
+  60% { transform:translate(-15%,-20%) }
+  70% { transform:translate(-5%,-10%) }
+  80% { transform:translate(-15%,-20%) }
+  90% { transform:translate(-5%,-10%) }
+  100% { transform:translate(-15%,-20%) }
+}
+
+.grain-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.grain-container::after {
+  content: "";
+  background-image: url("/noise-texture.png");
+  height: 300%;
+  width: 300%;
+  position: absolute;
+  top: -100%;
+  left: -100%;
+  opacity: 0.12;
+  animation: animateGrain 8s steps(10) infinite;
+  pointer-events: none;
+}
+
+.image-gradient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(transparent, rgba(0,0,0,0.3));
+  z-index: 1;
+  pointer-events: none;
+} 
