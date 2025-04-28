@@ -248,7 +248,7 @@ export default function SundaysPage() {
             
             <div className="mx-[calc((100vw/16)*2)] md:mx-[calc((100vw/16)*4)]">
               <p className="text-[1em] sm:text-[1.5em] md:text-[2em] font-['Office-Times-Sharp-Regular'] text-[#000000]">
-                Music production / Font design / AI research / Magic tricks / Writing / 3D modeling / Card game design / Reading fiction / Fashion design / more ...
+                Font design / AI research / Music production / Magic tricks / Writing / 3D modeling / Card game design / Reading fiction / Fashion design / more ...
               </p>
             </div>
           </div>
