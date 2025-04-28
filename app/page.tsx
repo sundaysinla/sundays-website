@@ -123,7 +123,7 @@ export default function SundaysPage() {
           {/* Logo row */}
           <div 
             ref={logoRef}
-            className={`col-span-full mt-[-5vh] sm:mt-[-16vh] md:mt-[-4vw] lg:mt-[-8vw] xl:mt-[-15vh] mb-[20vh] sm:mb-[30vh] md:mb-[35vh] lg:mb-[42vh] xl:mb-[50vh]`}
+            className={`col-span-full mt-[-5vh] sm:mt-[-16vh] md:mt-[-4vw] lg:mt-[-8vw] xl:mt-[-15vh] mb-[10vh] sm:mb-[30vh] md:mb-[35vh] lg:mb-[42vh] xl:mb-[50vh]`}
             style={{
               transition: 'all 1s ease-in-out 0.4s',
               opacity: !isLoading && logoInView ? '1' : '0',
@@ -144,7 +144,7 @@ export default function SundaysPage() {
                   src="/sundays-mobile.png"
                   alt="Sundays Logo"
                   fill
-                  className="object-contain translate-y-[190%] scale-[1.2]"
+                  className="object-contain translate-y-[180%] scale-[1.2]"
                   priority
                 />
               ) : (
@@ -157,7 +157,7 @@ export default function SundaysPage() {
           {/* Text */}
           <div 
             ref={textRef}
-            className={`col-span-full pt-[5vh] md:pt-[3vh] lg:pt-[5vh]`}
+            className={`col-span-full pt-[2vh] md:pt-[3vh] lg:pt-[5vh]`}
             style={{
               transition: 'all 1s ease-in-out 0.6s',
               opacity: !isLoading && textInView ? '1' : '0',
@@ -196,7 +196,10 @@ export default function SundaysPage() {
           
           {/* Images */}
           <div 
-            className="col-span-full mx-[calc((100vw/16)*1)] mt-[-3vh] sm:mb-[5vh] relative overflow-hidden rounded-[100px] grain-container image-gradient"
+            className="col-span-full mx-[calc((100vw/16)*1)] mt-[-3vh] sm:mb-[5vh] relative overflow-hidden"
+            style={{ 
+              borderRadius: 'clamp(32px, 1.5vw, 100px)'  // Increased min to 32px, reduced scale to 1.5vw
+            }}
             ref={setRefs}
           >
             <div 
@@ -214,7 +217,7 @@ export default function SundaysPage() {
               >
                 <div className="w-full h-full relative" style={{ marginTop: '-25%' }}>
                   <Image
-                    src="/students_final.png"
+                    src="/students_final_2.png"
                     alt="Students working together at a table"
                     fill
                     className="object-cover scale-100"
