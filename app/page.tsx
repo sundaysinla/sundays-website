@@ -104,7 +104,7 @@ export default function SundaysPage() {
           {/* Header */}
           <div 
             ref={headerRef}
-            className={`col-start-8 col-span-2 pt-6 sm:pt-6 md:pt-8 pb-0 lg:py-8 text-xs whitespace-nowrap flex items-center justify-center font-['Monument-Grotesk'] relative z-10`}
+            className={`col-start-8 col-span-2 pt-12 sm:pt-8 md:pt-10 lg:pt-12 lg:pb-10 text-xs whitespace-nowrap flex items-center justify-center font-['Monument-Grotesk'] relative z-10`}
             style={{
               transition: 'all 1s ease-in-out 0.2s',
               opacity: !isLoading && headerInView ? '1' : '0',
@@ -214,7 +214,7 @@ export default function SundaysPage() {
               >
                 <div className="w-full h-full relative" style={{ marginTop: '-25%' }}>
                   <Image
-                    src="/bayer-dithered-image.png"
+                    src="/students_final.png"
                     alt="Students working together at a table"
                     fill
                     className="object-cover scale-100"
