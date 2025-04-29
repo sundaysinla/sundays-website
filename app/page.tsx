@@ -177,7 +177,7 @@ export default function SundaysPage() {
                   href="https://lu.ma/usc" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="bg-black rounded-[8px] md:rounded-[8px] px-3 md:px-4 py-2 text-[0.3em] sm:text-[0.4em] md:text-[0.6em] lg:text-[0.8em] font-['Office-Times-Sharp-Mono'] transition-colors duration-300 ease-out hover:bg-[#EEEBE3] relative overflow-hidden group"
+                  className="bg-black rounded-[8px] md:rounded-[8px] px-3 md:px-4 py-2 text-[0.3em] sm:text-[0.7em] md:text-[0.8em] lg:text-[0.9em] font-['Office-Times-Sharp-Mono'] transition-colors duration-300 ease-out hover:bg-[#EEEBE3] relative overflow-hidden group"
                   style={{
                     textAlign: 'center'
                   }}
