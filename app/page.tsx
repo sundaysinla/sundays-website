@@ -19,7 +19,15 @@ export default function SundaysPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [canHide, setCanHide] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => {
+    // Check if we're in the browser
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 500 || 
+             /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    }
+    // Default to false if we're server-side
+    return false
+  })
   
   useEffect(() => {
     // Only start the hiding timer after typing is done
@@ -31,16 +39,26 @@ export default function SundaysPage() {
     }
   }, [canHide])
 
-  // Check window width after mount
+  // Check window width after mount and on resize
   useEffect(() => {
-    setIsMobile(window.innerWidth < 500)
-    
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 500)
+    const checkMobile = () => {
+      setIsMobile(
+        window.innerWidth < 500 || 
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      )
     }
     
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    // Check immediately
+    checkMobile()
+    
+    // Add resize listener
+    window.addEventListener('resize', checkMobile)
+    window.addEventListener('orientationchange', checkMobile)
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile)
+      window.removeEventListener('orientationchange', checkMobile)
+    }
   }, [])
 
   const [headerRef, headerInView] = useInView({ triggerOnce: true, threshold: 0.1 })
@@ -138,17 +156,15 @@ export default function SundaysPage() {
             className="">
               {/* Show static image on mobile, 3D model on larger screens */}
               {isMobile ? (
-                <div className="w-full h-full relative">
+                <div className="w-full h-full flex items-center justify-center" style={{ transform: 'translateY(100%)' }}>
                   <Image
                     src="/sundays-mobile.png"
                     alt="Sundays Logo"
-                    fill
-                    className="object-contain"
+                    width={300}
+                    height={100}
+                    className="w-full h-auto object-contain"
                     priority
                     sizes="100vw"
-                    style={{
-                      transform: 'translateY(100%)'
-                    }}
                   />
                 </div>
               ) : (
