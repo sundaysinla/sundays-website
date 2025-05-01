@@ -198,7 +198,7 @@ export default function SundaysPage() {
           <div 
             className="col-span-full mx-[calc((100vw/16)*1)] mt-[-3vh] sm:mb-[5vh] relative overflow-hidden"
             style={{ 
-              borderRadius: 'clamp(32px, 1.5vw, 100px)'  // Increased min to 32px, reduced scale to 1.5vw
+              borderRadius: 'min(4vw, 100px)'  // Reduced from 8vw to 4vw for smaller screens
             }}
             ref={setRefs}
           >
