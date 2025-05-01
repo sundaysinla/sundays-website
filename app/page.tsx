@@ -123,7 +123,7 @@ export default function SundaysPage() {
           {/* Logo row */}
           <div 
             ref={!isMobile ? logoRef : undefined}
-            className={`col-span-full mt-[10vh] sm:mt-[-16vh] md:mt-[-4vw] lg:mt-[-8vw] xl:mt-[-15vh] mb-[5vh] sm:mb-[30vh] md:mb-[35vh] lg:mb-[42vh] xl:mb-[50vh]`}
+            className={`col-span-full mt-[80px] sm:mt-[-120px] md:mt-[-4vw] lg:mt-[-8vw] xl:mt-[-15vh] mb-[40px] sm:mb-[200px] md:mb-[250px] lg:mb-[300px] xl:mb-[400px]`}
             style={{
               transition: !isMobile ? 'all 1s ease-in-out 0.4s' : 'none',
               opacity: !isLoading && (!isMobile || logoInView) ? '1' : '0',
@@ -131,10 +131,10 @@ export default function SundaysPage() {
             }}
           >
             <div style={{ 
-              marginLeft: 'calc((100vw - (15 * 1px)) / 16 - min(80px, 6vw))',
-              marginRight: 'calc((100vw - (15 * 1px)) / 16 + min(20px, 2vw))',
+              marginLeft: isMobile ? '0' : 'calc((100vw - (15 * 1px)) / 16 - min(80px, 6vw))',
+              marginRight: isMobile ? '0' : 'calc((100vw - (15 * 1px)) / 16 + min(20px, 2vw))',
               width: '100%',
-              height: isMobile ? '21vh' : 'clamp(5vh, 14vh, 18vh)',
+              height: isMobile ? '160px' : 'clamp(60px, 14vh, 180px)',
               position: 'relative'
             }} 
             className="">
@@ -157,7 +157,7 @@ export default function SundaysPage() {
           {/* Text */}
           <div 
             ref={textRef}
-            className={`col-span-full pt-[2vh] md:pt-[3vh] lg:pt-[5vh]`}
+            className={`col-span-full pt-[16px] md:pt-[24px] lg:pt-[40px]`}
             style={{
               transition: 'all 1s ease-in-out 0.6s',
               opacity: !isLoading && textInView ? '1' : '0',
@@ -165,14 +165,13 @@ export default function SundaysPage() {
             }}
           >
             <div style={{ 
-              // maxWidth: '600px',
               textAlign: 'center',
               padding: '0 0px'
             }} className="mx-[calc((100vw/16)*2)] md:mx-[calc((100vw/16)*5)] lg:mx-[calc((100vw/16)*5)]">
               <p className="text-[1em] sm:text-[0.75em] md:text-[0.9em] lg:text-[1em] font-light font-['Office-Times-Round'] text-[#2A2A24]">
                 Every Sunday, we meet for a few hours to work on our passion projects. Whether it's art, coding, poetry, or anything in-between, Sundays is your space to finish that project you've been itching to start.
               </p>
-              <div className="mt-12 sm:mt-10 flex justify-center mb-[8vh] sm:mb-[10vh]">
+              <div className="mt-12 sm:mt-10 flex justify-center mb-[60px] sm:mb-[80px]">
                 <Link 
                   href="https://lu.ma/usc" 
                   target="_blank" 
@@ -212,10 +211,10 @@ export default function SundaysPage() {
               }}
             >
               <motion.div 
-                style={{ y: imageY }}
+                style={{ y: !isMobile ? imageY : 0 }}
                 className="transform-gpu w-full h-[140%] absolute inset-0"
               >
-                <div className="w-full h-full relative" style={{ marginTop: '-25%' }}>
+                <div className="w-full h-full relative" style={{ marginTop: !isMobile ? '-25%' : '0' }}>
                   <Image
                     src="/students_final_2.png"
                     alt="Students working together at a table"
