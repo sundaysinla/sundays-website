@@ -122,12 +122,10 @@ export default function SundaysPage() {
 
           {/* Logo row */}
           <div 
-            ref={!isMobile ? logoRef : undefined}
             className={`col-span-full mt-[80px] sm:mt-[-120px] md:mt-[-4vw] lg:mt-[-8vw] xl:mt-[-15vh] mb-[40px] sm:mb-[200px] md:mb-[250px] lg:mb-[300px] xl:mb-[400px]`}
             style={{
-              transition: !isMobile ? 'all 1s ease-in-out 0.4s' : 'none',
-              opacity: !isLoading && (!isMobile || logoInView) ? '1' : '0',
-              transform: !isMobile && !isLoading && logoInView ? 'translateY(0)' : 'translateY(1rem)',
+              opacity: !isLoading ? '1' : '0',
+              transition: 'opacity 0.4s ease-in-out'
             }}
           >
             <div style={{ 
@@ -140,13 +138,19 @@ export default function SundaysPage() {
             className="">
               {/* Show static image on mobile, 3D model on larger screens */}
               {isMobile ? (
-                <Image
-                  src="/sundays-mobile.png"
-                  alt="Sundays Logo"
-                  fill
-                  className="object-contain translate-y-[100%]"
-                  priority
-                />
+                <div className="w-full h-full relative">
+                  <Image
+                    src="/sundays-mobile.png"
+                    alt="Sundays Logo"
+                    fill
+                    className="object-contain"
+                    priority
+                    sizes="100vw"
+                    style={{
+                      transform: 'translateY(100%)'
+                    }}
+                  />
+                </div>
               ) : (
                 <Logo3D />
               )}
