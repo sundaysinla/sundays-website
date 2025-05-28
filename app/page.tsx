@@ -193,7 +193,7 @@ export default function SundaysPage() {
               </p>
               <div className="mt-12 sm:mt-10 flex justify-center mb-[60px] sm:mb-[80px]">
                 <Link 
-                  href="https://lu.ma/usc" 
+                  href="https://lu.ma/sundaysinla" 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="bg-black rounded-[8px] md:rounded-[8px] px-3 md:px-4 py-2 text-[0.3em] sm:text-[0.7em] md:text-[0.8em] lg:text-[0.9em] font-['Office-Times-Sharp-Mono'] transition-colors duration-300 ease-out hover:bg-[#EEEBE3] relative overflow-hidden group"
@@ -305,7 +305,7 @@ export default function SundaysPage() {
                 <div className="grid grid-cols-2 mb-8">
                   <h3 className="text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#C0B9A5]">Jam with us</h3>
                   <p className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Regular']">Register on <Link 
-                    href="https://lu.ma/usc" 
+                    href="https://lu.ma/sundaysinla" 
                     target="_blank" 
                     rel="noopener noreferrer" 
                     className="underline hover:-translate-y-[2px] inline-block transition-all duration-300 ease-out hover:opacity-100"
