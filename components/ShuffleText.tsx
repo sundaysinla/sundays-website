@@ -37,7 +37,7 @@ export default function ShuffleText({ text }: ShuffleTextProps) {
 
   return (
     <Link 
-      href="https://lu.ma/usc"
+      href="https://lu.ma/sundaysinla"
       target="_blank"
       rel="noopener noreferrer"
     >
