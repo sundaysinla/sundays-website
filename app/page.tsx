@@ -7,6 +7,8 @@ import dynamic from 'next/dynamic'
 import { useInView } from 'react-intersection-observer'
 import { useScroll, motion, useTransform } from 'framer-motion'
 import LoadingScreen from '@/components/LoadingScreen'
+import NavBar from '@/components/NavBar'
+import DraggablePhotos from '@/components/DraggablePhotos'
 import ScatterText from '@/components/ScatterText'
 import ShuffleText from '@/components/ShuffleText'
 import ImageExplosion from '@/components/ImageExplosion'
@@ -84,15 +86,16 @@ export default function SundaysPage() {
   return (
     <>
       <LoadingScreen isLoading={isLoading} onTypingDone={() => setCanHide(true)} />
-      <div className={`min-h-screen relative overflow-hidden transition-opacity duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
+      <NavBar></NavBar>
+      <div className={`min-h-screen relative overflow-visible transition-opacity duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
         {/* Grid lines */}
         <div 
-          className="absolute inset-0" 
+          className="fixed inset-0 -z-10 pointer-events-none"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(16, calc(100vw / 16))',
             gap: 0,
-            background: 'transparent',
+            background: 'linear-gradient(to bottom, #F1F0E9 0%, #FFFFFF 100%)',
           }}
         >
           {[...Array(16)].map((_, i) => (
@@ -116,23 +119,24 @@ export default function SundaysPage() {
             display: 'grid',
             gridTemplateColumns: 'repeat(16, calc((100vw - (15 * 1px)) / 16))',
             gap: '1px',
-            gridTemplateRows: 'auto auto 1fr' // Header, Logo, Content rows
+            gridTemplateRows: 'auto auto 1fr', // Header, Logo, Content rows
+            background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.6), rgba(192, 185, 165, 0.8))'
           }}
         >
           {/* Header */}
           <div 
             ref={headerRef}
-            className={`col-start-8 col-span-2 pt-8 sm:pt-8 md:pt-10 lg:pt-12 lg:pb-10 text-xs whitespace-nowrap flex items-center justify-center font-['Monument-Grotesk'] relative z-10`}
+            className={`col-start-8 col-span-2 sm:pt-8 lg:pt-3 lg:pb-10 text-xs whitespace-nowrap flex items-center justify-center font-['Monument-Grotesk'] relative z-10 text-[#C0B9A5]`}
             style={{
               transition: 'all 1s ease-in-out 0.2s',
               opacity: !isLoading && headerInView ? '1' : '0',
-              transform: !isLoading && headerInView ? 'translateY(0)' : 'translateY(1rem)'
+              transform: !isLoading && headerInView ? 'translateY(0)' : 'translateY(1rem)',
             }}
           >
             {!isLoading && headerInView ? (
-              <ShuffleText text="SUNDAYS AT USC" />
+              <ShuffleText text="SUNDAYS IN LA" />
             ) : (
-              "SUNDAYS AT USC"
+              "SUNDAYS IN LA"
             )}
           </div>
           
@@ -181,74 +185,50 @@ export default function SundaysPage() {
             style={{
               transition: 'all 1s ease-in-out 0.6s',
               opacity: !isLoading && textInView ? '1' : '0',
-              transform: !isLoading && textInView ? 'translateY(0)' : 'translateY(1rem)'
+              transform: !isLoading && textInView ? 'translateY(0)' : 'translateY(1rem)',
             }}
           >
             <div style={{ 
               textAlign: 'center',
               padding: '0 0px'
             }} className="mx-[calc((100vw/16)*2)] md:mx-[calc((100vw/16)*5)] lg:mx-[calc((100vw/16)*5)]">
-              <p className="text-[1em] sm:text-[0.75em] md:text-[0.9em] lg:text-[1em] font-light font-['Office-Times-Round'] text-[#2A2A24]">
+              <p className="text-[1em] sm:text-[0.75em] md:text-[0.9em] lg:text-[1em] font-light font-['Office-Times-Round'] text-[#2A2A24] pt-4">
                 Every Sunday, we meet for a few hours to work on our passion projects. Whether it's art, coding, poetry, or anything in-between, Sundays is your space to finish that project you've been itching to start.
               </p>
-              <div className="mt-12 sm:mt-10 flex justify-center mb-[60px] sm:mb-[80px]">
+              <div className="mt-12 sm:mt-10 flex justify-center mb-[60px] sm:mb-[-80px]">
                 <Link 
                   href="https://lu.ma/sundaysinla" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="bg-black rounded-[8px] md:rounded-[8px] px-3 md:px-4 py-2 text-[0.3em] sm:text-[0.7em] md:text-[0.8em] lg:text-[0.9em] font-['Office-Times-Sharp-Mono'] transition-colors duration-300 ease-out hover:bg-[#EEEBE3] relative overflow-hidden group"
+                  className="bg-black rounded-[8px] md:rounded-[8px] px-3 md:px-4 py-2 text-[0.3em] sm:text-[0.7em] md:text-[0.8em] lg:text-[0.9em] font-['Sans Serif Button'] transition-colors duration-300 ease-out hover:bg-[#EEEBE3] relative overflow-hidden group"
                   style={{
                     textAlign: 'center'
                   }}
                 >
                   <span className="inline-block transition-transform duration-300 ease-out group-hover:-translate-y-full text-[#EEEBE3]">
-                    JOIN
+                    ATTEND A SESSION
                   </span>
                   <span className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-out translate-y-full group-hover:translate-y-0 text-black">
-                    JOIN
+                    ATTEND A SESSION
                   </span>
                 </Link>
               </div>
             </div>
-          </div>
 
+            <DraggablePhotos />
+
+
+          </div>
           
           {/* Images */}
-          <div 
+          <div
             className="col-span-full mx-[calc((100vw/16)*1)] mt-[-3vh] sm:mb-[5vh] relative overflow-hidden"
             style={{ 
               borderRadius: 'min(4vw, 100px)'  // Reduced from 8vw to 4vw for smaller screens
             }}
             ref={setRefs}
           >
-            <div 
-              className="w-full relative"
-              style={{ 
-                aspectRatio: '1.8/1',
-                opacity: !isLoading ? '1' : '0',
-                transform: !isLoading ? 'translateY(0)' : 'translateY(16px)',
-                transition: 'opacity 0.6s ease-in-out 1.0s, transform 1.2s ease-in-out 1.0s',
-              }}
-            >
-              <motion.div 
-                style={{ y: !isMobile ? imageY : 0 }}
-                className="transform-gpu w-full h-[140%] absolute inset-0"
-              >
-                <div className="w-full h-full relative" style={{ marginTop: !isMobile ? '-25%' : '0' }}>
-                  <Image
-                    src="/students_final_2.png"
-                    alt="Students working together at a table"
-                    fill
-                    className="object-cover scale-100"
-                    sizes="100vw"
-                    style={{
-                      objectPosition: 'center center'
-                    }}
-                    priority
-                  />
-                </div>
-              </motion.div>
-            </div>
+            
           </div>
 
           {/* After the image section */}
@@ -288,7 +268,7 @@ export default function SundaysPage() {
               <div>
                 <div className="grid grid-cols-2 mb-8">
                   <h3 className="text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#C0B9A5]">Whereabouts</h3>
-                  <p className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Regular']">Every Sunday at 2pm PST, near USC campus</p>
+                  <p className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Regular']">Every Sunday at 2pm PST in LA</p>
                 </div>
               </div>
 
@@ -318,7 +298,7 @@ export default function SundaysPage() {
               <div>
                 <div className="grid grid-cols-2 mb-24">
                   <h3 className="text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#C0B9A5]">IG / X / Linkedin</h3>
-                  <p className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Regular']">@sundaysatusc </p>
+                  <p className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Regular']">@sundaysnla </p>
                 </div>
               </div>
 
