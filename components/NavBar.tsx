@@ -18,7 +18,7 @@ export default function NavBar() {
             </div>
 
 
-            <div className="flex items-center space-x-8 text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#010101]">
+            <div className="flex items-center space-x-8 text-[12px] md:text-[14px] font-['Monument-Grotesk'] font-normal tracking-[-0.02em] text-[#010101] uppercase text-center">
                 <Link href="/about" className="hover:opacity-70 transition-opacity">ABOUT</Link>
                 <Link href="/projects" className="hover:opacity-70 transition-opacity">PROJECTS</Link>
                 <Link href="/team" className="hover:opacity-70 transition-opacity">TEAM</Link>
@@ -40,7 +40,5 @@ export default function NavBar() {
             </div>
 
         </nav>
-
-         
     )
 }
