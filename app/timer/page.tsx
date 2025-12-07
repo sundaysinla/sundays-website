@@ -1,67 +1,146 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+type TimerState = {
+  phaseIndex: number;
+  phaseStartedAt: number; // epoch ms when the current phase began/resumed
+  paused: boolean;
+  pausedRemaining: number; // seconds left when paused
+};
+
+const STORAGE_KEY = "sundays_timer_state";
+const CHANNEL_NAME = "sundays-timer-sync";
+
+// Phases shared across all windows
+const phases = [
+  { duration: 45 * 60, label: "45 Minutes of Deep Work", music: false },
+  { duration: 10 * 60, label: "10 Minutes to Talk", music: true },
+];
+
+const playlistUri = "spotify:playlist:2F0pDOIUewAIJ37vjztRiN";
+
+/** Format time as MM:SS */
+function formatTime(sec: number) {
+  const m = Math.floor(sec / 60).toString().padStart(2, "0");
+  const s = (sec % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+/** Format end time as 12hr AM/PM */
+function formatTime12(date: Date) {
+  let hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+  return `${hours}:${minutes.toString().padStart(2, "0")} ${ampm}`;
+}
+
+function buildInitialState(): TimerState {
+  return {
+    phaseIndex: 0,
+    phaseStartedAt: Date.now(),
+    paused: false,
+    pausedRemaining: phases[0].duration,
+  };
+}
 
 export default function TimerPage() {
-  const [phaseIndex, setPhaseIndex] = useState(0);
-  const [remaining, setRemaining] = useState(45 * 60);
-  const [paused, setPaused] = useState(false);
+  const [timerState, setTimerState] = useState<TimerState | null>(null);
   const [spotifyReady, setSpotifyReady] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [player, setPlayer] = useState<any>(null);
+  const [now, setNow] = useState(Date.now());
+  const channelRef = useRef<BroadcastChannel | null>(null);
 
-  // Phases
-  const phases = [
-    { duration: 45 * 60, label: "45 Minutes of Deep Work", music: false },
-    { duration: 10 * 60, label: "10 Minutes to Talk", music: true },
-  ];
-
-  const playlistUri = "spotify:playlist:2F0pDOIUewAIJ37vjztRiN";
-
-  /** Format time as MM:SS */
-  function formatTime(sec: number) {
-    const m = Math.floor(sec / 60).toString().padStart(2, "0");
-    const s = (sec % 60).toString().padStart(2, "0");
-    return `${m}:${s}`;
-  }
-
-  /** Format end time as 12hr AM/PM */
-  function formatTime12(date: Date) {
-    let hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? "PM" : "AM";
-    hours = hours % 12 || 12;
-    return `${hours}:${minutes.toString().padStart(2, "0")} ${ampm}`;
-  }
-
-  /** Phase logic */
-  const switchPhase = () => {
-    const next = (phaseIndex + 1) % phases.length;
-    setPhaseIndex(next);
-    setRemaining(phases[next].duration);
-    if (phases[next].music) {
-      playPlaylist(playlistUri);
-    } else {
-      player?.pause();
+  const readStoredState = () => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? (JSON.parse(raw) as TimerState) : null;
+    } catch {
+      return null;
     }
   };
 
-  /** Timer logic */
-  useEffect(() => {
-    if (paused) return;
-    const timer = setInterval(() => {
-      setRemaining((prev) => {
-        if (prev <= 1) {
-          switchPhase();
-          return phases[(phaseIndex + 1) % phases.length].duration;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [paused, phaseIndex]);
+  const persistState = (next: TimerState) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    channelRef.current?.postMessage({ type: "state", state: next });
+  };
 
-  /** Spotify SDK loader */
+  const updateTimerState = (updater: (prev: TimerState) => TimerState) => {
+    setTimerState((prev: TimerState | null) => {
+      const base = prev ?? buildInitialState();
+      const next = updater(base);
+      persistState(next);
+      return next;
+    });
+  };
+
+  const computeRemaining = (state: TimerState, current: number) => {
+    const duration = phases[state.phaseIndex].duration;
+    if (state.paused) return state.pausedRemaining;
+    const elapsed = Math.floor((current - state.phaseStartedAt) / 1000);
+    return Math.max(duration - elapsed, 0);
+  };
+
+  // Keep a ticking "now" so all windows compute the same displayed value
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Initial state load (shared across windows)
+  useEffect(() => {
+    const stored = readStoredState();
+    const initial = stored ?? buildInitialState();
+    setTimerState(initial);
+    if (!stored) {
+      persistState(initial);
+    }
+  }, []);
+
+  // BroadcastChannel for real-time sync across windows
+  useEffect(() => {
+    if (typeof window === "undefined" || !("BroadcastChannel" in window)) {
+      return;
+    }
+    const channel = new BroadcastChannel(CHANNEL_NAME);
+    channelRef.current = channel;
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === "state") {
+        setTimerState(event.data.state as TimerState);
+      }
+    };
+    channel.addEventListener("message", handler);
+    return () => {
+      channel.removeEventListener("message", handler);
+      channel.close();
+    };
+  }, []);
+
+  // Storage event fallback (fires on other tabs)
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === STORAGE_KEY && event.newValue) {
+        try {
+          const parsed = JSON.parse(event.newValue) as TimerState;
+          setTimerState(parsed);
+        } catch {
+          // ignore invalid payloads
+        }
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  // Spotify SDK loader
   useEffect(() => {
     const token = localStorage.getItem("spotify_access_token");
     if (!token) return;
@@ -72,20 +151,20 @@ export default function TimerPage() {
     document.body.appendChild(script);
 
     (window as any).onSpotifyWebPlaybackSDKReady = () => {
-      const player = new (window as any).Spotify.Player({
+      const spotifyPlayer = new (window as any).Spotify.Player({
         name: "Sundays Timer Player",
         getOAuthToken: (cb: (token: string) => void) => cb(token),
         volume: 0.5,
       });
-      setPlayer(player);
+      setPlayer(spotifyPlayer);
 
-      player.addListener("ready", ({ device_id }: any) => {
+      spotifyPlayer.addListener("ready", ({ device_id }: any) => {
         console.log("Ready with Device ID", device_id);
         setDeviceId(device_id);
         setSpotifyReady(true);
       });
 
-      player.connect();
+      spotifyPlayer.connect();
     };
   }, []);
 
@@ -107,8 +186,75 @@ export default function TimerPage() {
     );
   }
 
-  /** Current end time */
-  const endTime = new Date(Date.now() + remaining * 1000);
+  const remaining = useMemo(() => {
+    if (!timerState) return phases[0].duration;
+    return computeRemaining(timerState, now);
+  }, [timerState, now]);
+
+  const endTime = useMemo(() => new Date(now + remaining * 1000), [now, remaining]);
+
+  const handlePhaseChangeEffects = useCallback((nextPhaseIndex: number) => {
+    if (phases[nextPhaseIndex].music) {
+      playPlaylist(playlistUri);
+    } else {
+      player?.pause();
+    }
+  }, [player]);
+
+  const advancePhase = useCallback(() => {
+    updateTimerState((prev) => {
+      const nextPhase = (prev.phaseIndex + 1) % phases.length;
+      const nextState: TimerState = {
+        phaseIndex: nextPhase,
+        phaseStartedAt: Date.now(),
+        paused: false,
+        pausedRemaining: phases[nextPhase].duration,
+      };
+      handlePhaseChangeEffects(nextPhase);
+      return nextState;
+    });
+  }, [handlePhaseChangeEffects]);
+
+  // Automatically advance when the shared timer hits zero
+  useEffect(() => {
+    if (!timerState || timerState.paused) return;
+    if (remaining <= 0) {
+      advancePhase();
+    }
+  }, [remaining, timerState, advancePhase]);
+
+  const togglePause = () => {
+    if (!timerState) return;
+    if (timerState.paused) {
+      const duration = phases[timerState.phaseIndex].duration;
+      const resumedStart =
+        Date.now() - (duration - timerState.pausedRemaining) * 1000;
+      updateTimerState((prev) => ({
+        ...prev,
+        paused: false,
+        phaseStartedAt: resumedStart,
+        pausedRemaining: duration,
+      }));
+      return;
+    }
+
+    updateTimerState((prev) => ({
+      ...prev,
+      paused: true,
+      pausedRemaining: remaining,
+    }));
+  };
+
+  const restartPhase = () => {
+    updateTimerState((prev) => ({
+      ...prev,
+      paused: false,
+      phaseStartedAt: Date.now(),
+      pausedRemaining: phases[prev.phaseIndex].duration,
+    }));
+  };
+
+  const effectiveState = timerState ?? buildInitialState();
 
   return (
     <main
@@ -125,7 +271,7 @@ export default function TimerPage() {
       }}
     >
       <h1 style={{ fontFamily: "PP Mondwest", fontSize: "1.5rem" }}>
-        {phases[phaseIndex].label}
+        {phases[effectiveState.phaseIndex].label}
       </h1>
       <div
         style={{
@@ -140,15 +286,13 @@ export default function TimerPage() {
         Ends at {formatTime12(endTime)}
       </p>
       <div style={{ display: "flex", gap: "10px" }}>
-        <button onClick={() => setPaused((p) => !p)}>
-          {paused ? "Resume" : "Pause"}
+        <button onClick={togglePause}>
+          {effectiveState.paused ? "Resume" : "Pause"}
         </button>
-        <button onClick={() => setRemaining(phases[phaseIndex].duration)}>
-          Restart
-        </button>
-        <button onClick={switchPhase}>Skip</button>
+        <button onClick={restartPhase}>Restart</button>
+        <button onClick={advancePhase}>Skip</button>
       </div>
-      {phases[phaseIndex].music && (
+      {phases[effectiveState.phaseIndex].music && (
         <div style={{ marginTop: "2rem", fontFamily: "PP Neue Montreal" }}>
           🎵 Now Playing: Sundays Playlist
         </div>
