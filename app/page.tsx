@@ -10,10 +10,11 @@ import LoadingScreen from "@/components/LoadingScreen";
 import NavBar from "@/components/NavBar";
 import DraggablePhotos from "@/components/DraggablePhotos";
 import Carousel from "@/components/Carousel";
-import ScatterText from "@/components/ScatterText";
 import ShuffleText from "@/components/ShuffleText";
 import ImageExplosion from "@/components/ImageExplosion";
 import Team from "@/components/Team";
+import Projects from "@/components/Projects";
+import Who from "@/components/Who";
 import "../styles/grain.css";
 
 // Dynamic import of the 3D model component to avoid SSR issues
@@ -126,7 +127,6 @@ export default function SundaysPage() {
             display: "grid",
             gridTemplateColumns: "repeat(16, calc(100vw / 16))",
             gap: 0,
-            background: "linear-gradient(to bottom, #F1F0E9 0%, #FFFFFF 100%)",
           }}
         >
           {[...Array(16)].map((_, i) => (
@@ -152,7 +152,6 @@ export default function SundaysPage() {
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(16, calc((100vw - (15 * 1px)) / 16))",
-            gap: "1px",
             gridTemplateRows: "auto auto 1fr", // Header, Logo, Content rows
             background:
               "linear-gradient(to bottom, rgba(255, 255, 255, 0.6), rgba(192, 185, 165, 0.8))",
@@ -293,61 +292,26 @@ export default function SundaysPage() {
                   : "translateY(1rem)",
             }}
           >
-            {/* Header */}
-            <div
-              ref={headerRef}
-              className="col-span-full flex flex-col items-center text-center"
-              style={{
-                transition: "all 1s ease-in-out 0.2s",
-                opacity: !isLoading && headerInView ? "1" : "0",
-                transform:
-                  !isLoading && headerInView
-                    ? "translateY(0)"
-                    : "translateY(1rem)",
-              }}
-            >
-              {/* Top label */}
-              <div className="text-xs uppercase tracking-wide font-['Monument-Grotesk'] text-[#C0B9A5] mb-8">
-                {!isLoading && headerInView ? (
-                  <ShuffleText text="WHAT WE DO" />
-                ) : (
-                  "WHAT WE DO"
-                )}
-              </div>
 
-              {/* Main text block */}
-              <div className="flex flex-col items-center space-y-3 max-w-xl text-['Serif Headline 1'] py-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded-full bg-[#C7FF41]" />
-                  <p className="text-xl md:text-2xl font-serif text-black leading-relaxed">
-                    we meet every{" "}
-                    <span className="italic underline decoration-[#C0B9A5]/40">
-                      sunday
-                    </span>
-                  </p>
-                </div>
-
-                <p className="text-xl md:text-2xl font-serif text-black leading-relaxed">
-                  to create whatever it is
-                </p>
-
-                <p className="text-xl md:text-2xl font-serif text-black leading-relaxed">
-                  that makes us feel alive.
-                </p>
-              </div>
-            </div>
-            
-            <div className="py-16 pb-32">
+            <div id="about">
               <Carousel></Carousel>
             </div>
 
-            <div className="bg-[#FCFAF7]">
+            <div>
+              <Who></Who>
+            </div>
+            
+            <div id="projects">
+              <Projects></Projects>
+            </div>
+
+            <div id="team" className="bg-[#FCFAF7]">
               <Team></Team>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="col-span-full pt-32 bg-white">
+          <div className="col-span-full bg-white">
             <div className="space-y-0 mx-[calc((100vw/16)*2)] md:mx-[calc((100vw/16)*4)]">
               <div>
                 <div className="grid grid-cols-2 mb-8">
@@ -374,16 +338,16 @@ export default function SundaysPage() {
 
               <div>
                 <div className="grid grid-cols-2 mb-8">
-                  <h3 className="text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#C0B9A5]">
+                  <h3 className="text-[12px] md:text-[14px] font-['ABC Monument Grotesk Unlicensed Trial'] text-[#C0B9A5]">
                     Jam with us
                   </h3>
-                  <p className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Regular']">
+                  <p className="text-[12px] md:text-[14px] font-['Office Times Sharp']">
                     Register on{" "}
                     <Link
                       href="https://lu.ma/sundaysinla"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="underline hover:-translate-y-[2px] inline-block transition-all duration-300 ease-out hover:opacity-100"
+                      className="text-[#C0B9A5] font-['Office Times Sharp'] hover:-translate-y-[2px] inline-block transition-all duration-300 ease-out hover:opacity-100"
                     >
                       Luma
                     </Link>
@@ -397,9 +361,52 @@ export default function SundaysPage() {
                   <h3 className="text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#C0B9A5]">
                     Find us
                   </h3>
-                  <p className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Regular']">
-                    @sundaysnla{" "}
-                  </p>
+                  <div className="flex flex-col space-y-2">
+                    {/* Social icons */}
+                    <div className="flex space-x-7 mt-1">
+                      <Link
+                        href="https://x.com/sundaysinla"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:opacity-70 transition-opacity duration-300"
+                      >
+                        <Image
+                          src="/x.png" // your uploaded icon
+                          alt="X Logo"
+                          width={16}
+                          height={16}
+                        />
+                      </Link>
+
+                      <Link
+                        href="https://www.linkedin.com/company/sundays-at-usc/posts/?feedView=all"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:opacity-70 transition-opacity duration-300"
+                      >
+                        <Image
+                          src="/linkedin.png" // your uploaded icon
+                          alt="LinkedIn Logo"
+                          width={16}
+                          height={16}
+                        />
+                      </Link>
+
+                      <Link
+                        href="https://www.instagram.com/sundaysnla"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:opacity-70 transition-opacity duration-300"
+                      >
+                        <Image
+                          src="/instagram.png" // your uploaded icon
+                          alt="Instagram Logo"
+                          width={16}
+                          height={16}
+                        />
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               </div>
 
