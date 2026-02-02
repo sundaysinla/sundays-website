@@ -242,7 +242,7 @@ export default function SundaysPage() {
               className="mx-[calc((100vw/16)*2)] md:mx-[calc((100vw/16)*5)] lg:mx-[calc((100vw/16)*5)]"
             >
               <p className="text-[1em] sm:text-[0.75em] md:text-[0.9em] lg:text-[1em] font-light font-['Office-Times-Round'] text-[#2A2A24] pt-4">
-                Each Sunday, we meet for a couple hours to work on our passion
+                Each Sunday, we meet for a few hours to work on our passion
                 projects. Whether it's art, coding, poetry, or anything
                 in-between, Sundays is your space to finish that project you've
                 been itching to start.
