@@ -73,13 +73,18 @@ module.exports = {
         'slide-up': {
           '0%': { transform: 'translateY(0)' },
           '100%': { transform: 'translateY(-100%)' }
+        },
+        'carousel': {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' }
         }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         'blink': 'blink 1s step-end infinite',
-        'slide-up': 'slide-up 1s ease-in-out forwards'
+        'slide-up': 'slide-up 1s ease-in-out forwards',
+        'carousel': 'carousel 30s linear infinite'
       },
       gridTemplateColumns: {
         '16': 'repeat(16, 1fr)',

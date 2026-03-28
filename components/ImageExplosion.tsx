@@ -31,9 +31,9 @@ export default function ImageExplosion() {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <Link 
-        href="https://lu.ma/usc" 
-        target="_blank" 
+      <Link
+        href="https://luma.com/sundaysinla"
+        target="_blank"
         rel="noopener noreferrer"
         className="inline-block w-full"
       >

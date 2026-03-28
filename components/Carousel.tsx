@@ -1,8 +1,8 @@
 "use client";
 
-import useEmblaCarousel from "embla-carousel-react";
 import Image from "next/image";
 import AutoScroll from "embla-carousel-auto-scroll";
+import useEmblaCarousel from "embla-carousel-react";
 import ShuffleText from "@/components/ShuffleText";
 import { useInView } from "react-intersection-observer";
 import { useEffect, useRef, useState } from "react";
@@ -35,6 +35,9 @@ export default function WhatWeDoCarousel() {
       AutoScroll({
         speed: 1,
         stopOnInteraction: false,
+        stopOnMouseEnter: false,
+        stopOnFocusIn: false,
+        playOnInit: true,
       }),
     ]
   );
@@ -58,26 +61,17 @@ export default function WhatWeDoCarousel() {
       const offset =
         (scrollY / document.body.scrollHeight) * canvas.height * 1.5;
 
-      // Position the glow slightly below center
       const circleX = canvas.width / 2;
       const circleY = canvas.height / 1.6 - offset;
 
-      const radiusX = canvas.width * 0.4; // Controls WIDTH (40% of viewport width)
-      const radiusY = canvas.height * 0.25; // Controls HEIGHT (50% of viewport height)
+      const radiusX = canvas.width * 0.4;
+      const radiusY = canvas.height * 0.25;
 
-      // Save the current context state
       ctx.save();
-
-      // Translate to center point
       ctx.translate(circleX, circleY);
-
-      // Scale to create ellipse (stretch vertically or horizontally)
       ctx.scale(radiusX / radiusY, 1);
 
-      // Create circular gradient at origin
       const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, radiusY);
-
-      // Center glow (green) → purple edge → offwhite fade
       gradient.addColorStop(0.03, "#BDFF004D");
       gradient.addColorStop(0.25, "#907CFF26");
       gradient.addColorStop(0.7, "#F3F2EC00");
@@ -90,7 +84,6 @@ export default function WhatWeDoCarousel() {
         canvas.height * 2
       );
 
-      // Restore the context state
       ctx.restore();
     };
 
@@ -138,10 +131,10 @@ export default function WhatWeDoCarousel() {
         </div>
 
         {/* Main text */}
-        <div className="flex flex-col items-center space-y-3 max-w-xl py-6">
+        <div className="flex flex-col items-center space-y-1 max-w-xl py-6">
           <div className="flex items-center gap-3">
             <div className="w-4 h-4 rounded-full bg-[#C7FF41]" />
-            <p className="text-xl md:text-2xl font-serif text-black leading-relaxed">
+            <p className="text-xl md:text-2xl font-serif text-black leading-snug">
               we meet every{" "}
               <span className="italic underline decoration-[#C0B9A5]/40">
                 sunday
@@ -149,10 +142,10 @@ export default function WhatWeDoCarousel() {
             </p>
           </div>
 
-          <p className="text-xl md:text-2xl font-serif text-black leading-relaxed">
+          <p className="text-xl md:text-2xl font-serif text-black leading-snug">
             to create whatever it is
           </p>
-          <p className="text-xl md:text-2xl font-serif text-black leading-relaxed">
+          <p className="text-xl md:text-2xl font-serif text-black leading-snug">
             that makes us feel alive.
           </p>
         </div>
@@ -167,22 +160,15 @@ export default function WhatWeDoCarousel() {
           {[...images, ...images].map((src, i) => (
             <div
               key={i}
-              className="flex-[0_0_22%] min-w-0 relative aspect-[3/4] overflow-hidden transition-transform duration-300 hover:-translate-y-1"
+              className="flex-[0_0_22%] min-w-0 relative aspect-[3/4] transition-transform duration-300 hover:-translate-y-1"
             >
-              <div
-                key={i}
-                className="flex-[0_0_22%] min-w-0 relative aspect-[3/4] overflow-hidden transition-transform duration-300 hover:-translate-y-1"
-              >
-                <div className="w-full h-full flex bg-white rounded-2xl shadow-[0_6px_20px_rgba(0,0,0,0.05)] overflow-hidden">
-                  <Image
-                    src={src}
-                    alt={`carousel-${i}`}
-                    fill
-                    className="object-cover"
-                    priority={i < 6}
-                  />
-                </div>
-              </div>
+              <Image
+                src={src}
+                alt={`carousel-${i}`}
+                fill
+                className="object-contain p-2 drop-shadow-lg"
+                priority={i < 6}
+              />
             </div>
           ))}
         </div>

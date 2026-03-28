@@ -3,7 +3,7 @@ import React from "react";
 
 export default function Team() {
   return (
-    <section className="bg-[#FCFAF5] text-[#3A372F] py-20 px-6 md:px-20 lg:px-40">
+    <section className="bg-[#FCFAF5]/80 text-[#3A372F] py-32 px-6 md:px-20 lg:px-40">
       <div className="text-center mb-8">
         <p className="text-sm text-[#C0B9A5] font-['ABC Monument Grotesk Unlicensed Trial'] tracking-wide uppercase">
           Meet the Team
@@ -28,7 +28,7 @@ export default function Team() {
                 href="https://www.linkedin.com/in/amanda-nepo-7830152b1/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline underline-offset-4 transition-all duration-200"
+                className="relative after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-full after:bg-current after:opacity-0 after:transition-opacity after:duration-300 after:ease-out hover:after:opacity-100"
               >
                 Amanda Nepo
               </a>
@@ -38,7 +38,7 @@ export default function Team() {
                 href="https://www.linkedin.com/in/richardshizhang/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline underline-offset-4 transition-all duration-200"
+                className="relative after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-full after:bg-current after:opacity-0 after:transition-opacity after:duration-300 after:ease-out hover:after:opacity-100"
               >
                 Richard Zhang
               </a>
@@ -48,7 +48,7 @@ export default function Team() {
                 href="https://www.linkedin.com/in/sarah-fan-70400a241/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline underline-offset-4 transition-all duration-200"
+                className="relative after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-full after:bg-current after:opacity-0 after:transition-opacity after:duration-300 after:ease-out hover:after:opacity-100"
               >
                 Sarah Fan
               </a>
@@ -58,7 +58,7 @@ export default function Team() {
                 href="https://www.linkedin.com/in/snama/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline underline-offset-4 transition-all duration-200"
+                className="relative after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-full after:bg-current after:opacity-0 after:transition-opacity after:duration-300 after:ease-out hover:after:opacity-100"
               >
                 Sinchana Nama
               </a>
@@ -78,7 +78,7 @@ export default function Team() {
                 href="https://www.linkedin.com/in/1arushigupta/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline underline-offset-4 transition-all duration-200"
+                className="relative after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-full after:bg-current after:opacity-0 after:transition-opacity after:duration-300 after:ease-out hover:after:opacity-100"
               >
                 Arushi Gupta
               </a>
@@ -88,7 +88,7 @@ export default function Team() {
                 href="https://www.linkedin.com/in/emilyshenucla/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline underline-offset-4 transition-all duration-200"
+                className="relative after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-full after:bg-current after:opacity-0 after:transition-opacity after:duration-300 after:ease-out hover:after:opacity-100"
               >
                 Emily Shen
               </a>
@@ -98,7 +98,7 @@ export default function Team() {
                 href="https://www.linkedin.com/in/jaysontian/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline underline-offset-4 transition-all duration-200"
+                className="relative after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-full after:bg-current after:opacity-0 after:transition-opacity after:duration-300 after:ease-out hover:after:opacity-100"
               >
                 Jayson Tian
               </a>
@@ -108,7 +108,7 @@ export default function Team() {
                 href="https://www.linkedin.com/in/kyle-jeong/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline underline-offset-4 transition-all duration-200"
+                className="relative after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-full after:bg-current after:opacity-0 after:transition-opacity after:duration-300 after:ease-out hover:after:opacity-100"
               >
                 Kyle Jeong
               </a>
@@ -118,7 +118,7 @@ export default function Team() {
                 href="https://www.linkedin.com/in/michelletliu/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline underline-offset-4 transition-all duration-200"
+                className="relative after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-full after:bg-current after:opacity-0 after:transition-opacity after:duration-300 after:ease-out hover:after:opacity-100"
               >
                 Michelle Liu
               </a>
@@ -138,7 +138,7 @@ export default function Team() {
                 href="https://www.linkedin.com/in/brandonbbao/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline underline-offset-4 transition-all duration-200"
+                className="relative after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-full after:bg-current after:opacity-0 after:transition-opacity after:duration-300 after:ease-out hover:after:opacity-100"
               >
                 Brandon Bao
               </a>
@@ -148,7 +148,7 @@ export default function Team() {
                 href="https://www.linkedin.com/in/fiorilee/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline underline-offset-4 transition-all duration-200"
+                className="relative after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-full after:bg-current after:opacity-0 after:transition-opacity after:duration-300 after:ease-out hover:after:opacity-100"
               >
                 Fiori Lee
               </a>
@@ -158,7 +158,7 @@ export default function Team() {
                 href="https://www.linkedin.com/in/janrebolledo/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:underline underline-offset-4 transition-all duration-200"
+                className="relative after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-full after:bg-current after:opacity-0 after:transition-opacity after:duration-300 after:ease-out hover:after:opacity-100"
               >
                 Jan Rebolledo
               </a>

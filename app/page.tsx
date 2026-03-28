@@ -17,7 +17,6 @@ import Projects from "@/components/Projects";
 import Who from "@/components/Who";
 import "../styles/grain.css";
 
-// Dynamic import of the 3D model component to avoid SSR issues
 const Logo3D = dynamic(() => import("../components/Logo3D"), { ssr: false });
 
 export default function SundaysPage() {
@@ -25,7 +24,6 @@ export default function SundaysPage() {
   const [canHide, setCanHide] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(() => {
-    // Check if we're in the browser
     if (typeof window !== "undefined") {
       return (
         window.innerWidth < 500 ||
@@ -34,12 +32,10 @@ export default function SundaysPage() {
         )
       );
     }
-    // Default to false if we're server-side
     return false;
   });
 
   useEffect(() => {
-    // Only start the hiding timer after typing is done
     if (canHide) {
       const timer = setTimeout(() => {
         setIsLoading(false);
@@ -48,7 +44,6 @@ export default function SundaysPage() {
     }
   }, [canHide]);
 
-  // Check window width after mount and on resize
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(
@@ -59,10 +54,8 @@ export default function SundaysPage() {
       );
     };
 
-    // Check immediately
     checkMobile();
 
-    // Add resize listener
     window.addEventListener("resize", checkMobile);
     window.addEventListener("orientationchange", checkMobile);
 
@@ -101,7 +94,6 @@ export default function SundaysPage() {
 
   const imageY = useTransform(scrollYProgress, [0, 1], [0, 150]);
 
-  // Combine refs using callback ref
   const setRefs = useCallback(
     (node: HTMLDivElement | null) => {
       imageContainerRef.current = node;
@@ -132,7 +124,7 @@ export default function SundaysPage() {
           {[...Array(16)].map((_, i) => (
             <div
               key={i}
-              className="h-full bg-[#FEFDFB]"
+              className="h-full"
               style={{
                 backgroundImage:
                   i > 0
@@ -152,9 +144,9 @@ export default function SundaysPage() {
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(16, calc((100vw - (15 * 1px)) / 16))",
-            gridTemplateRows: "auto auto 1fr", // Header, Logo, Content rows
+            gridTemplateRows: "auto auto 1fr",
             background:
-              "linear-gradient(to bottom, rgba(255, 255, 255, 0.6), rgba(192, 185, 165, 0.8))",
+              "linear-gradient(to bottom, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.1))",
           }}
         >
           {/* Header */}
@@ -177,11 +169,9 @@ export default function SundaysPage() {
             )}
           </div>
 
-          {/* <div className="col-start-10 col-span-6 py-8"></div> */}
-
           {/* Logo row */}
           <div
-            className={`col-span-full mt-[80px] sm:mt-[-120px] md:mt-[-4vw] lg:mt-[-8vw] xl:mt-[-15vh] mb-[40px] sm:mb-[200px] md:mb-[250px] lg:mb-[300px] xl:mb-[400px]`}
+            className={`col-span-full mt-20 sm:-mt-32 md:-mt-[4vw] lg:-mt-[8vw] xl:-mt-[15vh] mb-10 sm:mb-48 md:mb-60 lg:mb-72 xl:mb-96`}
             style={{
               opacity: !isLoading ? "1" : "0",
               transition: "opacity 0.4s ease-in-out",
@@ -201,7 +191,6 @@ export default function SundaysPage() {
               }}
               className=""
             >
-              {/* Show static image on mobile, 3D model on larger screens */}
               {isMobile ? (
                 <div
                   className="w-full h-full flex items-center justify-center"
@@ -226,7 +215,7 @@ export default function SundaysPage() {
           {/* Text */}
           <div
             ref={textRef}
-            className={`col-span-full pt-[16px] md:pt-[24px] lg:pt-[40px]`}
+            className={`col-span-full`}
             style={{
               transition: "all 1s ease-in-out 0.6s",
               opacity: !isLoading && textInView ? "1" : "0",
@@ -243,19 +232,20 @@ export default function SundaysPage() {
             >
               <p className="text-[1em] sm:text-[0.75em] md:text-[0.9em] lg:text-[1em] font-light font-['Office-Times-Round'] text-[#2A2A24] pt-4">
                 Every Sunday, we meet for a few hours to work on our passion
-                projects. Whether it's art, coding, poetry, or anything
-                in-between, Sundays is your space to finish that project you've
+                projects. Whether it&apos;s art, coding, poetry, or anything
+                in-between, Sundays is your space to finish that project you&apos;ve
                 been itching to start.
               </p>
-              <div className="mt-12 sm:mt-10 flex justify-center mb-[60px] sm:mb-[-80px]">
+              <div className="mt-12 sm:mt-10 flex justify-center mb-8 sm:mb-6 relative z-20">
                 <Link
-                  href="https://lu.ma/sundaysinla"
+                  href="https://luma.com/sundaysinla"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-black rounded-[8px] md:rounded-[8px] px-3 md:px-4 py-2 text-[0.3em] sm:text-[0.7em] md:text-[0.8em] lg:text-[0.9em] font-['Sans Serif Button'] transition-colors duration-300 ease-out hover:bg-[#EEEBE3] relative overflow-hidden group"
+                  className="bg-black rounded-full px-4 md:px-5 pt-2 pb-1.5 text-[0.3em] sm:text-[0.7em] md:text-[0.8em] lg:text-[0.9em] font-['Monument-Grotesk'] uppercase tracking-[-0.02em] transition-colors duration-300 ease-out hover:bg-[#EEEBE3] relative overflow-hidden group"
                   style={{
                     textAlign: "center",
-                  }}
+                    cornerShape: "squircle",
+                  } as React.CSSProperties}
                 >
                   <span className="inline-block transition-transform duration-300 ease-out group-hover:-translate-y-full text-[#EEEBE3]">
                     ATTEND A SESSION
@@ -274,7 +264,7 @@ export default function SundaysPage() {
           <div
             className="col-span-full mx-[calc((100vw/16)*1)] mt-[-3vh] sm:mb-[5vh] relative overflow-hidden"
             style={{
-              borderRadius: "min(4vw, 100px)", // Reduced from 8vw to 4vw for smaller screens
+              borderRadius: "min(4vw, 100px)",
             }}
             ref={setRefs}
           ></div>
@@ -282,7 +272,7 @@ export default function SundaysPage() {
           {/* After the image section */}
           <div
             ref={jammingRef}
-            className="col-span-full text-center bg-[#FEFDFB] py-32 overflow-hidden"
+            className="col-span-full text-center bg-[#FEFDFB]/80 pt-32 overflow-hidden"
             style={{
               transition: "all 1s ease-in-out 0.5s",
               opacity: !isLoading && jammingInView ? "1" : "0",
@@ -305,13 +295,13 @@ export default function SundaysPage() {
               <Projects></Projects>
             </div>
 
-            <div id="team" className="bg-[#FCFAF7]">
+            <div id="team" className="bg-[#FCFAF7]/80">
               <Team></Team>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="col-span-full bg-white">
+          <div className="col-span-full pt-32">
             <div className="space-y-0 mx-[calc((100vw/16)*2)] md:mx-[calc((100vw/16)*4)]">
               <div>
                 <div className="grid grid-cols-2 mb-8">
@@ -362,7 +352,6 @@ export default function SundaysPage() {
                     Find us
                   </h3>
                   <div className="flex flex-col space-y-2">
-                    {/* Social icons */}
                     <div className="flex space-x-7 mt-1">
                       <Link
                         href="https://x.com/sundaysinla"
@@ -371,7 +360,7 @@ export default function SundaysPage() {
                         className="hover:opacity-70 transition-opacity duration-300"
                       >
                         <Image
-                          src="/x.png" // your uploaded icon
+                          src="/x.png"
                           alt="X Logo"
                           width={16}
                           height={16}
@@ -385,7 +374,7 @@ export default function SundaysPage() {
                         className="hover:opacity-70 transition-opacity duration-300"
                       >
                         <Image
-                          src="/linkedin.png" // your uploaded icon
+                          src="/linkedin.png"
                           alt="LinkedIn Logo"
                           width={16}
                           height={16}
@@ -399,7 +388,7 @@ export default function SundaysPage() {
                         className="hover:opacity-70 transition-opacity duration-300"
                       >
                         <Image
-                          src="/instagram.png" // your uploaded icon
+                          src="/instagram.png"
                           alt="Instagram Logo"
                           width={16}
                           height={16}

@@ -10,25 +10,32 @@ export default function LoadingScreen({ isLoading, onTypingDone }: LoadingScreen
   const text = "hello, how's your day going?"
   const [displayText, setDisplayText] = useState('')
   const hasTyped = useRef(false)
-  
-  const typingDelay = 80  // Increase from default (usually 50-60)
+
+  const DURATION = 400
 
   useEffect(() => {
     if (!isLoading || hasTyped.current) return
-    
-    let currentIndex = 0
-    const interval = setInterval(() => {
-      if (currentIndex <= text.length) {
-        setDisplayText(text.slice(0, currentIndex))
-        currentIndex++
+
+    let rafId: number
+    const start = performance.now()
+
+    const step = (now: number) => {
+      const elapsed = now - start
+      const progress = Math.min(elapsed / DURATION, 1)
+      const chars = Math.floor(progress * text.length)
+      setDisplayText(text.slice(0, chars))
+
+      if (progress < 1) {
+        rafId = requestAnimationFrame(step)
       } else {
-        clearInterval(interval)
+        setDisplayText(text)
         hasTyped.current = true
         onTypingDone()
       }
-    }, typingDelay)
-    
-    return () => clearInterval(interval)
+    }
+
+    rafId = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(rafId)
   }, [isLoading, onTypingDone])
 
   return (
