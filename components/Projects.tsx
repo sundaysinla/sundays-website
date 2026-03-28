@@ -1,9 +1,36 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
+
+type Project = {
+  number: string;
+  name: string;
+};
+
+const FALLBACK: Project[] = [
+  { number: "01", name: "music production" },
+  { number: "02", name: "font making" },
+  { number: "03", name: "educational tools" },
+  { number: "04", name: "website design" },
+  { number: "05", name: "magic tricks" },
+  { number: "06", name: "reading fiction" },
+  { number: "07", name: "making matcha" },
+  { number: "08", name: "3d modeling" },
+];
 
 export default function Projects() {
+  const [projects, setProjects] = useState<Project[]>(FALLBACK);
+
+  useEffect(() => {
+    fetch("/api/projects")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) setProjects(data);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
-    <section className="text-[#3A372F] py-24 px-6 md:px-20 lg:px-40 relative">
+    <section className="text-[#3A372F] py-32 px-6 md:px-16 lg:px-24 relative">
       <div className="text-center mb-8">
         <p className="text-sm uppercase text-[#C0B9A5] font-['ABC Monument Grotesk Unlicensed Trial']">
           Projects
@@ -19,30 +46,14 @@ export default function Projects() {
 
       {/* Project List */}
       <ul className="space-y-4 ml-8 md:space-y-6 text-[#2A2A24] text-left">
-        <li className="text-[22px] font-['Office-Times-Sharp-Regular']">
-          (01) music production
-        </li>
-        <li className="text-[22px] font-['Office-Times-Sharp-Regular']">
-          (02) font making
-        </li>
-        <li className="text-[22px] font-['Office-Times-Sharp-Regular']">
-          (03) educational tools
-        </li>
-        <li className="text-[22px] font-['Office-Times-Sharp-Regular']">
-          (04) website design
-        </li>
-        <li className="text-[22px] font-['Office-Times-Sharp-Regular']">
-          (05) magic tricks
-        </li>
-        <li className="text-[22px] font-['Office-Times-Sharp-Regular']">
-          (06) reading fiction
-        </li>
-        <li className="text-[22px] font-['Office-Times-Sharp-Regular']">
-          (07) making matcha
-        </li>
-        <li className="text-[22px] font-['Office-Times-Sharp-Regular']">
-          (08) 3d modeling
-        </li>
+        {projects.map((project) => (
+          <li
+            key={project.number}
+            className="text-[22px] font-['Office-Times-Sharp-Regular']"
+          >
+            ({project.number}) {project.name}
+          </li>
+        ))}
       </ul>
     </section>
   );

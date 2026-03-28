@@ -77,6 +77,10 @@ module.exports = {
         'carousel': {
           '0%': { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(-50%)' }
+        },
+        'glow-pulse': {
+          '0%, 100%': { transform: 'scale(1)', opacity: '0.6', boxShadow: '0 0 12px 4px rgba(199, 255, 65, 0.3)' },
+          '50%': { transform: 'scale(2)', opacity: '0', boxShadow: '0 0 24px 12px rgba(199, 255, 65, 0)' }
         }
       },
       animation: {

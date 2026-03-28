@@ -110,14 +110,14 @@ export default function SundaysPage() {
       />
       <NavBar></NavBar>
       <div
-        className={`min-h-screen relative overflow-visible transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"}`}
+        className={`min-h-screen relative overflow-x-clip overflow-y-visible transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"}`}
       >
         {/* Grid lines */}
         <div
           className="fixed inset-0 -z-10 pointer-events-none"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(16, calc(100vw / 16))",
+            gridTemplateColumns: "repeat(16, 1fr)",
             gap: 0,
           }}
         >
@@ -128,7 +128,7 @@ export default function SundaysPage() {
               style={{
                 backgroundImage:
                   i > 0
-                    ? "linear-gradient(#E2D8FF 4px, transparent 2px)"
+                    ? "linear-gradient(#e7e5e4 4px, transparent 2px)"
                     : "none",
                 backgroundSize: "1px 12px",
                 backgroundPosition: "left top",
@@ -143,16 +143,14 @@ export default function SundaysPage() {
           className="relative"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(16, calc((100vw - (15 * 1px)) / 16))",
+            gridTemplateColumns: "repeat(16, 1fr)",
             gridTemplateRows: "auto auto 1fr",
-            background:
-              "linear-gradient(to bottom, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.1))",
           }}
         >
           {/* Header */}
           <div
             ref={headerRef}
-            className={`col-start-8 col-span-2 sm:pt-8 lg:pt-3 lg:pb-10 text-xs whitespace-nowrap flex items-center justify-center font-['Monument-Grotesk'] relative z-10 text-[#C0B9A5]`}
+            className={`col-start-8 col-span-2 pt-2 sm:pt-3 pb-0 text-sm whitespace-nowrap flex items-center justify-center font-['Monument-Grotesk'] relative z-10 text-[#C0B9A5]`}
             style={{
               transition: "all 1s ease-in-out 0.2s",
               opacity: !isLoading && headerInView ? "1" : "0",
@@ -171,30 +169,21 @@ export default function SundaysPage() {
 
           {/* Logo row */}
           <div
-            className={`col-span-full mt-20 sm:-mt-32 md:-mt-[4vw] lg:-mt-[8vw] xl:-mt-[15vh] mb-10 sm:mb-48 md:mb-60 lg:mb-72 xl:mb-96`}
+            className="col-span-full -mb-5 sm:-mb-4 md:-mb-3"
             style={{
               opacity: !isLoading ? "1" : "0",
               transition: "opacity 0.4s ease-in-out",
             }}
           >
             <div
+              className="w-full relative"
               style={{
-                marginLeft: isMobile
-                  ? "0"
-                  : "calc((100vw - (15 * 1px)) / 16 - min(80px, 6vw))",
-                marginRight: isMobile
-                  ? "0"
-                  : "calc((100vw - (15 * 1px)) / 16 + min(20px, 2vw))",
-                width: "100%",
-                height: isMobile ? "160px" : "clamp(60px, 14vh, 180px)",
-                position: "relative",
+                height: isMobile ? "160px" : "clamp(160px, 24vw, 420px)",
               }}
-              className=""
             >
               {isMobile ? (
                 <div
                   className="w-full h-full flex items-center justify-center"
-                  style={{ transform: "translateY(100%)" }}
                 >
                   <Image
                     src="/sundays-mobile.png"
@@ -228,20 +217,17 @@ export default function SundaysPage() {
                 textAlign: "center",
                 padding: "0 0px",
               }}
-              className="mx-[calc((100vw/16)*2)] md:mx-[calc((100vw/16)*5)] lg:mx-[calc((100vw/16)*5)]"
+              className="mx-auto max-w-[65%] sm:max-w-[50%] md:max-w-[40%] lg:max-w-[30%] xl:max-w-[28%]"
             >
-              <p className="text-[1em] sm:text-[0.75em] md:text-[0.9em] lg:text-[1em] font-light font-['Office-Times-Round'] text-[#2A2A24] pt-4">
-                Every Sunday, we meet for a few hours to work on our passion
-                projects. Whether it&apos;s art, coding, poetry, or anything
-                in-between, Sundays is your space to finish that project you&apos;ve
-                been itching to start.
+              <p className="text-[1em] sm:text-[0.75em] md:text-[0.9em] lg:text-[1em] font-light font-['Office-Times-Round'] text-[#2A2A24] pt-0">
+                A home for your passions.<br />Weekly coworking sessions, every Sunday.
               </p>
-              <div className="mt-12 sm:mt-10 flex justify-center mb-8 sm:mb-6 relative z-20">
+              <div className="mt-12 sm:mt-10 flex justify-center mb-2 sm:mb-1 relative z-20">
                 <Link
                   href="https://luma.com/sundaysinla"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-black rounded-full px-4 md:px-5 pt-2 pb-1.5 text-[0.3em] sm:text-[0.7em] md:text-[0.8em] lg:text-[0.9em] font-['Monument-Grotesk'] uppercase tracking-[-0.02em] transition-colors duration-300 ease-out hover:bg-[#EEEBE3] relative overflow-hidden group"
+                  className="bg-black rounded-full px-4 pt-2 pb-1.5 text-[0.3em] sm:text-[0.7em] md:text-[0.8em] lg:text-[0.9em] font-['Monument-Grotesk'] uppercase transition-colors duration-300 ease-out hover:bg-[#EEEBE3] relative overflow-hidden group"
                   style={{
                     textAlign: "center",
                     cornerShape: "squircle",
@@ -272,7 +258,7 @@ export default function SundaysPage() {
           {/* After the image section */}
           <div
             ref={jammingRef}
-            className="col-span-full text-center bg-[#FEFDFB]/80 pt-32 overflow-hidden"
+            className="col-span-full text-center pt-32 overflow-x-clip overflow-y-visible"
             style={{
               transition: "all 1s ease-in-out 0.5s",
               opacity: !isLoading && jammingInView ? "1" : "0",
@@ -301,8 +287,8 @@ export default function SundaysPage() {
           </div>
 
           {/* Footer */}
-          <div className="col-span-full pt-32">
-            <div className="space-y-0 mx-[calc((100vw/16)*2)] md:mx-[calc((100vw/16)*4)]">
+          <div className="col-span-full pt-32 overflow-hidden">
+            <div className="space-y-0 mx-[calc((100vw/16)*3)] md:mx-[calc((100vw/16)*4)]">
               <div>
                 <div className="grid grid-cols-2 mb-8">
                   <h3 className="text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#C0B9A5]">

@@ -27,30 +27,31 @@ export default function Logo3D() {
     // Scene setup
     const scene = new THREE.Scene()
     let model: THREE.Group | null = null
-    const camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 1000)
+    const el = containerRef.current
+    const getW = () => el.clientWidth || window.innerWidth
+    const getH = () => el.clientHeight || 300
+    const camera = new THREE.PerspectiveCamera(30, getW() / getH(), 0.1, 1000)
 
-    // Fixed camera position
-    camera.position.z = 10
-    camera.position.x = 0
-    camera.position.y = 0
+    camera.position.set(0, 0, 10)
 
     const renderer = new THREE.WebGLRenderer({ 
       antialias: true, 
       alpha: true,
       powerPreference: "high-performance",
-      precision: "highp"  // Use high precision
+      precision: "highp"
     })
-    renderer.setSize(window.innerWidth, window.innerHeight)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))  // Increase pixel ratio but cap it for performance
+    renderer.setSize(getW(), getH())
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.toneMapping = THREE.ACESFilmicToneMapping
     renderer.toneMappingExposure = 1.0
     renderer.setClearColor(0x000000, 0)
-
-    // Enable shadow mapping for smoother edges
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
-    containerRef.current.appendChild(renderer.domElement)
+    renderer.domElement.style.display = 'block'
+    renderer.domElement.style.width = '100%'
+    renderer.domElement.style.height = '100%'
+    el.appendChild(renderer.domElement)
 
     // Lighting - less saturated, cooler colors
     const ambientLight = new THREE.AmbientLight(0xf0f0f5, 0.8)     // more neutral
@@ -110,17 +111,11 @@ export default function Logo3D() {
     // Function to adjust model scale and position based on window width
     function adjustModelScale() {
       if (!model) return
-      const scale = 1
+      model.scale.set(1, 1, 0.6)
       
-      // Scale z-axis less to make model thinner in depth
-      model.scale.set(scale, scale, scale * 0.6)
-      
-      // Adjust position after scaling
-      if (model) {
-        const box = new THREE.Box3().setFromObject(model as Object3D)
-        const center = box.getCenter(new THREE.Vector3())
-        model.position.set(-center.x, 0, -center.z)
-      }
+      const box = new THREE.Box3().setFromObject(model as Object3D)
+      const center = box.getCenter(new THREE.Vector3())
+      model.position.set(-center.x, -center.y, -center.z)
     }
 
     // Separate model loading function
@@ -186,49 +181,42 @@ export default function Logo3D() {
     animate()
 
     function adjustCamera() {
-      // Calculate camera distance based on screen width
+      const w = getW()
+      const h = getH()
       const baseWidth = 1200
-      const minZ = 10   // Closest camera position for large screens
-      const maxZ = 40   // Furthest camera position for small screens
+      const minZ = 6
+      const maxZ = 18
       
-      // Invert the ratio so smaller screens get larger z values
-      const ratio = 1 - (window.innerWidth / baseWidth)
+      const ratio = Math.max(0, 1 - (w / baseWidth))
       const z = minZ + (ratio * (maxZ - minZ))
       
-      // Calculate y position - subtle decrease as screen gets smaller
-      const minY = -1.15  // Starting y position for large screens
-      const maxY = -3.3  // Lowest y position for small screens
-      const y = minY + (ratio * (maxY - minY))
-      
-      camera.position.z = Math.max(minZ, Math.min(maxZ, z))
-      camera.position.x = 0
-      camera.position.y = y
+      camera.aspect = w / h
+      camera.updateProjectionMatrix()
+      camera.position.set(0, 0, Math.max(minZ, Math.min(maxZ, z)))
     }
 
     // Initial camera setup
     adjustCamera()
 
     // Update resize handler
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight
-      camera.updateProjectionMatrix()
-      renderer.setSize(window.innerWidth, window.innerHeight)
+    function handleResize() {
+      renderer.setSize(getW(), getH())
       adjustModelScale()
-      adjustCamera()  // Add camera adjustment on resize
-    })
+      adjustCamera()
+    }
+    window.addEventListener('resize', handleResize)
 
-    // Enhanced cleanup
     return () => {
-      window.removeEventListener('resize', adjustModelScale)
+      window.removeEventListener('resize', handleResize)
       document.removeEventListener('mousemove', handleMouseMove)
       cleanScene()
       renderer.dispose()
-      containerRef.current?.removeChild(renderer.domElement)
+      el.removeChild(renderer.domElement)
     }
   }, [])
 
   return (
-    <div ref={containerRef} className="w-full h-full overflow-visible">
+    <div ref={containerRef} className="w-full h-full overflow-visible relative">
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-black rounded-full animate-spin border-t-transparent" />
