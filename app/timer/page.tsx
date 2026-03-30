@@ -294,7 +294,7 @@ export default function TimerPage() {
       </div>
       {phases[effectiveState.phaseIndex].music && (
         <div style={{ marginTop: "2rem", fontFamily: "PP Neue Montreal" }}>
-          🎵 Now Playing: Sundays Playlist
+          🎵 Now Playing: Sundays Playlist.
         </div>
       )}
     </main>
