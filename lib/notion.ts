@@ -35,11 +35,11 @@ export async function getProjects(): Promise<Project[]> {
 
 const FALLBACK_PROJECTS: Project[] = [
   { number: "01", name: "music production" },
-  { number: "02", name: "font making" },
+  { number: "02", name: "making matcha" },
   { number: "03", name: "educational tools" },
   { number: "04", name: "website design" },
   { number: "05", name: "magic tricks" },
   { number: "06", name: "reading fiction" },
-  { number: "07", name: "making matcha" },
+  { number: "07", name: "font making" },
   { number: "08", name: "3d modeling" },
 ];
