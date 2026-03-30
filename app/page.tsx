@@ -234,10 +234,10 @@ export default function SundaysPage() {
                   } as React.CSSProperties}
                 >
                   <span className="inline-block transition-transform duration-300 ease-out group-hover:-translate-y-full text-[#EEEBE3]">
-                    ATTEND A SESSION
+                    ATTEND A SESSION!
                   </span>
                   <span className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-out translate-y-full group-hover:translate-y-0 text-black">
-                    ATTEND A SESSION
+                    ATTEND A SESSION!
                   </span>
                 </Link>
               </div>
