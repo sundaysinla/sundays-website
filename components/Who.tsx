@@ -21,7 +21,7 @@ export default function Who() {
             style={{
               backgroundImage:
                 i > 0
-                  ? "linear-gradient(#F0EDE8 4px, transparent 2px)"
+                  ? "linear-gradient(#e7e5e4 4px, transparent 2px)"
                   : "none",
               backgroundSize: "1px 12px",
               backgroundPosition: "left top",

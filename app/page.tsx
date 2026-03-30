@@ -128,7 +128,7 @@ export default function SundaysPage() {
               style={{
                 backgroundImage:
                   i > 0
-                    ? "linear-gradient(#e7e5e4 4px, transparent 2px)"
+                    ? "linear-gradient(#fafaf9 4px, transparent 2px)"
                     : "none",
                 backgroundSize: "1px 12px",
                 backgroundPosition: "left top",

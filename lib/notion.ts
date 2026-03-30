@@ -11,8 +11,8 @@ export type Project = {
 
 export async function getProjects(): Promise<Project[]> {
   try {
-    const response = await notion.databases.query({
-      database_id: PROJECTS_DB_ID,
+    const response = await notion.dataSources.query({
+      data_source_id: PROJECTS_DB_ID,
       sorts: [{ property: "Order", direction: "ascending" }],
     });
 

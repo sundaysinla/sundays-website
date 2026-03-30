@@ -100,15 +100,9 @@ export default function WhatWeDoCarousel() {
 
         {/* Main text */}
         <div className="flex flex-col items-center space-y-3 max-w-xl py-4">
-          <div className="flex items-center gap-3">
-            <div className="relative w-6 h-6 translate-y-[1px]">
-              <div className="absolute inset-0 rounded-full bg-[#C7FF41] animate-[glow-pulse_6s_ease-in-out_infinite]" />
-              <div className="relative w-full h-full rounded-full bg-[#C7FF41]" />
-            </div>
-            <p className="text-xl md:text-3xl lg:text-4xl font-serif font-thin text-black leading-relaxed">
-              we meet every <span className="text-stone-400">sunday</span>
-            </p>
-          </div>
+          <p className="text-xl md:text-3xl lg:text-4xl font-serif font-thin text-black leading-relaxed">
+            we meet every <span className="text-stone-400">sunday</span>
+          </p>
 
           <p className="text-xl md:text-3xl lg:text-4xl font-serif font-thin text-black leading-relaxed">
             to create whatever it is
