@@ -45,7 +45,7 @@ export default function NavBar() {
 
             {/* Mobile menu overlay */}
             <div
-                className={`fixed inset-0 z-50 bg-[#FEFDFB] transition-opacity duration-300 ${open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+                className={`fixed inset-0 z-50 bg-[#FEFDFB] flex flex-col transition-opacity duration-300 ${open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
             >
                 <div className="flex items-center justify-between px-6 py-4">
                     <Image
@@ -66,20 +66,29 @@ export default function NavBar() {
                     </button>
                 </div>
 
-                <div className="flex flex-col px-6 pt-8 gap-6 font-['Monument-Grotesk'] text-[32px] uppercase text-[#010101]">
-                    <Link href="#about" onClick={() => setOpen(false)} className="hover:opacity-70 transition-opacity">About</Link>
-                    <Link href="#projects" onClick={() => setOpen(false)} className="hover:opacity-70 transition-opacity">Projects</Link>
-                    <Link href="#team" onClick={() => setOpen(false)} className="hover:opacity-70 transition-opacity">Team</Link>
-                    <Link href="/timer" onClick={() => setOpen(false)} className="hover:opacity-70 transition-opacity">Live Timer</Link>
-                    <Link
-                        href="https://luma.com/sundaysinla"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => setOpen(false)}
-                        className="hover:opacity-70 transition-opacity"
-                    >
-                        Join Us
-                    </Link>
+                <div className="flex flex-col flex-1 justify-center px-6 pb-16 gap-6 font-serif text-lg lowercase text-[#010101]">
+                    {[
+                        { href: '#about', label: 'about' },
+                        { href: '#projects', label: 'projects' },
+                        { href: '#team', label: 'team' },
+                        { href: '/timer', label: 'live timer' },
+                        { href: 'https://luma.com/sundaysinla', label: 'join us', external: true },
+                    ].map((item, i) => (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                            onClick={() => setOpen(false)}
+                            className="hover:opacity-70"
+                            style={{
+                                opacity: open ? 1 : 0,
+                                transform: open ? 'translateY(0)' : 'translateY(8px)',
+                                transition: `opacity 200ms ease-out ${i * 80}ms, transform 200ms ease-out ${i * 80}ms`,
+                            }}
+                        >
+                            {item.label}
+                        </Link>
+                    ))}
                 </div>
             </div>
         </>

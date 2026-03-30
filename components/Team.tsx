@@ -1,8 +1,9 @@
 "use client";
 import React from "react";
+import DashedDivider from "@/components/DashedDivider";
 
 const linkClass =
-  "relative after:absolute after:left-0 after:-bottom-0.5 after:h-[1px] after:w-full after:bg-current after:opacity-0 after:transition-opacity after:duration-300 after:ease-out hover:after:opacity-20";
+  "relative after:absolute after:left-0 after:-bottom-0.5 after:h-[1px] after:w-full after:bg-current after:opacity-20 md:after:opacity-0 after:transition-opacity after:duration-300 after:ease-out hover:after:opacity-20";
 
 type Member = { name: string; href?: string };
 
@@ -78,16 +79,12 @@ export default function Team() {
     <section className="bg-[#FCFAF7] text-[#2A2A24] py-32 px-6 md:px-12 lg:px-16 relative">
       {/* Dashed column grid */}
       <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(16, 1fr)",
-        }}
+        className="absolute inset-0 pointer-events-none grid grid-cols-8 md:grid-cols-[repeat(16,1fr)]"
       >
         {[...Array(16)].map((_, i) => (
           <div
             key={i}
-            className="h-full"
+            className={`h-full ${i >= 8 ? 'hidden md:block' : ''}`}
             style={{
               backgroundImage:
                 i > 0
@@ -107,20 +104,19 @@ export default function Team() {
           <p className="text-sm text-[#C0B9A5] font-['Monument-Grotesk'] tracking-wide uppercase">
             Meet the Team
           </p>
-          <p className="text-sm font-bold font-['Monument-Grotesk'] text-[#C0B9A5] uppercase">
+          <p className="text-sm font-bold font-['Monument-Grotesk'] text-stone-400 uppercase">
             Season 6: 2025–26
           </p>
         </div>
 
-        {/* Divider */}
-        <div className="w-full border-t border-dashed border-[#C0B9A5]/40" />
+        <DashedDivider />
 
         {/* Three columns */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-16 text-center w-full">
+        <div className="flex flex-col md:grid md:grid-cols-3 gap-y-12 md:gap-8 text-center w-full items-center md:items-start">
           {/* USC Hosts */}
-          <div className="flex flex-col gap-8 items-center">
-            <div className="flex flex-col gap-4 items-center">
-              <div className="text-[44px] leading-none">✌️</div>
+          <div className="flex flex-col gap-6 items-center">
+            <div className="flex flex-col gap-3 items-center">
+              <div className="text-[44px] leading-none h-[52px] flex items-end">✌️</div>
               <h2 className="text-4xl font-['Office-Times-Sharp-Regular'] text-[#C0B9A5] lowercase tracking-[-0.36px]">
                 usc hosts
               </h2>
@@ -129,9 +125,9 @@ export default function Team() {
           </div>
 
           {/* UCLA Hosts */}
-          <div className="flex flex-col gap-8 items-center">
+          <div className="flex flex-col gap-6 items-center">
             <div className="flex flex-col gap-3 items-center">
-              <div className="text-[44px] leading-none">🐻</div>
+              <div className="text-[44px] leading-none h-[52px] flex items-end">🐻</div>
               <h2 className="text-4xl font-['Office-Times-Sharp-Regular'] text-[#C0B9A5] lowercase tracking-[-0.36px]">
                 ucla hosts
               </h2>
@@ -140,9 +136,9 @@ export default function Team() {
           </div>
 
           {/* Media Team */}
-          <div className="flex flex-col gap-8 items-center">
+          <div className="flex flex-col gap-6 items-center">
             <div className="flex flex-col gap-3 items-center">
-              <div className="text-[44px] leading-none">🎥</div>
+              <div className="text-[44px] leading-none h-[52px] flex items-end">🎥</div>
               <h2 className="text-4xl font-['Office-Times-Sharp-Regular'] text-[#C0B9A5] lowercase tracking-[-0.36px]">
                 media team
               </h2>
@@ -151,14 +147,16 @@ export default function Team() {
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="w-full border-t border-dashed border-[#C0B9A5]/40" />
+        <DashedDivider />
 
         {/* Alumni */}
         <div className="flex flex-col gap-8 items-center w-full">
-          <h2 className="text-4xl font-['Office-Times-Sharp-Regular'] text-[#C0B9A5] lowercase tracking-[-0.36px]">
-            ⁂ sundays alumni
-          </h2>
+          <div className="flex flex-col gap-3 items-center">
+            <div className="text-[44px] leading-none h-[52px] flex items-end text-[#C0B9A5]">⁂</div>
+            <h2 className="text-4xl font-['Office-Times-Sharp-Regular'] text-[#C0B9A5] lowercase tracking-[-0.36px]">
+              sundays alumni
+            </h2>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-16 text-center w-full">
             <MemberList members={alumniCol1} />
             <MemberList members={alumniCol2} />

@@ -20,20 +20,10 @@ import "../styles/grain.css";
 const Logo3D = dynamic(() => import("../components/Logo3D"), { ssr: false });
 
 export default function SundaysPage() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [canHide, setCanHide] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [canHide, setCanHide] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window !== "undefined") {
-      return (
-        window.innerWidth < 500 ||
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-          navigator.userAgent
-        )
-      );
-    }
-    return false;
-  });
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     if (canHide) {
@@ -104,31 +94,23 @@ export default function SundaysPage() {
 
   return (
     <>
-      <LoadingScreen
-        isLoading={isLoading}
-        onTypingDone={() => setCanHide(true)}
-      />
+      {/* Loading screen removed */}
       <NavBar></NavBar>
       <div
         className={`min-h-screen relative overflow-x-clip overflow-y-visible transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"}`}
       >
         {/* Grid lines */}
         <div
-          className="fixed inset-0 -z-10 pointer-events-none"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(16, 1fr)",
-            gap: 0,
-          }}
+          className="fixed inset-0 -z-10 pointer-events-none grid grid-cols-8 md:grid-cols-[repeat(16,1fr)]"
         >
           {[...Array(16)].map((_, i) => (
             <div
               key={i}
-              className="h-full"
+              className={`h-full ${i >= 8 ? 'hidden md:block' : ''}`}
               style={{
                 backgroundImage:
                   i > 0
-                    ? "linear-gradient(#fafaf9 4px, transparent 2px)"
+                    ? "linear-gradient(#f5f5f4 4px, transparent 2px)"
                     : "none",
                 backgroundSize: "1px 12px",
                 backgroundPosition: "left top",
@@ -150,7 +132,7 @@ export default function SundaysPage() {
           {/* Header */}
           <div
             ref={headerRef}
-            className={`col-start-8 col-span-2 pt-2 sm:pt-3 pb-0 text-sm whitespace-nowrap flex items-center justify-center font-['Monument-Grotesk'] relative z-10 text-[#C0B9A5]`}
+            className={`col-start-8 col-span-2 pt-2 sm:pt-3 pb-0 sm:pb-0 text-sm whitespace-nowrap flex items-center justify-center font-['Monument-Grotesk'] relative z-10 text-[#C0B9A5]`}
             style={{
               transition: "all 1s ease-in-out 0.2s",
               opacity: !isLoading && headerInView ? "1" : "0",
@@ -169,7 +151,7 @@ export default function SundaysPage() {
 
           {/* Logo row */}
           <div
-            className="col-span-full -mb-5 sm:-mb-4 md:-mb-3"
+            className="col-span-full py-8 sm:py-4 sm:-mb-4 md:-mb-3"
             style={{
               opacity: !isLoading ? "1" : "0",
               transition: "opacity 0.4s ease-in-out",
@@ -178,7 +160,7 @@ export default function SundaysPage() {
             <div
               className="w-full relative"
               style={{
-                height: isMobile ? "160px" : "clamp(160px, 24vw, 420px)",
+                height: isMobile ? "auto" : "clamp(160px, 24vw, 420px)",
               }}
             >
               {isMobile ? (
@@ -190,7 +172,7 @@ export default function SundaysPage() {
                     alt="Sundays Logo"
                     width={300}
                     height={100}
-                    className="w-full h-auto object-contain"
+                    className="w-[85%] h-auto object-contain"
                     priority
                     sizes="100vw"
                   />
@@ -204,7 +186,7 @@ export default function SundaysPage() {
           {/* Text */}
           <div
             ref={textRef}
-            className={`col-span-full`}
+            className={`col-span-full mt-4 sm:mt-4 md:mt-0`}
             style={{
               transition: "all 1s ease-in-out 0.6s",
               opacity: !isLoading && textInView ? "1" : "0",
@@ -213,13 +195,9 @@ export default function SundaysPage() {
             }}
           >
             <div
-              style={{
-                textAlign: "center",
-                padding: "0 0px",
-              }}
-              className="mx-auto max-w-[65%] sm:max-w-[50%] md:max-w-[40%] lg:max-w-[30%] xl:max-w-[28%]"
+              className="mx-auto w-full sm:max-w-[50%] md:max-w-[40%] lg:max-w-[30%] xl:max-w-[28%] flex flex-col items-center"
             >
-              <p className="text-[1em] sm:text-[0.75em] md:text-[0.9em] lg:text-[1em] font-light font-['Office-Times-Round'] text-[#2A2A24] pt-0">
+              <p className="text-base md:text-[0.9em] lg:text-[1em] font-light font-['Office-Times-Round'] text-[#2A2A24] pt-0 sm:whitespace-nowrap text-center leading-relaxed">
                 A home for the passions that excite you.<br />Weekly coworking sessions, every Sunday.
               </p>
               <div className="mt-12 sm:mt-10 flex justify-center mb-2 sm:mb-1 relative z-20">
@@ -227,17 +205,17 @@ export default function SundaysPage() {
                   href="https://luma.com/sundaysinla"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-black rounded-full px-4 pt-2 pb-1.5 text-[0.3em] sm:text-[0.7em] md:text-[0.8em] lg:text-[0.9em] font-['Monument-Grotesk'] uppercase transition-colors duration-300 ease-out hover:bg-[#EEEBE3] relative overflow-hidden group"
+                  className="bg-black rounded-full px-4 pt-2 pb-1.5 text-sm md:text-[0.8em] lg:text-[0.9em] font-['Monument-Grotesk'] uppercase transition-colors duration-300 ease-out hover:bg-[#EEEBE3] relative overflow-hidden group"
                   style={{
                     textAlign: "center",
                     cornerShape: "squircle",
                   } as React.CSSProperties}
                 >
                   <span className="inline-block transition-transform duration-300 ease-out group-hover:-translate-y-full text-[#EEEBE3]">
-                    ATTEND A SESSION!
+                    ATTEND A SESSION
                   </span>
                   <span className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-out translate-y-full group-hover:translate-y-0 text-black">
-                    ATTEND A SESSION!
+                    ATTEND A SESSION
                   </span>
                 </Link>
               </div>
@@ -291,10 +269,10 @@ export default function SundaysPage() {
             <div className="space-y-0 mx-[calc((100vw/16)*3)] md:mx-[calc((100vw/16)*4)]">
               <div>
                 <div className="grid grid-cols-2 mb-8">
-                  <h3 className="text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#C0B9A5]">
+                  <h3 className="text-sm md:text-base font-['Monument-Grotesk'] text-[#C0B9A5]">
                     Whereabouts
                   </h3>
-                  <p className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Regular']">
+                  <p className="text-sm md:text-base font-['Office-Times-Sharp-Regular']">
                     Every Sunday at 2pm PST near USC or UCLA campus
                   </p>
                 </div>
@@ -302,10 +280,10 @@ export default function SundaysPage() {
 
               <div>
                 <div className="grid grid-cols-2 mb-8">
-                  <h3 className="text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#C0B9A5]">
+                  <h3 className="text-sm md:text-base font-['Monument-Grotesk'] text-[#C0B9A5]">
                     Why we exist
                   </h3>
-                  <p className="text-[12px] md:text-[14px] font-['Office-Times-Sharp-Regular']">
+                  <p className="text-sm md:text-base font-['Office-Times-Sharp-Regular']">
                     We want to bring together likeminded people who love to make
                     things, in the company of other creatives
                   </p>
@@ -314,16 +292,16 @@ export default function SundaysPage() {
 
               <div>
                 <div className="grid grid-cols-2 mb-8">
-                  <h3 className="text-[12px] md:text-[14px] font-['ABC Monument Grotesk Unlicensed Trial'] text-[#C0B9A5]">
+                  <h3 className="text-sm md:text-base font-['Monument-Grotesk'] text-[#C0B9A5]">
                     Jam with us
                   </h3>
-                  <p className="text-[12px] md:text-[14px] font-['Office Times Sharp']">
+                  <p className="text-sm md:text-base font-['Office-Times-Sharp-Regular']">
                     Register on{" "}
                     <Link
                       href="https://lu.ma/sundaysinla"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#C0B9A5] font-['Office Times Sharp'] hover:-translate-y-[2px] inline-block transition-all duration-300 ease-out hover:opacity-100"
+                      className="text-[#C0B9A5] font-['Office-Times-Sharp-Regular'] hover:-translate-y-[2px] inline-block transition-all duration-300 ease-out hover:opacity-100"
                     >
                       Luma
                     </Link>
@@ -333,23 +311,22 @@ export default function SundaysPage() {
               </div>
 
               <div>
-                <div className="grid grid-cols-2 mb-24">
-                  <h3 className="text-[12px] md:text-[14px] font-['Monument-Grotesk'] text-[#C0B9A5]">
+                <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4 sm:gap-0 mb-24">
+                  <h3 className="text-sm md:text-base font-['Monument-Grotesk'] text-[#C0B9A5]">
                     Find us
                   </h3>
                   <div className="flex flex-col space-y-2">
-                    <div className="flex space-x-7 mt-1">
+                    <div className="flex items-center gap-4 md:gap-8">
                       <Link
                         href="https://x.com/sundaysinla"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="hover:opacity-70 transition-opacity duration-300"
                       >
-                        <Image
+                        <img
                           src="/x.png"
                           alt="X Logo"
-                          width={16}
-                          height={16}
+                          className="w-[20px] h-auto md:w-[16px] shrink-0"
                         />
                       </Link>
 
@@ -359,11 +336,10 @@ export default function SundaysPage() {
                         rel="noopener noreferrer"
                         className="hover:opacity-70 transition-opacity duration-300"
                       >
-                        <Image
+                        <img
                           src="/linkedin.png"
                           alt="LinkedIn Logo"
-                          width={16}
-                          height={16}
+                          className="w-[20px] h-auto md:w-[16px] shrink-0"
                         />
                       </Link>
 
@@ -373,22 +349,33 @@ export default function SundaysPage() {
                         rel="noopener noreferrer"
                         className="hover:opacity-70 transition-opacity duration-300"
                       >
-                        <Image
+                        <img
                           src="/instagram.png"
                           alt="Instagram Logo"
-                          width={16}
-                          height={16}
+                          className="w-[20px] h-auto md:w-[16px] shrink-0"
                         />
+                      </Link>
+
+                      <Link
+                        href="https://luma.com/sundaysinla"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:opacity-70 transition-opacity duration-300 -ml-1 md:-ml-1.25"
+                      >
+                        <svg viewBox="0 0 133 134" fill="none" xmlns="http://www.w3.org/2000/svg" width={20} height={20}>
+                          <path d="M133 67C96.2822 67 66.5 36.9939 66.5 0C66.5 36.9939 36.7178 67 0 67C36.7178 67 66.5 97.0061 66.5 134C66.5 97.0061 96.2822 67 133 67Z" fill="#C0B9A5"/>
+                        </svg>
                       </Link>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="text-center transition-transform duration-500 ease-in-out hover:-translate-y-[8px] hover:duration-[1000ms]">
+            </div>
+
+              <div className="text-center flex justify-center transition-transform duration-500 ease-in-out hover:-translate-y-[8px] hover:duration-[1000ms]">
                 <ImageExplosion />
               </div>
-            </div>
           </div>
         </div>
       </div>

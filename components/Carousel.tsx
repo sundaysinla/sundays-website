@@ -3,7 +3,6 @@
 import Image from "next/image";
 import ShuffleText from "@/components/ShuffleText";
 import { useInView } from "react-intersection-observer";
-import { useEffect, useRef } from "react";
 
 const cards = [
   { image: "/maker-keyboard.png", label: "(play)" },
@@ -19,74 +18,16 @@ export default function WhatWeDoCarousel() {
     triggerOnce: true,
     threshold: 0.1,
   });
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resizeCanvas();
-
-    const drawGradient = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      const scrollY = window.scrollY;
-      const offset =
-        (scrollY / document.body.scrollHeight) * canvas.height * 1.5;
-
-      const circleX = canvas.width / 2;
-      const circleY = canvas.height / 1.6 - offset;
-
-      const radiusX = canvas.width * 0.4;
-      const radiusY = canvas.height * 0.25;
-
-      ctx.save();
-      ctx.translate(circleX, circleY);
-      ctx.scale(radiusX / radiusY, 1);
-
-      const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, radiusY);
-      gradient.addColorStop(0.03, "#BDFF004D");
-      gradient.addColorStop(0.25, "#907CFF26");
-      gradient.addColorStop(0.7, "#F3F2EC00");
-
-      ctx.fillStyle = gradient;
-      ctx.fillRect(
-        -canvas.width,
-        -canvas.height,
-        canvas.width * 2,
-        canvas.height * 2
-      );
-
-      ctx.restore();
-    };
-
-    drawGradient();
-
-    const handleScroll = () => requestAnimationFrame(drawGradient);
-    const handleResize = () => { resizeCanvas(); drawGradient(); };
-
-    window.addEventListener("scroll", handleScroll);
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
 
   const doubled = [...cards, ...cards];
 
   return (
     <div className="col-span-full flex flex-col items-center text-center relative py-32 bg-stone-50">
-      <canvas
-        ref={canvasRef}
-        className="fixed top-0 left-0 w-full h-full z-0 pointer-events-none"
+      <div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/3 w-[600px] h-[600px] md:w-[800px] md:h-[800px] rounded-full z-0 pointer-events-none"
+        style={{
+          background: "radial-gradient(circle, #BDFF004D 3%, #C0B9A526 25%, transparent 70%)",
+        }}
       />
 
       {/* Header */}
@@ -99,30 +40,30 @@ export default function WhatWeDoCarousel() {
         </div>
 
         {/* Main text */}
-        <div className="flex flex-col items-center space-y-3 max-w-xl py-4">
-          <p className="text-xl md:text-3xl lg:text-4xl font-serif font-thin text-black leading-relaxed">
-            we meet every <span className="text-stone-400">sunday</span>
+        <div className="flex flex-col items-center space-y-0 md:space-y-1 max-w-xl py-4">
+          <p className="text-lg md:text-2xl lg:text-3xl font-['Office-Times-Sharp-Regular'] text-black leading-snug">
+            we meet every <span className="italic">sunday</span>
           </p>
 
-          <p className="text-xl md:text-3xl lg:text-4xl font-serif font-thin text-black leading-relaxed">
+          <p className="text-lg md:text-2xl lg:text-3xl font-['Office-Times-Sharp-Regular'] text-black leading-snug">
             to create whatever it is
           </p>
-          <p className="text-xl md:text-3xl lg:text-4xl font-serif font-thin text-black leading-relaxed">
+          <p className="text-lg md:text-2xl lg:text-3xl font-['Office-Times-Sharp-Regular'] text-black leading-snug">
             that makes us feel alive.
           </p>
         </div>
       </div>
 
       {/* Carousel */}
-      <div className="relative z-10 overflow-hidden w-screen max-w-full mx-auto pt-10 pb-4">
+      <div className="relative z-10 overflow-hidden w-screen max-w-full mx-auto pt-20 pb-4">
         <div
-          className="flex gap-12 px-8 w-max animate-carousel"
+          className="flex gap-4 md:gap-12 px-4 md:px-8 w-max animate-carousel"
           style={{ animationDuration: `${doubled.length * 4}s` }}
         >
           {[...doubled, ...doubled].map((card, i) => (
             <div
               key={i}
-              className="flex-shrink-0 flex flex-col gap-8 items-center justify-center p-6 rounded-lg overflow-clip transition-transform duration-300 ease-out hover:-translate-y-3"
+              className="flex-shrink-0 flex flex-col gap-4 md:gap-8 items-center justify-center p-3 md:p-6 rounded-lg overflow-clip transition-transform duration-300 ease-out hover:-translate-y-3"
               style={{
                 background: 'rgba(255,255,255,0.5)',
                 boxShadow: '0px 4px 12px 0px rgba(0,0,0,0.05)',
@@ -130,7 +71,7 @@ export default function WhatWeDoCarousel() {
                 cornerShape: 'squircle',
               } as React.CSSProperties}
             >
-              <div className="relative w-[270px] h-[270px] shrink-0 flex items-center justify-center overflow-hidden">
+              <div className="relative w-[135px] h-[135px] md:w-[270px] md:h-[270px] shrink-0 flex items-center justify-center overflow-hidden">
                 <Image
                   src={card.image}
                   alt={card.label}
@@ -140,7 +81,7 @@ export default function WhatWeDoCarousel() {
                   priority={i < 6}
                 />
               </div>
-              <p className="w-[270px] text-left font-['Office-Times-Round'] text-[17px] text-[#3600cf] tracking-[-0.17px] lowercase leading-[1.2]">
+              <p className="w-[135px] md:w-[270px] text-left font-['Office-Times-Round'] text-[10px] md:text-[17px] text-[#3600cf] tracking-[-0.17px] lowercase leading-[1.2]">
                 {card.label}
               </p>
             </div>

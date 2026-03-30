@@ -1,13 +1,20 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 
 export default function ImageExplosion() {
   const [isHovered, setIsHovered] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
-  // Array of image options
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 950)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
   const images = [
     '/camera.png',
     '/laptop.png',
@@ -17,30 +24,37 @@ export default function ImageExplosion() {
     '/figma.png'
   ]
 
-  const handleMouseEnter = () => {
+  const handleTap = () => {
+    if (!isMobile) return
     setIsHovered(true)
+    setTimeout(() => setIsHovered(false), 3500)
   }
 
-  const handleMouseLeave = () => {
-    setIsHovered(false)
-  }
+  const textEl = (
+    <p className="text-[4em] sm:text-[7em] md:text-[10em] lg:text-[11em] xl:text-[16em] font-['PP-Editorial-New-UltraLightItalic'] italic whitespace-nowrap mb-2 sm:-mb-2 md:-mb-6 lg:-mb-8">
+      Join Us
+    </p>
+  )
 
   return (
     <div 
       className="relative cursor-pointer w-full text-center"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onMouseEnter={() => !isMobile && setIsHovered(true)}
+      onMouseLeave={() => !isMobile && setIsHovered(false)}
+      onClick={handleTap}
     >
-      <Link
-        href="https://luma.com/sundaysinla"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-block w-full"
-      >
-        <p className="text-[4em] sm:text-[7em] md:text-[10em] lg:text-[11em] xl:text-[16em] font-['PP-Editorial-New-UltraLightItalic'] italic whitespace-nowrap mb-2 sm:-mb-2 md:-mb-6 lg:-mb-8">
-          Join Us
-        </p>
-      </Link>
+      {isMobile ? (
+        <span className="inline-block w-full">{textEl}</span>
+      ) : (
+        <Link
+          href="https://luma.com/sundaysinla"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block w-full"
+        >
+          {textEl}
+        </Link>
+      )}
 
       <AnimatePresence>
         {isHovered && [...Array(7)].map((_, i) => {
@@ -72,8 +86,8 @@ export default function ImageExplosion() {
               key={i}
               className="absolute left-1/2 top-1/2"
               style={{
-                width: '200px',
-                height: '200px',
+                width: isMobile ? '100px' : '200px',
+                height: isMobile ? '100px' : '200px',
                 // transform: 'translate(-50%, -50%)'
               }}
               initial={{ 
@@ -101,17 +115,17 @@ export default function ImageExplosion() {
                 // scale: [1, 1.3, 0.8]
               }}
               transition={{
-                duration: 2.3,  // Increased duration
+                duration: isMobile ? 3.2 : 2.3,
                 times: [0, 0.4, 1],
                 ease: [0.25, 0.1, 0.25, 1],
                 y: {
-                  duration: 2.3,
-                  times: [0, 0.3, 1],  // Adjusted timing
+                  duration: isMobile ? 3.2 : 2.3,
+                  times: [0, 0.3, 1],
                   ease: [0.32, 0, 0.67, 1]
                 },
                 x: {
-                  duration: 2.3,
-                  times: [0, 0.5, 1],  // Adjusted for smoother horizontal movement
+                  duration: isMobile ? 3.2 : 2.3,
+                  times: [0, 0.5, 1],
                   ease: [0.45, 0, 0.55, 1]
                 }
               }}

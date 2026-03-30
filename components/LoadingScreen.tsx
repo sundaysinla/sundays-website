@@ -10,6 +10,8 @@ export default function LoadingScreen({ isLoading, onTypingDone }: LoadingScreen
   const text = "hello, how's your day going?"
   const [displayText, setDisplayText] = useState('')
   const hasTyped = useRef(false)
+  const onDoneRef = useRef(onTypingDone)
+  onDoneRef.current = onTypingDone
 
   const DURATION = 400
 
@@ -30,13 +32,13 @@ export default function LoadingScreen({ isLoading, onTypingDone }: LoadingScreen
       } else {
         setDisplayText(text)
         hasTyped.current = true
-        onTypingDone()
+        onDoneRef.current()
       }
     }
 
     rafId = requestAnimationFrame(step)
     return () => cancelAnimationFrame(rafId)
-  }, [isLoading, onTypingDone])
+  }, [isLoading])
 
   return (
     <div 
