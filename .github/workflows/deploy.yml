@@ -24,13 +24,22 @@ jobs:
 
       - name: Deploy to Production
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: >
+          vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
+          --build-env NOTION_API_KEY=${{ secrets.NOTION_API_KEY }}
+          --build-env NOTION_PROJECTS_DB_ID=${{ secrets.NOTION_PROJECTS_DB_ID }}
+          --env NOTION_API_KEY=${{ secrets.NOTION_API_KEY }}
+          --env NOTION_PROJECTS_DB_ID=${{ secrets.NOTION_PROJECTS_DB_ID }}
 
       - name: Deploy Preview
         if: github.event_name == 'pull_request'
         id: deploy-preview
         run: |
-          url=$(vercel deploy --token=${{ secrets.VERCEL_TOKEN }})
+          url=$(vercel deploy --token=${{ secrets.VERCEL_TOKEN }} \
+            --build-env NOTION_API_KEY=${{ secrets.NOTION_API_KEY }} \
+            --build-env NOTION_PROJECTS_DB_ID=${{ secrets.NOTION_PROJECTS_DB_ID }} \
+            --env NOTION_API_KEY=${{ secrets.NOTION_API_KEY }} \
+            --env NOTION_PROJECTS_DB_ID=${{ secrets.NOTION_PROJECTS_DB_ID }})
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Comment Preview URL on PR
