@@ -7,6 +7,9 @@ import React, {
   useRef,
   useState,
 } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import Button from "@/components/Button";
 
 type TimerState = {
   phaseIndex: number;
@@ -56,8 +59,11 @@ export default function TimerPage() {
   const [spotifyReady, setSpotifyReady] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [player, setPlayer] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
   const [now, setNow] = useState(Date.now());
   const channelRef = useRef<BroadcastChannel | null>(null);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const readStoredState = () => {
     try {
@@ -259,6 +265,7 @@ export default function TimerPage() {
   return (
     <main
       style={{
+        position: "relative",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -270,6 +277,15 @@ export default function TimerPage() {
         backgroundSize: "20px 20px",
       }}
     >
+      <Link href="/" className="absolute top-4 left-6 md:left-12">
+        <Image
+          src="/smiley.png"
+          alt="Logo"
+          width={32}
+          height={32}
+          className="opacity-80 hover:opacity-100 transition-opacity"
+        />
+      </Link>
       <h1 style={{ fontFamily: "PP Mondwest", fontSize: "1.5rem" }}>
         {phases[effectiveState.phaseIndex].label}
       </h1>
@@ -278,19 +294,24 @@ export default function TimerPage() {
           fontFamily: "PP Mondwest",
           color: "#3600cf",
           fontSize: "clamp(40px, 15vw, 200px)",
+          margin: "24px 0",
         }}
       >
-        {formatTime(remaining)}
+        {mounted ? formatTime(remaining) : "\u00A0"}
       </div>
-      <p style={{ fontFamily: "PP Neue Montreal" }}>
-        Ends at {formatTime12(endTime)}
+      <p style={{ fontFamily: "PP Mondwest" }}>
+        {mounted ? `Ends at ${formatTime12(endTime)}` : "\u00A0"}
       </p>
-      <div style={{ display: "flex", gap: "10px" }}>
-        <button onClick={togglePause}>
+      <div style={{ display: "flex", gap: "24px", marginTop: "12px" }}>
+        <Button variant="default" size="md" onClick={togglePause}>
           {effectiveState.paused ? "Resume" : "Pause"}
-        </button>
-        <button onClick={restartPhase}>Restart</button>
-        <button onClick={advancePhase}>Skip</button>
+        </Button>
+        <Button variant="default" size="md" onClick={restartPhase}>
+          Restart
+        </Button>
+        <Button variant="default" size="md" onClick={advancePhase}>
+          Skip
+        </Button>
       </div>
       {phases[effectiveState.phaseIndex].music && (
         <div style={{ marginTop: "2rem", fontFamily: "PP Neue Montreal" }}>
