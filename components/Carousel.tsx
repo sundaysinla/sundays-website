@@ -63,11 +63,10 @@ export default function WhatWeDoCarousel() {
           {[...doubled, ...doubled].map((card, i) => (
             <div
               key={i}
-              className="flex-shrink-0 flex flex-col gap-4 md:gap-8 items-center justify-center p-3 md:p-6 rounded-lg overflow-clip transition-transform duration-300 ease-out hover:-translate-y-3"
+              className="flex-shrink-0 flex flex-col gap-4 md:gap-8 items-center justify-center p-3 md:p-6 rounded-[14px] md:rounded-[26px] overflow-clip transition-transform duration-300 ease-out hover:-translate-y-3"
               style={{
                 background: 'rgba(255,255,255,0.5)',
                 boxShadow: '0px 4px 12px 0px rgba(0,0,0,0.05)',
-                borderRadius: '26px',
                 cornerShape: 'squircle',
               } as React.CSSProperties}
             >

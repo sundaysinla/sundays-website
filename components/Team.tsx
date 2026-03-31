@@ -58,6 +58,7 @@ const alumniCol1: Member[] = [
   { name: "Jade Franson", href: "https://www.linkedin.com/in/jade-franson/" },
   { name: "BJ Moon", href: "https://www.linkedin.com/in/bjmoon/" },
   { name: "Jake Sacks", href: "https://www.linkedin.com/in/sacksjake/" },
+  { name: "Ethan Lippman", href: "https://x.com/EbisuEthan" },
 ];
 
 const alumniCol2: Member[] = [
@@ -65,6 +66,7 @@ const alumniCol2: Member[] = [
   { name: "Celine Carr", href: "https://www.linkedin.com/in/celine-carr-072bb9261/" },
   { name: "Joseph Good", href: "https://www.linkedin.com/in/joseph-good1/" },
   { name: "Sarah Fan", href: "https://www.linkedin.com/in/sarah-fan-70400a241/" },
+  { name: "Grace Li", href: "https://www.linkedin.com/in/grace-li51/" },
 ];
 
 const alumniCol3: Member[] = [
@@ -154,7 +156,7 @@ export default function Team() {
           <div className="flex flex-col gap-3 items-center">
             <div className="text-[44px] leading-none h-[52px] flex items-end text-[#C0B9A5]">⁂</div>
             <h2 className="text-4xl font-['Office-Times-Sharp-Regular'] text-[#C0B9A5] lowercase tracking-[-0.36px]">
-              sundays alumni
+              hosts alumni
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-16 text-center w-full">
