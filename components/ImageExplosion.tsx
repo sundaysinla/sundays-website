@@ -61,7 +61,7 @@ export default function ImageExplosion() {
       )}
 
       <AnimatePresence>
-        {isHovered && [...Array(7)].map((_, i) => {
+        {isHovered && [...Array(isMobile ? 14 : 7)].map((_, i) => {
           // Randomly select an image for each instance
           const randomImage = images[Math.floor(Math.random() * images.length)]
           

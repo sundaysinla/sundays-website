@@ -303,17 +303,18 @@ export default function SundaysPage() {
                     Find us
                   </h3>
                   <div className="flex flex-col space-y-2">
-                    <div className="flex items-center gap-4 md:gap-8">
+                    <div className="flex items-center gap-6 md:gap-8">
                       <Link
                         href="https://x.com/sundaysinla"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="opacity-50 hover:opacity-100 transition-opacity duration-300"
+                        className="hover:brightness-75 transition-[filter] duration-300"
                       >
                         <img
                           src="/x.png"
                           alt="X Logo"
                           className="w-[20px] h-auto md:w-[16px] shrink-0"
+                          style={{ filter: 'invert(78%) sepia(10%) saturate(500%) hue-rotate(10deg) brightness(90%)' }}
                         />
                       </Link>
 
@@ -321,12 +322,13 @@ export default function SundaysPage() {
                         href="https://www.linkedin.com/company/sundays-at-usc/posts/?feedView=all"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="opacity-50 hover:opacity-100 transition-opacity duration-300"
+                        className="hover:brightness-75 transition-[filter] duration-300"
                       >
                         <img
                           src="/linkedin.png"
                           alt="LinkedIn Logo"
                           className="w-[20px] h-auto md:w-[16px] shrink-0"
+                          style={{ filter: 'invert(78%) sepia(10%) saturate(500%) hue-rotate(10deg) brightness(90%)' }}
                         />
                       </Link>
 
@@ -334,12 +336,13 @@ export default function SundaysPage() {
                         href="https://www.instagram.com/sundaysnla"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="opacity-50 hover:opacity-100 transition-opacity duration-300"
+                        className="hover:brightness-75 transition-[filter] duration-300"
                       >
                         <img
                           src="/instagram.png"
                           alt="Instagram Logo"
                           className="w-[20px] h-auto md:w-[16px] shrink-0"
+                          style={{ filter: 'invert(78%) sepia(10%) saturate(500%) hue-rotate(10deg) brightness(90%)' }}
                         />
                       </Link>
 
@@ -347,7 +350,7 @@ export default function SundaysPage() {
                         href="https://luma.com/sundaysinla"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="opacity-50 hover:opacity-100 transition-opacity duration-300 -ml-1 md:-ml-1.25"
+                        className="hover:brightness-75 transition-[filter] duration-300 -ml-1 md:-ml-1.25"
                       >
                         <svg viewBox="0 0 133 134" fill="none" xmlns="http://www.w3.org/2000/svg" width={20} height={20}>
                           <path d="M133 67C96.2822 67 66.5 36.9939 66.5 0C66.5 36.9939 36.7178 67 0 67C36.7178 67 66.5 97.0061 66.5 134C66.5 97.0061 96.2822 67 133 67Z" fill="#C0B9A5"/>

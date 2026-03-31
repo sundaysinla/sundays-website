@@ -32,14 +32,24 @@ export default function NavBar() {
                     </span>
                 </div>
 
-                {/* Hamburger button */}
+                {/* Hamburger / X button */}
                 <button
-                    onClick={() => setOpen(true)}
-                    className="lg:hidden flex flex-col justify-center items-center w-8 h-8 gap-[5px]"
-                    aria-label="Open menu"
+                    onClick={() => setOpen(!open)}
+                    className="lg:hidden relative w-8 h-8 flex items-center justify-center"
+                    aria-label={open ? "Close menu" : "Open menu"}
                 >
-                    <span className="block w-5 h-[1.5px] bg-[#010101]" />
-                    <span className="block w-5 h-[1.5px] bg-[#010101]" />
+                    <span
+                        className="absolute block w-5 h-[1.5px] bg-[#010101] transition-all duration-300 ease-in-out"
+                        style={{
+                            transform: open ? 'rotate(45deg)' : 'translateY(-3px)',
+                        }}
+                    />
+                    <span
+                        className="absolute block w-5 h-[1.5px] bg-[#010101] transition-all duration-300 ease-in-out"
+                        style={{
+                            transform: open ? 'rotate(-45deg)' : 'translateY(3px)',
+                        }}
+                    />
                 </button>
             </nav>
 
@@ -57,12 +67,17 @@ export default function NavBar() {
                     />
                     <button
                         onClick={() => setOpen(false)}
-                        className="w-8 h-8 flex items-center justify-center"
+                        className="relative w-8 h-8 flex items-center justify-center"
                         aria-label="Close menu"
                     >
-                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M1 1L17 17M17 1L1 17" stroke="#010101" strokeWidth="1.5" />
-                        </svg>
+                        <span
+                            className="absolute block w-5 h-[1.5px] bg-[#010101] transition-all duration-300 ease-in-out"
+                            style={{ transform: 'rotate(45deg)' }}
+                        />
+                        <span
+                            className="absolute block w-5 h-[1.5px] bg-[#010101] transition-all duration-300 ease-in-out"
+                            style={{ transform: 'rotate(-45deg)' }}
+                        />
                     </button>
                 </div>
 

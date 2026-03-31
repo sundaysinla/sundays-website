@@ -175,6 +175,9 @@ function MobileProjectCard({ project }: { project: Project }) {
       <div className="flex items-center gap-4">
         <div className="flex-1 min-w-0 flex flex-col items-start gap-1.5">
           <div className="flex items-center gap-2">
+            <span className="bg-[#BDFF00] text-[13px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.15px] px-1.5 pt-px pb-0.5 rounded-[3px] shrink-0">
+              ({project.number})
+            </span>
             <p className="text-[18px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.2px] leading-tight truncate text-left">
               {project.projectUrl ? (
                 <a href={project.projectUrl} target="_blank" rel="noopener noreferrer" className="pointer-events-auto underline decoration-dotted decoration-stone-400/60 underline-offset-[3px] hover:decoration-solid hover:decoration-stone-500/80 hover:text-stone-900 transition-all duration-300">
@@ -184,12 +187,9 @@ function MobileProjectCard({ project }: { project: Project }) {
                 project.name
               )}
             </p>
-            <span className="bg-[#BDFF00] text-[13px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.15px] px-1.5 pt-px pb-0.5 rounded-[3px] shrink-0">
-              ({project.number})
-            </span>
           </div>
           {project.description && (
-            <p className="text-[13px] font-['Monument-Grotesk'] text-[#4d4d4d] leading-snug line-clamp-2">
+            <p className="text-[13px] font-['Monument-Grotesk'] text-[#4d4d4d] leading-snug line-clamp-2 text-left">
               {highlightMisspellings(project.description)}
             </p>
           )}
@@ -223,7 +223,7 @@ function MobileProjectCard({ project }: { project: Project }) {
         )}
       </div>
       {project.creators && project.creators.length > 0 && (
-        <div className="flex items-center gap-3 pt-1 border-t border-dashed border-stone-200">
+        <div className="flex items-center gap-3 pt-2.5 border-t border-dashed border-stone-200">
           {project.creators.map((c) => (
             <a
               key={c.name}
