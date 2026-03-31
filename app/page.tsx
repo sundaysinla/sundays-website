@@ -72,10 +72,6 @@ export default function SundaysPage() {
     triggerOnce: true,
     threshold: 0.1,
   });
-  const [jammingRef, jammingInView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
 
   const { scrollYProgress } = useScroll({
     target: imageContainerRef,
@@ -205,7 +201,7 @@ export default function SundaysPage() {
                   href="https://luma.com/sundaysinla"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-black rounded-full px-4 pt-2 pb-1.5 text-sm md:text-[0.8em] lg:text-[0.9em] font-['Monument-Grotesk'] uppercase transition-colors duration-300 ease-out hover:bg-[#EEEBE3] relative overflow-hidden group"
+                  className="bg-black rounded-xl px-4 pt-2 pb-1.5 text-sm md:text-[0.8em] lg:text-[0.9em] font-['Monument-Grotesk'] uppercase transition-colors duration-300 ease-out hover:bg-[#EEEBE3] relative overflow-hidden group"
                   style={{
                     textAlign: "center",
                     cornerShape: "squircle",
@@ -235,16 +231,7 @@ export default function SundaysPage() {
 
           {/* After the image section */}
           <div
-            ref={jammingRef}
             className="col-span-full text-center pt-32 overflow-x-clip overflow-y-visible"
-            style={{
-              transition: "all 1s ease-in-out 0.5s",
-              opacity: !isLoading && jammingInView ? "1" : "0",
-              transform:
-                !isLoading && jammingInView
-                  ? "translateY(0)"
-                  : "translateY(1rem)",
-            }}
           >
 
             <div id="about">
@@ -321,7 +308,7 @@ export default function SundaysPage() {
                         href="https://x.com/sundaysinla"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="hover:opacity-70 transition-opacity duration-300"
+                        className="opacity-50 hover:opacity-100 transition-opacity duration-300"
                       >
                         <img
                           src="/x.png"
@@ -334,7 +321,7 @@ export default function SundaysPage() {
                         href="https://www.linkedin.com/company/sundays-at-usc/posts/?feedView=all"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="hover:opacity-70 transition-opacity duration-300"
+                        className="opacity-50 hover:opacity-100 transition-opacity duration-300"
                       >
                         <img
                           src="/linkedin.png"
@@ -347,7 +334,7 @@ export default function SundaysPage() {
                         href="https://www.instagram.com/sundaysnla"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="hover:opacity-70 transition-opacity duration-300"
+                        className="opacity-50 hover:opacity-100 transition-opacity duration-300"
                       >
                         <img
                           src="/instagram.png"
@@ -360,7 +347,7 @@ export default function SundaysPage() {
                         href="https://luma.com/sundaysinla"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="hover:opacity-70 transition-opacity duration-300 -ml-1 md:-ml-1.25"
+                        className="opacity-50 hover:opacity-100 transition-opacity duration-300 -ml-1 md:-ml-1.25"
                       >
                         <svg viewBox="0 0 133 134" fill="none" xmlns="http://www.w3.org/2000/svg" width={20} height={20}>
                           <path d="M133 67C96.2822 67 66.5 36.9939 66.5 0C66.5 36.9939 36.7178 67 0 67C36.7178 67 66.5 97.0061 66.5 134C66.5 97.0061 96.2822 67 133 67Z" fill="#C0B9A5"/>

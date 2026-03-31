@@ -26,8 +26,11 @@ export default function ImageExplosion() {
 
   const handleTap = () => {
     if (!isMobile) return
-    setIsHovered(true)
-    setTimeout(() => setIsHovered(false), 3500)
+    setIsHovered(false)
+    requestAnimationFrame(() => {
+      setIsHovered(true)
+      setTimeout(() => setIsHovered(false), 3500)
+    })
   }
 
   const textEl = (
@@ -42,6 +45,7 @@ export default function ImageExplosion() {
       onMouseEnter={() => !isMobile && setIsHovered(true)}
       onMouseLeave={() => !isMobile && setIsHovered(false)}
       onClick={handleTap}
+      onTouchEnd={(e) => { e.preventDefault(); handleTap(); }}
     >
       {isMobile ? (
         <span className="inline-block w-full">{textEl}</span>

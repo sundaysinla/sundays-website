@@ -89,7 +89,7 @@ function CreatorRow({ creator, avatar }: { creator: Creator; avatar?: string }) 
 
   if (creator.url) {
     return (
-      <a href={creator.url} target="_blank" rel="noopener noreferrer" className="pointer-events-auto hover:opacity-70 transition-opacity">
+      <a href={creator.url} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted decoration-stone-400/60 underline-offset-[3px] hover:decoration-solid hover:decoration-stone-500/80 transition-all duration-300">
         {inner}
       </a>
     );
@@ -101,11 +101,11 @@ function ProjectCard({ project }: { project: Project }) {
   const avatars = useAvatars(project.creators);
 
   return (
-    <div className="w-[318px] bg-white rounded-[8px] p-6 flex flex-col items-start gap-4 shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] border border-[#FCFAF7] pointer-events-none text-left">
+    <div className="w-[318px] bg-white rounded-[8px] p-6 flex flex-col items-start gap-4 shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] border border-[#FCFAF7] text-left">
       <div className="flex items-center gap-2.5 w-full">
         <p className="flex-1 text-[20px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.2px] leading-[1.4]">
           {project.projectUrl ? (
-            <a href={project.projectUrl} target="_blank" rel="noopener noreferrer" className="pointer-events-auto underline decoration-dotted decoration-stone-400/60 underline-offset-[3px] hover:decoration-solid hover:decoration-stone-500/80 hover:text-stone-900 transition-all duration-300">
+            <a href={project.projectUrl} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted decoration-stone-400/60 underline-offset-[3px] hover:decoration-solid hover:decoration-stone-500/80 hover:text-stone-900 transition-all duration-300">
               {project.name}
             </a>
           ) : (
@@ -171,11 +171,11 @@ function MobileProjectCard({ project }: { project: Project }) {
   const avatars = useAvatars(project.creators);
 
   return (
-    <div className="bg-white rounded-[14px] px-4 py-3 flex flex-col gap-2 shadow-[0px_4px_20px_0px_rgba(0,0,0,0.10)] border border-[#FCFAF7] pointer-events-none">
-      <div className="flex items-center gap-3">
-        <div className="flex-1 min-w-0 flex flex-col gap-1">
+    <div className="bg-white rounded-[14px] px-5 py-4 flex flex-col gap-3 shadow-[0px_4px_20px_0px_rgba(0,0,0,0.10)] border border-[#FCFAF7] pointer-events-none">
+      <div className="flex items-center gap-4">
+        <div className="flex-1 min-w-0 flex flex-col items-start gap-1.5">
           <div className="flex items-center gap-2">
-            <p className="text-[17px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.2px] leading-tight truncate">
+            <p className="text-[18px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.2px] leading-tight truncate text-left">
               {project.projectUrl ? (
                 <a href={project.projectUrl} target="_blank" rel="noopener noreferrer" className="pointer-events-auto underline decoration-dotted decoration-stone-400/60 underline-offset-[3px] hover:decoration-solid hover:decoration-stone-500/80 hover:text-stone-900 transition-all duration-300">
                   {project.name}
@@ -195,12 +195,12 @@ function MobileProjectCard({ project }: { project: Project }) {
           )}
         </div>
         {project.image && (
-          <div className="w-14 h-14 shrink-0 flex items-center justify-center">
+          <div className="w-[72px] h-[72px] shrink-0 flex items-center justify-center">
             <img
               src={project.image}
               alt={project.name}
-              width={56}
-              height={56}
+              width={72}
+              height={72}
               className="object-contain mix-blend-multiply"
               loading="lazy"
               onError={(e) => {
@@ -230,7 +230,7 @@ function MobileProjectCard({ project }: { project: Project }) {
               href={c.url || undefined}
               target="_blank"
               rel="noopener noreferrer"
-              className="pointer-events-auto flex items-center gap-1.5 hover:opacity-70 transition-opacity"
+              className="pointer-events-auto flex items-center gap-1.5 underline decoration-dotted decoration-stone-400/60 underline-offset-[3px] hover:decoration-solid hover:decoration-stone-500/80 transition-all duration-300"
             >
               <div className="w-5 h-5 rounded-full overflow-hidden bg-stone-100 shrink-0">
                 {avatars[c.url] ? (
@@ -253,6 +253,8 @@ function MobileProjectCard({ project }: { project: Project }) {
 export default function Projects() {
   const [projects, setProjects] = useState<Project[]>(FALLBACK);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const cardHovered = useRef(false);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [scrollIdx, setScrollIdx] = useState<number>(0);
   const [visible, setVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -260,8 +262,36 @@ export default function Projects() {
   const sectionRef = useRef<HTMLElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
+  const mousePos = useRef<{ x: number; y: number; t: number }>({ x: 0, y: 0, t: 0 });
+  const pendingHover = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeIdx = isMobile ? scrollIdx : hoveredIdx;
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    mousePos.current = { x: e.clientX, y: e.clientY, t: Date.now() };
+  }, []);
+
+  const handleItemEnter = useCallback((i: number) => {
+    if (pendingHover.current) clearTimeout(pendingHover.current);
+    if (hoveredIdx === null) {
+      setHoveredIdx(i);
+      return;
+    }
+    const { x: prevX } = mousePos.current;
+    const ul = listRef.current;
+    if (ul) {
+      const ulRect = ul.getBoundingClientRect();
+      const distToRight = ulRect.right - prevX;
+      if (distToRight > 60) {
+        setHoveredIdx(i);
+        return;
+      }
+    }
+    pendingHover.current = setTimeout(() => {
+      setHoveredIdx(i);
+      pendingHover.current = null;
+    }, 200);
+  }, [hoveredIdx]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -329,14 +359,16 @@ export default function Projects() {
   }, [isMobile, projects]);
 
   return (
-    <section ref={sectionRef} className="text-[#3A372F] py-32 px-6 md:px-16 lg:px-24 relative bg-white overflow-hidden">
+    <section ref={sectionRef} className="text-[#3A372F] py-32 px-6 md:px-16 lg:px-24 relative bg-white">
       <style>{`
         @keyframes mobileCardIn {
           from { opacity: 0; transform: translateY(6px) scale(0.98); }
           to   { opacity: 1; transform: translateY(0) scale(1); }
         }
       `}</style>
-      <AsciiBackground />
+      <div className="absolute inset-0 overflow-hidden">
+        <AsciiBackground />
+      </div>
       <div className="relative z-10 text-center mb-8">
         <p className="text-sm uppercase text-[#C0B9A5] font-['ABC Monument Grotesk Unlicensed Trial']">
           Projects
@@ -365,7 +397,13 @@ export default function Projects() {
 
       <div
         className="relative z-10"
-        onMouseLeave={() => setHoveredIdx(null)}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => {
+          if (pendingHover.current) clearTimeout(pendingHover.current);
+          leaveTimer.current = setTimeout(() => {
+            if (!cardHovered.current) setHoveredIdx(null);
+          }, 300);
+        }}
       >
         <ul ref={listRef} className="text-left">
           {projects.map((project, i) => (
@@ -378,29 +416,34 @@ export default function Projects() {
                   ? scrollIdx === i ? "text-stone-800" : "text-stone-400"
                   : "text-stone-400 hover:text-stone-800"
               }`}
-              onMouseEnter={() => setHoveredIdx(i)}
+              onMouseEnter={() => handleItemEnter(i)}
             >
               <span className="ml-8">({project.number}) {project.name}</span>
             </li>
           ))}
         </ul>
 
-        {/* Desktop: card on right, sticky */}
-        <div
-          className="hidden md:block absolute right-[12%] top-0 bottom-0 w-[318px] pointer-events-none"
-        >
-          <div className="sticky top-[30vh] flex items-center justify-center">
-            <div
-              style={{
-                opacity: activeIdx !== null && visible ? 1 : 0,
-                transform: activeIdx !== null && visible ? 'scale(1) translateY(0)' : 'scale(0.96) translateY(8px)',
-                transition: 'opacity 200ms ease-out, transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
-              }}
-            >
-              {activeIdx !== null && <ProjectCard project={projects[activeIdx]} />}
-            </div>
+        {/* Desktop: fixed card, vertically centered in viewport */}
+        {!isMobile && activeIdx !== null && (
+          <div
+            className="fixed top-1/2 right-[12%] w-[318px] z-50"
+            style={{
+              opacity: visible ? 1 : 0,
+              transform: visible ? 'translateY(-50%) scale(1)' : 'translateY(calc(-50% + 8px)) scale(0.96)',
+              transition: 'opacity 200ms ease-out, transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
+            }}
+            onMouseEnter={() => {
+              cardHovered.current = true;
+              if (leaveTimer.current) clearTimeout(leaveTimer.current);
+            }}
+            onMouseLeave={() => {
+              cardHovered.current = false;
+              setHoveredIdx(null);
+            }}
+          >
+            <ProjectCard project={projects[activeIdx]} />
           </div>
-        </div>
+        )}
       </div>
 
     </section>
