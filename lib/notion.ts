@@ -48,8 +48,8 @@ export async function getProjects(): Promise<Project[]> {
       const yourUrl = props["Your LinkedIn, X, or Insta"]?.url ?? "";
       if (yourName) creators.push({ name: yourName, url: yourUrl });
 
-      const addtlName = props["Addtl Creator Name??"]?.rich_text?.[0]?.plain_text ?? "";
-      const addtlUrl = props["Addtl LinkedIn, X, or Insta"]?.url ?? "";
+      const addtlName = props["Additional Creator Name?"]?.rich_text?.[0]?.plain_text ?? "";
+      const addtlUrl = props["Additional LinkedIn, X, or Insta"]?.url ?? "";
       if (addtlName) creators.push({ name: addtlName, url: addtlUrl });
 
       return {
