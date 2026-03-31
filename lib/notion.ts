@@ -7,6 +7,7 @@ const PROJECTS_DB_ID = process.env.NOTION_PROJECTS_DB_ID!;
 export type Creator = {
   name: string;
   url: string;
+  profilePic?: string;
 };
 
 export type Project = {
@@ -46,11 +47,15 @@ export async function getProjects(): Promise<Project[]> {
       const creators: Creator[] = [];
       const yourName = props["Your Name"]?.rich_text?.[0]?.plain_text ?? "";
       const yourUrl = props["Your LinkedIn, X, or Insta"]?.url ?? "";
-      if (yourName) creators.push({ name: yourName, url: yourUrl });
+      const yourPicFile = props["Your Profile Pic"]?.files?.[0];
+      const yourPic = yourPicFile?.file?.url ?? yourPicFile?.external?.url ?? "";
+      if (yourName) creators.push({ name: yourName, url: yourUrl, profilePic: yourPic || undefined });
 
       const addtlName = props["Additional Creator Name?"]?.rich_text?.[0]?.plain_text ?? "";
       const addtlUrl = props["Additional LinkedIn, X, or Insta"]?.url ?? "";
-      if (addtlName) creators.push({ name: addtlName, url: addtlUrl });
+      const addtlPicFile = props["Additional Creator Profile Pic"]?.files?.[0];
+      const addtlPic = addtlPicFile?.file?.url ?? addtlPicFile?.external?.url ?? "";
+      if (addtlName) creators.push({ name: addtlName, url: addtlUrl, profilePic: addtlPic || undefined });
 
       return {
         number: String(order).padStart(2, "0"),

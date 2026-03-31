@@ -6,6 +6,7 @@ import AsciiBackground from "@/components/AsciiBackground";
 type Creator = {
   name: string;
   url: string;
+  profilePic?: string;
 };
 
 type Project = {
@@ -55,6 +56,10 @@ function useAvatars(creators?: Creator[]) {
     if (!creators?.length) return;
     let cancelled = false;
     creators.forEach((c) => {
+      if (c.profilePic) {
+        setAvatars((prev) => ({ ...prev, [c.url || c.name]: c.profilePic! }));
+        return;
+      }
       if (!c.url) return;
       fetch(`/api/og-image?url=${encodeURIComponent(c.url)}`)
         .then((r) => r.json())
@@ -158,7 +163,7 @@ function ProjectCard({ project }: { project: Project }) {
           <DashedDivider className="w-full" />
           <div className="flex flex-col gap-3">
             {project.creators.map((c) => (
-              <CreatorRow key={c.name} creator={c} avatar={avatars[c.url]} />
+              <CreatorRow key={c.name} creator={c} avatar={avatars[c.url] || avatars[c.name]} />
             ))}
           </div>
         </>
@@ -233,8 +238,8 @@ function MobileProjectCard({ project }: { project: Project }) {
               className="pointer-events-auto flex items-center gap-1.5 underline decoration-dotted decoration-stone-400/60 underline-offset-[3px] hover:decoration-solid hover:decoration-stone-500/80 transition-all duration-300"
             >
               <div className="w-5 h-5 rounded-full overflow-hidden bg-stone-100 shrink-0">
-                {avatars[c.url] ? (
-                  <img src={avatars[c.url]} alt={c.name} className="w-full h-full object-cover" />
+                {(avatars[c.url] || avatars[c.name]) ? (
+                  <img src={avatars[c.url] || avatars[c.name]} alt={c.name} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-stone-200" />
                 )}
