@@ -20,8 +20,8 @@ import "../styles/grain.css";
 const Logo3D = dynamic(() => import("../components/Logo3D"), { ssr: false });
 
 export default function SundaysPage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [canHide, setCanHide] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [canHide, setCanHide] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -90,7 +90,7 @@ export default function SundaysPage() {
 
   return (
     <>
-      {/* Loading screen removed */}
+      <LoadingScreen isLoading={isLoading} onTypingDone={() => setCanHide(true)} />
       <NavBar></NavBar>
       <div
         className={`min-h-screen relative overflow-x-clip overflow-y-visible transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"}`}
