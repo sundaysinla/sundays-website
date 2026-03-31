@@ -78,8 +78,11 @@ export default function Logo3D() {
     const pmremGenerator = new THREE.PMREMGenerator(renderer)
     pmremGenerator.compileEquirectangularShader()
 
-    // Load model immediately with basic environment
-    const defaultEnvMap = pmremGenerator.fromScene(new THREE.Scene()).texture
+    // Load model immediately with a bright default environment so it appears silver
+    const defaultScene = new THREE.Scene()
+    defaultScene.background = new THREE.Color(0xd0d0d0)
+    const defaultEnvMap = pmremGenerator.fromScene(defaultScene).texture
+    defaultScene.background = null
     loadModel(defaultEnvMap)
 
     // Try to load HDR environment map
