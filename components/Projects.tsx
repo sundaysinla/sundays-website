@@ -423,10 +423,10 @@ export default function Projects() {
           ))}
         </ul>
 
-        {/* Desktop: fixed card, vertically centered in viewport */}
+        {/* Desktop: card centered vertically within list */}
         {!isMobile && activeIdx !== null && (
           <div
-            className="fixed top-1/2 right-[12%] w-[318px] z-50"
+            className="absolute right-[12%] top-1/2 w-[318px] z-50"
             style={{
               opacity: visible ? 1 : 0,
               transform: visible ? 'translateY(-50%) scale(1)' : 'translateY(calc(-50% + 8px)) scale(0.96)',
