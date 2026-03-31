@@ -303,13 +303,13 @@ export default function TimerPage() {
         {mounted ? `Ends at ${formatTime12(endTime)}` : "\u00A0"}
       </p>
       <div style={{ display: "flex", gap: "24px", marginTop: "12px" }}>
-        <Button variant="default" size="md" onClick={togglePause}>
+        <Button variant="dark" size="md" onClick={togglePause}>
           {effectiveState.paused ? "Resume" : "Pause"}
         </Button>
-        <Button variant="default" size="md" onClick={restartPhase}>
+        <Button size="md" className="bg-stone-100 border-stone-300 hover:bg-stone-200" onClick={restartPhase}>
           Restart
         </Button>
-        <Button variant="default" size="md" onClick={advancePhase}>
+        <Button size="md" className="bg-stone-100 border-stone-300 hover:bg-stone-200" onClick={advancePhase}>
           Skip
         </Button>
       </div>

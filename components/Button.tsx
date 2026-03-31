@@ -75,7 +75,7 @@ export default function Button({
 
     const inner = (
         <>
-            <span className="inline-block transition-transform duration-300 ease-out group-hover:-translate-y-full">
+            <span className="inline-block transition-transform duration-300 ease-out group-hover:-translate-y-[calc(100%+4px)]">
                 {children}
             </span>
             <span className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-out translate-y-full group-hover:translate-y-0">
