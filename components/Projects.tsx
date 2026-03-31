@@ -1,7 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
-import Image from "next/image";
 import DashedDivider from "@/components/DashedDivider";
 
 type Project = {
@@ -37,12 +36,13 @@ function ProjectCard({ project }: { project: Project }) {
       {project.image && (
         <div className="w-full aspect-square flex items-center justify-center">
           <div className="-rotate-[13deg]">
-            <Image
+            <img
               src={project.image}
               alt={project.name}
               width={225}
               height={225}
               className="object-contain mix-blend-multiply"
+              loading="lazy"
             />
           </div>
         </div>
