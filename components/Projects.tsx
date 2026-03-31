@@ -28,6 +28,26 @@ const FALLBACK: Project[] = [
   { number: "08", name: "3d modeling", description: "bringing ideas to life" },
 ];
 
+const MISSPELLINGS = ["spel"];
+
+function highlightMisspellings(text: string): React.ReactNode {
+  const pattern = new RegExp(`(${MISSPELLINGS.join("|")})`, "gi");
+  const parts = text.split(pattern);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) =>
+    MISSPELLINGS.some((w) => w.toLowerCase() === part.toLowerCase()) ? (
+      <span
+        key={i}
+        className="decoration-red-500 decoration-wavy underline underline-offset-[3px]"
+      >
+        {part}
+      </span>
+    ) : (
+      part
+    )
+  );
+}
+
 function useAvatars(creators?: Creator[]) {
   const [avatars, setAvatars] = useState<Record<string, string>>({});
 
@@ -92,7 +112,7 @@ function ProjectCard({ project }: { project: Project }) {
             project.name
           )}
         </p>
-        <span className="bg-[#BDFF00] text-[15px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.15px] px-2 pt-0.5 pb-1 rounded-[1px] shrink-0">
+        <span className="bg-[#BDFF00] text-[15px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.15px] px-2 pt-0.5 pb-1 rounded-[3px] shrink-0">
           ({project.number})
         </span>
       </div>
@@ -129,7 +149,7 @@ function ProjectCard({ project }: { project: Project }) {
 
       {project.description && (
         <p className="text-sm font-['Monument-Grotesk'] text-[#4d4d4d] w-full">
-          {project.description}
+          {highlightMisspellings(project.description)}
         </p>
       )}
 
@@ -164,13 +184,13 @@ function MobileProjectCard({ project }: { project: Project }) {
                 project.name
               )}
             </p>
-            <span className="bg-[#BDFF00] text-[13px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.15px] px-1.5 pt-px pb-0.5 rounded-[1px] shrink-0">
+            <span className="bg-[#BDFF00] text-[13px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.15px] px-1.5 pt-px pb-0.5 rounded-[3px] shrink-0">
               ({project.number})
             </span>
           </div>
           {project.description && (
             <p className="text-[13px] font-['Monument-Grotesk'] text-[#4d4d4d] leading-snug line-clamp-2">
-              {project.description}
+              {highlightMisspellings(project.description)}
             </p>
           )}
         </div>
@@ -353,7 +373,7 @@ export default function Projects() {
               key={project.number}
               ref={(el) => setItemRef(el, i)}
               data-idx={i}
-              className={`text-[22px] font-['Office-Times-Sharp-Regular'] py-4 pr-[340px] cursor-default transition-colors duration-200 ${
+              className={`text-[22px] font-['Office-Times-Sharp-Regular'] py-4 md:pr-[340px] cursor-default transition-colors duration-200 ${
                 isMobile
                   ? scrollIdx === i ? "text-stone-800" : "text-stone-400"
                   : "text-stone-400 hover:text-stone-800"
