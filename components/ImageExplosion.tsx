@@ -35,7 +35,7 @@ export default function ImageExplosion() {
 
   const textEl = (
     <div className="relative inline-block">
-      <p className="text-[4em] sm:text-[7em] md:text-[10em] lg:text-[11em] xl:text-[16em] font-['PP-Editorial-New-UltraLightItalic'] italic whitespace-nowrap mb-2 sm:-mb-2 md:-mb-6 lg:-mb-8 leading-[0.85]">
+      <p className="text-[4em] sm:text-[7em] md:text-[12em] lg:text-[15em] xl:text-[20em] font-['PP-Editorial-New-UltraLightItalic'] italic whitespace-nowrap mb-2 sm:-mb-2 md:-mb-6 lg:-mb-8 leading-[0.85]">
         Join Us
       </p>
       <div
