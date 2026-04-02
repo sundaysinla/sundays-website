@@ -23,11 +23,10 @@ const CHANNEL_NAME = "sundays-timer-sync";
 
 // Phases shared across all windows
 const phases = [
-  { duration: 45 * 60, label: "45 Minutes of Deep Work", music: false },
-  { duration: 10 * 60, label: "10 Minutes to Talk", music: true },
+  { duration: 45 * 60, label: "45 Minutes of Deep Work" },
+  { duration: 10 * 60, label: "10 Minutes to Talk" },
 ];
 
-const playlistUri = "spotify:playlist:2F0pDOIUewAIJ37vjztRiN";
 
 /** Format time as MM:SS */
 function formatTime(sec: number) {
@@ -56,9 +55,6 @@ function buildInitialState(): TimerState {
 
 export default function TimerPage() {
   const [timerState, setTimerState] = useState<TimerState | null>(null);
-  const [spotifyReady, setSpotifyReady] = useState(false);
-  const [deviceId, setDeviceId] = useState<string | null>(null);
-  const [player, setPlayer] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
   const [now, setNow] = useState(Date.now());
   const channelRef = useRef<BroadcastChannel | null>(null);
@@ -146,66 +142,12 @@ export default function TimerPage() {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  // Spotify SDK loader
-  useEffect(() => {
-    const token = localStorage.getItem("spotify_access_token");
-    if (!token) return;
-
-    const script = document.createElement("script");
-    script.src = "https://sdk.scdn.co/spotify-player.js";
-    script.async = true;
-    document.body.appendChild(script);
-
-    (window as any).onSpotifyWebPlaybackSDKReady = () => {
-      const spotifyPlayer = new (window as any).Spotify.Player({
-        name: "Sundays Timer Player",
-        getOAuthToken: (cb: (token: string) => void) => cb(token),
-        volume: 0.5,
-      });
-      setPlayer(spotifyPlayer);
-
-      spotifyPlayer.addListener("ready", ({ device_id }: any) => {
-        console.log("Ready with Device ID", device_id);
-        setDeviceId(device_id);
-        setSpotifyReady(true);
-      });
-
-      spotifyPlayer.connect();
-    };
-  }, []);
-
-  /** Play playlist when phase changes to music phase */
-  async function playPlaylist(uri: string) {
-    if (!deviceId) return;
-    const token = localStorage.getItem("spotify_access_token");
-    if (!token) return;
-    await fetch(
-      `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
-      {
-        method: "PUT",
-        body: JSON.stringify({ context_uri: uri }),
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-  }
-
   const remaining = useMemo(() => {
     if (!timerState) return phases[0].duration;
     return computeRemaining(timerState, now);
   }, [timerState, now]);
 
   const endTime = useMemo(() => new Date(now + remaining * 1000), [now, remaining]);
-
-  const handlePhaseChangeEffects = useCallback((nextPhaseIndex: number) => {
-    if (phases[nextPhaseIndex].music) {
-      playPlaylist(playlistUri);
-    } else {
-      player?.pause();
-    }
-  }, [player]);
 
   const advancePhase = useCallback(() => {
     updateTimerState((prev) => {
@@ -216,10 +158,9 @@ export default function TimerPage() {
         paused: false,
         pausedRemaining: phases[nextPhase].duration,
       };
-      handlePhaseChangeEffects(nextPhase);
       return nextState;
     });
-  }, [handlePhaseChangeEffects]);
+  }, []);
 
   // Automatically advance when the shared timer hits zero
   useEffect(() => {
@@ -313,11 +254,6 @@ export default function TimerPage() {
           Skip
         </Button>
       </div>
-      {phases[effectiveState.phaseIndex].music && (
-        <div style={{ marginTop: "2rem", fontFamily: "PP Neue Montreal" }}>
-          🎵 Now Playing: Sundays Playlist.
-        </div>
-      )}
     </main>
   );
 }

@@ -34,9 +34,21 @@ export default function ImageExplosion() {
   }
 
   const textEl = (
-    <p className="text-[4em] sm:text-[7em] md:text-[10em] lg:text-[11em] xl:text-[16em] font-['PP-Editorial-New-UltraLightItalic'] italic whitespace-nowrap mb-2 sm:-mb-2 md:-mb-6 lg:-mb-8">
-      Join Us
-    </p>
+    <div className="relative inline-block">
+      <p className="text-[4em] sm:text-[7em] md:text-[10em] lg:text-[11em] xl:text-[16em] font-['PP-Editorial-New-UltraLightItalic'] italic whitespace-nowrap mb-2 sm:-mb-2 md:-mb-6 lg:-mb-8 leading-[0.85]">
+        Join Us
+      </p>
+      <div
+        className="absolute left-0 right-0 bottom-0 translate-y-5"
+        style={{
+          height: '4px',
+          backgroundImage: 'radial-gradient(circle closest-side, rgba(214,211,209,0.5) 100%, transparent 100%)',
+          backgroundSize: '12px 4px',
+          backgroundRepeat: 'repeat-x',
+          backgroundPosition: 'center',
+        }}
+      />
+    </div>
   )
 
   return (

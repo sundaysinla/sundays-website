@@ -84,9 +84,22 @@ function PhotoLightbox({ src, onClose }: { src: string; onClose: () => void }) {
 
 export default function Who() {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null)
+  const [inView, setInView] = useState(false)
+  const sectionRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const el = sectionRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setInView(true); observer.disconnect() } },
+      { threshold: 0.15 }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   return (
-    <section className="text-[#3A372F] bg-[#F5F4EF]/80 py-56 md:py-40 lg:py-48 px-6 md:px-12 lg:px-16 relative overflow-hidden">
+    <section ref={sectionRef} className="text-[#3A372F] bg-[#F5F4EF]/80 py-56 md:py-40 lg:py-48 px-6 md:px-12 lg:px-16 relative overflow-hidden">
       {/* Dashed column grid */}
       <div
         className="absolute inset-0 pointer-events-none grid grid-cols-8 md:grid-cols-[repeat(16,1fr)]"
@@ -111,30 +124,44 @@ export default function Who() {
 
       {/* Left polaroid cluster */}
       <div
-        className="absolute -left-4 -bottom-6 w-[75%] md:w-[38%] max-w-[560px] select-none transition-transform duration-300 ease-out hover:scale-[1.01] cursor-pointer"
+        className="absolute -left-4 -bottom-6 w-[75%] md:w-[38%] max-w-[560px] select-none cursor-pointer z-20"
+        style={{
+          transform: inView ? 'translate(0, 0) rotate(0deg)' : 'translate(-120%, 40%) rotate(-45deg)',
+          opacity: inView ? 1 : 0,
+          transition: 'transform 1s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease-out',
+        }}
         onClick={() => setLightboxSrc('/polaroids-full.png')}
       >
-        <Image
-          src="/polaroids-right.png"
-          alt="Polaroid photos"
-          width={960}
-          height={640}
-          className="w-full h-auto drop-shadow-[0_2px_6px_rgba(120,113,108,0.25)]"
-        />
+        <div className="transition-transform duration-300 ease-out hover:scale-[1.01]">
+          <Image
+            src="/polaroids-right.png"
+            alt="Polaroid photos"
+            width={960}
+            height={640}
+            className="w-full h-auto drop-shadow-[0_2px_6px_rgba(120,113,108,0.25)]"
+          />
+        </div>
       </div>
 
       {/* Right polaroid cluster */}
       <div
-        className="absolute -right-4 -top-4 w-[75%] md:w-[38%] max-w-[560px] select-none transition-transform duration-300 ease-out hover:scale-[1.01] cursor-pointer"
+        className="absolute -right-4 -top-4 w-[75%] md:w-[38%] max-w-[560px] select-none cursor-pointer z-20"
+        style={{
+          transform: inView ? 'translate(0, 0) rotate(0deg)' : 'translate(120%, -40%) rotate(45deg)',
+          opacity: inView ? 1 : 0,
+          transition: 'transform 1s cubic-bezier(0.16, 1, 0.3, 1) 0.15s, opacity 0.6s ease-out 0.15s',
+        }}
         onClick={() => setLightboxSrc('/polaroids-full-2.png')}
       >
-        <Image
-          src="/polaroids-left.png"
-          alt="Polaroid photos"
-          width={960}
-          height={780}
-          className="w-full h-auto drop-shadow-[0_2px_6px_rgba(120,113,108,0.25)]"
-        />
+        <div className="transition-transform duration-300 ease-out hover:scale-[1.01]">
+          <Image
+            src="/polaroids-left.png"
+            alt="Polaroid photos"
+            width={960}
+            height={780}
+            className="w-full h-auto drop-shadow-[0_2px_6px_rgba(120,113,108,0.25)]"
+          />
+        </div>
       </div>
 
       {/* Content */}

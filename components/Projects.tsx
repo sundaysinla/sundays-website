@@ -106,7 +106,7 @@ function ProjectCard({ project }: { project: Project }) {
   const avatars = useAvatars(project.creators);
 
   return (
-    <div className="w-[318px] bg-white rounded-[8px] p-6 flex flex-col items-start gap-4 shadow-[0px_4px_12px_0px_rgba(0,0,0,0.05)] border border-[#FCFAF7] text-left">
+    <div className="w-[318px] bg-white rounded-[8px] p-6 flex flex-col items-start gap-4 shadow-[0px_4px_14px_0px_rgba(0,0,0,0.12)] border border-[#FCFAF7] text-left">
       <div className="flex items-center gap-2.5 w-full">
         <p className="flex-1 text-[20px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.2px] leading-[1.4]">
           {project.projectUrl ? (
@@ -117,20 +117,20 @@ function ProjectCard({ project }: { project: Project }) {
             project.name
           )}
         </p>
-        <span className="bg-[#BDFF00] text-[15px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.15px] px-2 pt-0.5 pb-1 rounded-[3px] shrink-0">
+        <span className="bg-[#BDFF00] text-[15px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.15px] px-2 pt-0.5 pb-1 rounded-[8px] shrink-0" style={{ cornerShape: 'squircle' } as React.CSSProperties}>
           ({project.number})
         </span>
       </div>
 
       {project.image && (
         <div className="w-full flex-1 min-h-0 flex items-center justify-center">
-          <div className="-rotate-[13deg]">
+          <div>
             <img
               src={project.image}
               alt={project.name}
               width={225}
               height={225}
-              className="object-contain mix-blend-multiply rounded-lg"
+              className="object-contain mix-blend-multiply rounded-xl"
               loading="lazy"
               onError={(e) => {
                 const img = e.currentTarget;
@@ -176,11 +176,11 @@ function MobileProjectCard({ project }: { project: Project }) {
   const avatars = useAvatars(project.creators);
 
   return (
-    <div className="bg-white rounded-[14px] px-5 py-4 flex flex-col gap-3 shadow-[0px_4px_20px_0px_rgba(0,0,0,0.10)] border border-[#FCFAF7] pointer-events-none">
+    <div className="bg-white rounded-[14px] px-5 py-4 flex flex-col gap-3 shadow-[0px_4px_20px_0px_rgba(0,0,0,0.16)] border border-[#FCFAF7] pointer-events-none">
       <div className="flex items-center gap-4">
         <div className="flex-1 min-w-0 flex flex-col items-start gap-1.5">
           <div className="flex items-center gap-2">
-            <span className="bg-[#BDFF00] text-[13px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.15px] px-1.5 pt-px pb-0.5 rounded-[3px] shrink-0">
+            <span className="bg-[#BDFF00] text-[13px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.15px] px-1.5 pt-px pb-0.5 rounded-[8px] shrink-0" style={{ cornerShape: 'squircle' } as React.CSSProperties}>
               ({project.number})
             </span>
             <p className="text-[18px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.2px] leading-tight truncate text-left">
@@ -206,7 +206,7 @@ function MobileProjectCard({ project }: { project: Project }) {
               alt={project.name}
               width={72}
               height={72}
-              className="object-contain mix-blend-multiply rounded-lg"
+              className="object-contain mix-blend-multiply rounded-xl"
               loading="lazy"
               onError={(e) => {
                 const img = e.currentTarget;
