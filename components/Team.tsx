@@ -159,7 +159,7 @@ export default function Team() {
               hosts alumni
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-16 text-center w-full">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-1 md:gap-16 text-center w-full">
             <MemberList members={alumniCol1} />
             <MemberList members={alumniCol2} />
             <MemberList members={alumniCol3} />

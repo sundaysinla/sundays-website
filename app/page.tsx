@@ -20,8 +20,9 @@ import "../styles/grain.css";
 const Logo3D = dynamic(() => import("../components/Logo3D"), { ssr: false });
 
 export default function SundaysPage() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [canHide, setCanHide] = useState(false);
+  const alreadySeen = typeof window !== "undefined" && sessionStorage.getItem("sundays-greeted") === "1";
+  const [isLoading, setIsLoading] = useState(!alreadySeen);
+  const [canHide, setCanHide] = useState(alreadySeen);
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -29,6 +30,7 @@ export default function SundaysPage() {
     if (canHide) {
       const timer = setTimeout(() => {
         setIsLoading(false);
+        sessionStorage.setItem("sundays-greeted", "1");
       }, 500);
       return () => clearTimeout(timer);
     }

@@ -23,6 +23,10 @@ export async function getProjects(): Promise<Project[]> {
   try {
     const response = await notion.dataSources.query({
       data_source_id: PROJECTS_DB_ID,
+      filter: {
+        property: "Order",
+        number: { greater_than: 0 },
+      },
       sorts: [{ property: "Order", direction: "ascending" }],
     });
 
@@ -58,6 +62,7 @@ export async function getProjects(): Promise<Project[]> {
       if (addtlName) creators.push({ name: addtlName, url: addtlUrl, profilePic: addtlPic || undefined });
 
       return {
+        order,
         number: String(order).padStart(2, "0"),
         name,
         description,
@@ -65,7 +70,7 @@ export async function getProjects(): Promise<Project[]> {
         projectUrl: projectUrl || undefined,
         creators: creators.length > 0 ? creators : undefined,
       };
-    });
+    }).filter((p) => p.order > 0).map(({ order, ...rest }) => rest);
   } catch (e) {
     console.error("Failed to fetch from Notion, using fallback:", e);
     return FALLBACK_PROJECTS;

@@ -130,7 +130,7 @@ function ProjectCard({ project }: { project: Project }) {
               alt={project.name}
               width={225}
               height={225}
-              className="object-contain mix-blend-multiply"
+              className="object-contain mix-blend-multiply rounded-lg"
               loading="lazy"
               onError={(e) => {
                 const img = e.currentTarget;
@@ -206,7 +206,7 @@ function MobileProjectCard({ project }: { project: Project }) {
               alt={project.name}
               width={72}
               height={72}
-              className="object-contain mix-blend-multiply"
+              className="object-contain mix-blend-multiply rounded-lg"
               loading="lazy"
               onError={(e) => {
                 const img = e.currentTarget;
@@ -257,7 +257,7 @@ function MobileProjectCard({ project }: { project: Project }) {
 
 export default function Projects() {
   const [projects, setProjects] = useState<Project[]>(FALLBACK);
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(0);
   const cardHovered = useRef(false);
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [scrollIdx, setScrollIdx] = useState<number>(0);
@@ -419,7 +419,7 @@ export default function Projects() {
               className={`text-[22px] font-['Office-Times-Sharp-Regular'] py-4 md:pr-[340px] cursor-default transition-colors duration-200 ${
                 isMobile
                   ? scrollIdx === i ? "text-stone-800" : "text-stone-400"
-                  : "text-stone-400 hover:text-stone-800"
+                  : hoveredIdx === i ? "text-stone-800" : "text-stone-400 hover:text-stone-800"
               }`}
               onMouseEnter={() => handleItemEnter(i)}
             >

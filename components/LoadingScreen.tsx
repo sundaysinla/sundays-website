@@ -13,7 +13,7 @@ export default function LoadingScreen({ isLoading, onTypingDone }: LoadingScreen
   const onDoneRef = useRef(onTypingDone)
   onDoneRef.current = onTypingDone
 
-  const DURATION = 400
+  const DURATION = 600
 
   useEffect(() => {
     if (!isLoading || hasTyped.current) return
