@@ -9,7 +9,7 @@ type Member = { name: string; href?: string };
 
 function MemberList({ members }: { members: Member[] }) {
   return (
-    <ul className="space-y-1 text-[16px] font-['Office-Times-Sharp-Regular'] tracking-[-0.16px]">
+    <ul className="space-y-2 md:space-y-1 text-[16px] font-['Office-Times-Sharp-Regular'] tracking-[-0.16px]">
       {members.map((m) => (
         <li key={m.name}>
           {m.href ? (
@@ -159,7 +159,10 @@ export default function Team() {
               hosts alumni
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-1 md:gap-16 text-center w-full">
+          <div className="md:hidden text-center w-full">
+            <MemberList members={[...alumniCol1, ...alumniCol2, ...alumniCol3]} />
+          </div>
+          <div className="hidden md:grid md:grid-cols-3 gap-16 text-center w-full">
             <MemberList members={alumniCol1} />
             <MemberList members={alumniCol2} />
             <MemberList members={alumniCol3} />
