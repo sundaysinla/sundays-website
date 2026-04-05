@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import Link from 'next/link'
 import Image from 'next/image'
 
 export default function ImageExplosion() {
@@ -34,21 +33,9 @@ export default function ImageExplosion() {
   }
 
   const textEl = (
-    <div className="relative inline-block">
-      <p className="text-[4em] sm:text-[7em] md:text-[12em] lg:text-[15em] xl:text-[20em] font-['PP-Editorial-New-UltraLightItalic'] italic whitespace-nowrap mb-2 sm:-mb-2 md:-mb-6 lg:-mb-8 leading-[0.85]">
-        Join Us
-      </p>
-      <div
-        className="absolute left-0 right-0 bottom-0 translate-y-5"
-        style={{
-          height: '4px',
-          backgroundImage: 'radial-gradient(circle closest-side, rgba(214,211,209,0.5) 100%, transparent 100%)',
-          backgroundSize: '12px 4px',
-          backgroundRepeat: 'repeat-x',
-          backgroundPosition: 'center',
-        }}
-      />
-    </div>
+    <p className="text-[4em] sm:text-[7em] md:text-[13em] lg:text-[16em] xl:text-[18em] font-['PP-Editorial-New-UltraLightItalic'] italic whitespace-nowrap mb-2 sm:-mb-2 md:-mb-6 lg:-mb-8 leading-[0.85]">
+      Join Us
+    </p>
   )
 
   return (
@@ -59,18 +46,7 @@ export default function ImageExplosion() {
       onClick={handleTap}
       onTouchEnd={(e) => { e.preventDefault(); handleTap(); }}
     >
-      {isMobile ? (
-        <span className="inline-block w-full">{textEl}</span>
-      ) : (
-        <Link
-          href="https://luma.com/sundaysinla"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-block w-full"
-        >
-          {textEl}
-        </Link>
-      )}
+      <span className="inline-block w-full">{textEl}</span>
 
       <AnimatePresence>
         {isHovered && [...Array(isMobile ? 14 : 7)].map((_, i) => {

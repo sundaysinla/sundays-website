@@ -227,12 +227,12 @@ export default function TimerPage() {
           className="opacity-80 hover:opacity-100 transition-opacity"
         />
       </Link>
-      <h1 style={{ fontFamily: "PP Mondwest", fontSize: "1.5rem" }}>
+      <h1 style={{ fontFamily: "'PP Mondwest', 'SF Mono', 'Menlo', 'Courier New', monospace", fontSize: "1.5rem" }}>
         {phases[effectiveState.phaseIndex].label}
       </h1>
       <div
         style={{
-          fontFamily: "PP Mondwest",
+          fontFamily: "'PP Mondwest', 'SF Mono', 'Menlo', 'Courier New', monospace",
           color: "#3600cf",
           fontSize: "clamp(40px, 15vw, 200px)",
           margin: "24px 0",
@@ -240,7 +240,7 @@ export default function TimerPage() {
       >
         {mounted ? formatTime(remaining) : "\u00A0"}
       </div>
-      <p style={{ fontFamily: "PP Mondwest" }}>
+      <p style={{ fontFamily: "'PP Mondwest', 'SF Mono', 'Menlo', 'Courier New', monospace" }}>
         {mounted ? `Ends at ${formatTime12(endTime)}` : "\u00A0"}
       </p>
       <div style={{ display: "flex", gap: "24px", marginTop: "12px" }}>

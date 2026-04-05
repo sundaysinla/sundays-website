@@ -361,7 +361,7 @@ export default function SundaysPage() {
 
             </div>
 
-              <div className="text-center flex justify-center transition-transform duration-500 ease-in-out hover:-translate-y-[8px] hover:duration-[1000ms] pb-12 md:pb-16">
+              <div className="text-center flex justify-center transition-transform duration-500 ease-in-out hover:-translate-y-[8px] hover:duration-[1000ms] pt-16 md:pt-24 pb-12 md:pb-16">
                 <ImageExplosion />
               </div>
           </div>
