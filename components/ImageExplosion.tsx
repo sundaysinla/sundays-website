@@ -33,7 +33,7 @@ export default function ImageExplosion() {
   }
 
   const textEl = (
-    <p className="text-[22vw] md:text-[20vw] font-['PP-Editorial-New-UltraLightItalic'] italic whitespace-nowrap mb-2 sm:-mb-2 md:-mb-6 lg:-mb-8 leading-[0.85]">
+    <p className="text-[22vw] md:text-[18vw] font-['PP-Editorial-New-UltraLightItalic'] italic whitespace-nowrap mb-2 sm:-mb-2 md:-mb-6 lg:-mb-8 leading-[0.85]">
       Join Us
     </p>
   )
