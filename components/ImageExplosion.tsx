@@ -33,7 +33,7 @@ export default function ImageExplosion() {
   }
 
   const textEl = (
-    <p className="text-[4em] sm:text-[7em] md:text-[13em] lg:text-[16em] xl:text-[1em] font-['PP-Editorial-New-UltraLightItalic'] italic whitespace-nowrap mb-2 sm:-mb-2 md:-mb-6 lg:-mb-8 leading-[0.85]">
+    <p className="text-[4em] sm:text-[7em] md:text-[14em] lg:text-[17em] xl:text-[22em] font-['PP-Editorial-New-UltraLightItalic'] italic whitespace-nowrap mb-2 sm:-mb-2 md:-mb-6 lg:-mb-8 leading-[0.85]">
       Join Us
     </p>
   )
@@ -46,7 +46,7 @@ export default function ImageExplosion() {
       onClick={handleTap}
       onTouchEnd={(e) => { e.preventDefault(); handleTap(); }}
     >
-      <a href="/sundays-slack.png" target="_blank" rel="noopener noreferrer" className="inline-block w-full">{textEl}</a>
+      <span className="inline-block w-full">{textEl}</span>
 
       <AnimatePresence>
         {isHovered && [...Array(isMobile ? 14 : 7)].map((_, i) => {
