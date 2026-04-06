@@ -131,7 +131,7 @@ function ProjectCard({ project }: { project: Project }) {
               width={225}
               height={225}
               className="object-contain mix-blend-multiply rounded-xl"
-              loading="lazy"
+              loading="eager"
               onError={(e) => {
                 const img = e.currentTarget;
                 if (!img.dataset.retried) {
@@ -207,7 +207,7 @@ function MobileProjectCard({ project }: { project: Project }) {
               width={72}
               height={72}
               className="object-contain mix-blend-multiply rounded-xl"
-              loading="lazy"
+              loading="eager"
               onError={(e) => {
                 const img = e.currentTarget;
                 if (!img.dataset.retried) {
@@ -323,7 +323,15 @@ export default function Projects() {
     fetch("/api/projects")
       .then((r) => r.json())
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) setProjects(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setProjects(data);
+          data.forEach((p: Project) => {
+            if (p.image) {
+              const img = new window.Image();
+              img.src = p.image;
+            }
+          });
+        }
       })
       .catch(() => {});
   }, []);
