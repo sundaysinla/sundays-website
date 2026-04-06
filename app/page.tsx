@@ -26,21 +26,13 @@ export default function SundaysPage() {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    if (sessionStorage.getItem("sundays-greeted") === "1") {
-      setIsLoading(false);
-      setCanHide(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (canHide && isLoading) {
+    if (canHide) {
       const timer = setTimeout(() => {
         setIsLoading(false);
-        sessionStorage.setItem("sundays-greeted", "1");
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [canHide, isLoading]);
+  }, [canHide]);
 
   useEffect(() => {
     const checkMobile = () => {
