@@ -255,13 +255,19 @@ function MobileProjectCard({ project }: { project: Project }) {
   );
 }
 
+function defaultProjectIndex(list: Project[]): number {
+  const i = list.findIndex((p) => p.name.trim().toLowerCase() === "making matcha");
+  return i >= 0 ? i : 0;
+}
+
 export default function Projects() {
   const [projects, setProjects] = useState<Project[]>(FALLBACK);
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(0);
+  /** `null` = idle: show default card (making matcha), not an empty slot */
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const cardHovered = useRef(false);
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [scrollIdx, setScrollIdx] = useState<number>(0);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [showMobileCard, setShowMobileCard] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
@@ -270,7 +276,8 @@ export default function Projects() {
   const mousePos = useRef<{ x: number; y: number; t: number }>({ x: 0, y: 0, t: 0 });
   const pendingHover = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const activeIdx = isMobile ? scrollIdx : hoveredIdx;
+  const defaultIdx = defaultProjectIndex(projects);
+  const activeIdx = isMobile ? scrollIdx : (hoveredIdx ?? defaultIdx);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     mousePos.current = { x: e.clientX, y: e.clientY, t: Date.now() };
@@ -337,12 +344,9 @@ export default function Projects() {
   }, []);
 
   useEffect(() => {
-    if (hoveredIdx !== null) {
-      requestAnimationFrame(() => setVisible(true));
-    } else {
-      setVisible(false);
-    }
-  }, [hoveredIdx]);
+    if (isMobile) return;
+    requestAnimationFrame(() => setVisible(true));
+  }, [isMobile, hoveredIdx, projects.length]);
 
   const setItemRef = useCallback((el: HTMLLIElement | null, i: number) => {
     itemRefs.current[i] = el;
@@ -409,7 +413,7 @@ export default function Projects() {
       )}
 
       <div
-        className="relative z-10"
+        className={`relative z-10 ${!isMobile ? "md:flex md:flex-row md:items-start md:justify-between md:gap-10 lg:gap-16 md:pr-[8%] lg:pr-[12%]" : ""}`}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => {
           if (pendingHover.current) clearTimeout(pendingHover.current);
@@ -418,32 +422,36 @@ export default function Projects() {
           }, 300);
         }}
       >
-        <ul ref={listRef} className="text-left">
-          {projects.map((project, i) => (
+        <ul ref={listRef} className="text-left min-w-0 flex-1">
+          {projects.map((project, i) => {
+            const desktopActive =
+              hoveredIdx !== null ? hoveredIdx === i : i === defaultIdx;
+            return (
             <li
               key={project.number}
               ref={(el) => setItemRef(el, i)}
               data-idx={i}
-              className={`text-[22px] font-['Office-Times-Sharp-Regular'] py-4 md:pr-[340px] cursor-default transition-colors duration-200 ${
+              className={`text-[22px] font-['Office-Times-Sharp-Regular'] py-4 cursor-default transition-colors duration-200 ${
                 isMobile
                   ? scrollIdx === i ? "text-stone-800" : "text-stone-400"
-                  : hoveredIdx === i ? "text-stone-800" : "text-stone-400 hover:text-stone-800"
+                  : desktopActive ? "text-stone-800" : "text-stone-400 hover:text-stone-800"
               }`}
               onMouseEnter={() => handleItemEnter(i)}
             >
               <span className="ml-8">({project.number}) {project.name}</span>
             </li>
-          ))}
+            );
+          })}
         </ul>
 
-        {/* Desktop: card centered vertically within list */}
-        {!isMobile && activeIdx !== null && (
+        {/* Desktop: sticky card so it stays in view while scrolling the list */}
+        {!isMobile && projects.length > 0 && (
           <div
-            className="absolute right-[12%] top-1/2 w-[318px] z-50"
+            className="hidden md:block w-[318px] shrink-0 sticky top-[min(32vh,220px)] z-50 self-start"
             style={{
               opacity: visible ? 1 : 0,
-              transform: visible ? 'translateY(-50%) scale(1)' : 'translateY(calc(-50% + 8px)) scale(0.96)',
-              transition: 'opacity 200ms ease-out, transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
+              transform: visible ? "scale(1)" : "scale(0.96)",
+              transition: "opacity 200ms ease-out, transform 300ms cubic-bezier(0.16, 1, 0.3, 1)",
             }}
             onMouseEnter={() => {
               cardHovered.current = true;
