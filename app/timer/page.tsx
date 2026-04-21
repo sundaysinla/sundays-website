@@ -218,7 +218,7 @@ export default function TimerPage() {
         backgroundSize: "20px 20px",
       }}
     >
-      <Link href="/" className="absolute top-4 left-6 md:left-12">
+      <Link href="/" className="absolute top-4 left-6 md:left-12 z-10">
         <Image
           src="/smiley.png"
           alt="Logo"
@@ -227,6 +227,14 @@ export default function TimerPage() {
           className="opacity-80 hover:opacity-100 transition-opacity"
         />
       </Link>
+      <Image
+        src="/sundays-logo-metal.png"
+        alt="Sundays"
+        width={1024}
+        height={576}
+        priority
+        className="absolute left-1/2 -translate-x-1/2 top-4 md:top-6 w-[140px] sm:w-[180px] md:w-[220px] h-auto"
+      />
       <h1 style={{ fontFamily: "'PP Mondwest', 'SF Mono', 'Menlo', 'Courier New', monospace", fontSize: "1.5rem" }}>
         {phases[effectiveState.phaseIndex].label}
       </h1>
