@@ -1,4 +1,5 @@
 import { Client } from "@notionhq/client";
+import { getFirstNotionFileUrl, projectImagePath } from "./notion-image.mjs";
 
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 
@@ -40,11 +41,7 @@ export async function getProjects(): Promise<Project[]> {
       const description =
         props["1-line Description"]?.rich_text?.[0]?.plain_text ?? "";
 
-      const imageFile =
-        props["Image (JPG, PNG, or GIF)"]?.files?.[0] ??
-        props["Image"]?.files?.[0];
-      const image =
-        imageFile?.file?.url ?? imageFile?.external?.url ?? "";
+      const image = getFirstNotionFileUrl(props) ? projectImagePath(page.id) : "";
 
       const projectUrl = props["Project URL"]?.url ?? "";
 
@@ -75,6 +72,11 @@ export async function getProjects(): Promise<Project[]> {
     console.error("Failed to fetch from Notion, using fallback:", e);
     return FALLBACK_PROJECTS;
   }
+}
+
+export async function getProjectImageUrl(pageId: string): Promise<string> {
+  const page = await notion.pages.retrieve({ page_id: pageId });
+  return getFirstNotionFileUrl((page as any).properties);
 }
 
 const FALLBACK_PROJECTS: Project[] = [
