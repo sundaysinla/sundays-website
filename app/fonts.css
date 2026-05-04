@@ -1,4 +1,12 @@
 @font-face {
+  font-family: 'PP Mondwest';
+  src: url('/fonts/PPMondwest-Regular.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: 'Office-Times-Round';
   src: url('/fonts/OfficeTimesRound-Regular.woff2') format('woff2');
   font-weight: normal;

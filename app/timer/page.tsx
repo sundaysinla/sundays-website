@@ -27,6 +27,7 @@ const phases = [
   { duration: 10 * 60, label: "10 Minutes to Talk" },
 ];
 
+const TIMER_FONT_FAMILY = "'PP Mondwest', 'Courier New', Courier, monospace";
 
 /** Format time as MM:SS */
 function formatTime(sec: number) {
@@ -235,12 +236,12 @@ export default function TimerPage() {
         priority
         className="absolute left-1/2 -translate-x-1/2 top-4 md:top-6 w-[140px] sm:w-[180px] md:w-[220px] h-auto"
       />
-      <h1 style={{ fontFamily: "'PP Mondwest', 'SF Mono', 'Menlo', 'Courier New', monospace", fontSize: "1.5rem" }}>
+      <h1 style={{ fontFamily: TIMER_FONT_FAMILY, fontSize: "1.5rem" }}>
         {phases[effectiveState.phaseIndex].label}
       </h1>
       <div
         style={{
-          fontFamily: "'PP Mondwest', 'SF Mono', 'Menlo', 'Courier New', monospace",
+          fontFamily: TIMER_FONT_FAMILY,
           color: "#3600cf",
           fontSize: "clamp(40px, 15vw, 200px)",
           margin: "24px 0",
@@ -248,7 +249,7 @@ export default function TimerPage() {
       >
         {mounted ? formatTime(remaining) : "\u00A0"}
       </div>
-      <p style={{ fontFamily: "'PP Mondwest', 'SF Mono', 'Menlo', 'Courier New', monospace" }}>
+      <p style={{ fontFamily: TIMER_FONT_FAMILY }}>
         {mounted ? `Ends at ${formatTime12(endTime)}` : "\u00A0"}
       </p>
       <div style={{ display: "flex", gap: "24px", marginTop: "12px" }}>
