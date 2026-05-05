@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useInView } from "react-intersection-observer";
-import { useScroll, motion, useTransform } from "framer-motion";
 import LoadingScreen from "@/components/LoadingScreen";
 import NavBar from "@/components/NavBar";
 import DraggablePhotos from "@/components/DraggablePhotos";
@@ -22,17 +21,16 @@ const Logo3D = dynamic(() => import("../components/Logo3D"), { ssr: false });
 export default function SundaysPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [canHide, setCanHide] = useState(false);
+  const [logoReady, setLogoReady] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const canLiftLoader = canHide && (isMobile || logoReady);
 
   useEffect(() => {
-    if (canHide) {
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-      }, 500);
-      return () => clearTimeout(timer);
+    if (canLiftLoader) {
+      setIsLoading(false);
     }
-  }, [canHide]);
+  }, [canLiftLoader]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -73,13 +71,6 @@ export default function SundaysPage() {
     threshold: 0.1,
   });
 
-  const { scrollYProgress } = useScroll({
-    target: imageContainerRef,
-    offset: ["start end", "end start"],
-  });
-
-  const imageY = useTransform(scrollYProgress, [0, 1], [0, 150]);
-
   const setRefs = useCallback(
     (node: HTMLDivElement | null) => {
       imageContainerRef.current = node;
@@ -88,13 +79,16 @@ export default function SundaysPage() {
     [inViewRef]
   );
 
+  const shouldRenderPage = canHide || !isLoading;
+
   return (
     <>
       <LoadingScreen isLoading={isLoading} onTypingDone={() => setCanHide(true)} />
-      <NavBar></NavBar>
-      <div
-        className={`min-h-screen relative overflow-x-clip overflow-y-visible transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"}`}
-      >
+      {shouldRenderPage && (<>
+        <NavBar></NavBar>
+        <div
+          className={`min-h-screen relative overflow-x-clip overflow-y-visible transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"}`}
+        >
         {/* Grid lines */}
         <div
           className="fixed inset-0 -z-10 pointer-events-none grid grid-cols-8 md:grid-cols-[repeat(16,1fr)]"
@@ -174,7 +168,7 @@ export default function SundaysPage() {
                   />
                 </div>
               ) : (
-                <Logo3D />
+                <Logo3D onReady={() => setLogoReady(true)} />
               )}
             </div>
           </div>
@@ -359,7 +353,8 @@ export default function SundaysPage() {
               </div>
           </div>
         </div>
-      </div>
+        </div>
+      </>)}
     </>
   );
 }

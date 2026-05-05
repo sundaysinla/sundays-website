@@ -17,9 +17,15 @@ type GLTFResult = GLTF & {
   }
 }
 
-export default function Logo3D() {
+interface Logo3DProps {
+  onReady?: () => void
+}
+
+export default function Logo3D({ onReady }: Logo3DProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const onReadyRef = useRef(onReady)
+  onReadyRef.current = onReady
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -130,6 +136,7 @@ export default function Logo3D() {
         '/sundays_metallic_logo_only.gltf',
         (gltf) => {
           setIsLoading(false)
+          onReadyRef.current?.()
           cleanScene()
           model = gltf.scene
           
@@ -156,7 +163,9 @@ export default function Logo3D() {
           scene.add(model)
         },
         (progress) => {
-          console.log(`Loading model: ${(progress.loaded / progress.total * 100).toFixed(2)}%`)
+          if (progress.total > 0) {
+            console.log(`Loading model: ${(progress.loaded / progress.total * 100).toFixed(2)}%`)
+          }
         },
         (error) => {
           console.error('Error loading model:', error)

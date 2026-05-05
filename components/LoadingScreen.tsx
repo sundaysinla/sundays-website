@@ -6,38 +6,37 @@ interface LoadingScreenProps {
   onTypingDone: () => void
 }
 
+const LOADING_TEXT = "hello, how's your day going?"
+const TYPING_DELAY_MS = 90
+
 export default function LoadingScreen({ isLoading, onTypingDone }: LoadingScreenProps) {
-  const text = "hello, how's your day going?"
-  const [displayText, setDisplayText] = useState('')
+  const [displayText, setDisplayText] = useState(LOADING_TEXT.slice(0, 1))
+  const [isTyping, setIsTyping] = useState(true)
   const hasTyped = useRef(false)
   const onDoneRef = useRef(onTypingDone)
   onDoneRef.current = onTypingDone
 
-  const DURATION = 400
-
   useEffect(() => {
     if (!isLoading || hasTyped.current) return
 
-    let rafId: number
-    const start = performance.now()
+    let currentIndex = 1
+    let timeoutId: ReturnType<typeof setTimeout>
 
-    const step = (now: number) => {
-      const elapsed = now - start
-      const progress = Math.min(elapsed / DURATION, 1)
-      const chars = Math.floor(progress * text.length)
-      setDisplayText(text.slice(0, chars))
+    const typeNextCharacter = () => {
+      currentIndex += 1
+      setDisplayText(LOADING_TEXT.slice(0, currentIndex))
 
-      if (progress < 1) {
-        rafId = requestAnimationFrame(step)
+      if (currentIndex < LOADING_TEXT.length) {
+        timeoutId = setTimeout(typeNextCharacter, TYPING_DELAY_MS)
       } else {
-        setDisplayText(text)
+        setIsTyping(false)
         hasTyped.current = true
         onDoneRef.current()
       }
     }
 
-    rafId = requestAnimationFrame(step)
-    return () => cancelAnimationFrame(rafId)
+    timeoutId = setTimeout(typeNextCharacter, TYPING_DELAY_MS)
+    return () => clearTimeout(timeoutId)
   }, [isLoading])
 
   return (
@@ -47,7 +46,7 @@ export default function LoadingScreen({ isLoading, onTypingDone }: LoadingScreen
     >
       <p className="text-xs font-['Office-Times-Sharp-Mono'] text-black">
         {displayText}
-        <span className="animate-blink ml-[1px] inline-block w-[1px] h-[14px] bg-black translate-y-[2px]" />
+        <span className={`${isTyping ? '' : 'animate-blink'} ml-[1px] inline-block w-[1px] h-[14px] bg-black translate-y-[2px]`} />
       </p>
     </div>
   )
