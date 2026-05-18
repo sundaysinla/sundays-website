@@ -143,7 +143,7 @@ export default function Logo3D({ onReady }: Logo3DProps) {
     // smooth material property update on the existing meshes.
     new RGBELoader()
       .setDataType(THREE.HalfFloatType)
-      .load('/environment/modern_bathroom_4k.hdr',
+      .load('/environment/modern_bathroom_1k.hdr',
         (hdrEquirect) => {
           const envMap = pmremGenerator.fromEquirectangular(hdrEquirect).texture
           scene.environment = envMap

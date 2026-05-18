@@ -50,6 +50,21 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        {/* Pre-warm cross-origin connection used by Three.js Draco decoder */}
+        <link rel="preconnect" href="https://www.gstatic.com" crossOrigin="anonymous" />
+        {/* Kick off downloads for the 3D logo assets in parallel with the JS bundle */}
+        <link
+          rel="preload"
+          href="/sundays_metallic_logo_only.min.gltf"
+          as="fetch"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/environment/modern_bathroom_1k.hdr"
+          as="fetch"
+          crossOrigin="anonymous"
+        />
       </head>
       <body>{children}</body>
     </html>

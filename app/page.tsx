@@ -26,9 +26,9 @@ export default function SundaysPage() {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    if (canHide) {
-      setIsLoading(false);
-    }
+    if (!canHide) return;
+    const id = setTimeout(() => setIsLoading(false), 200);
+    return () => clearTimeout(id);
   }, [canHide]);
 
   useEffect(() => {
