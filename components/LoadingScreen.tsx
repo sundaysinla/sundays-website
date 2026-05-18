@@ -7,7 +7,7 @@ interface LoadingScreenProps {
 }
 
 const LOADING_TEXT = "hello, how's your day going?"
-const TYPING_DELAY_MS = 89
+const TYPING_DELAY_MS = 60
 
 export default function LoadingScreen({ isLoading, onTypingDone }: LoadingScreenProps) {
   const [displayText, setDisplayText] = useState(LOADING_TEXT.slice(0, 1))

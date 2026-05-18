@@ -3,6 +3,7 @@ import "./globals.css"
 import { Inter } from "next/font/google"
 import './fonts.css'
 import type { Metadata } from 'next'
+import AssetPreloader from '@/components/AssetPreloader'
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -52,21 +53,24 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         {/* Pre-warm cross-origin connection used by Three.js Draco decoder */}
         <link rel="preconnect" href="https://www.gstatic.com" crossOrigin="anonymous" />
-        {/* Kick off downloads for the 3D logo assets in parallel with the JS bundle */}
+        {/* Kick off downloads for the 3D logo assets in parallel with the JS bundle.
+            No crossOrigin attr: matches Three.js loaders' same-origin fetch mode so
+            the preload cache hits rather than triggering a double-fetch. */}
         <link
           rel="preload"
           href="/sundays_metallic_logo_only.min.gltf"
           as="fetch"
-          crossOrigin="anonymous"
         />
         <link
           rel="preload"
           href="/environment/modern_bathroom_1k.hdr"
           as="fetch"
-          crossOrigin="anonymous"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <AssetPreloader />
+        {children}
+      </body>
     </html>
   )
 }
