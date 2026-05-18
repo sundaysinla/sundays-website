@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import { useInView } from "react-intersection-observer";
 import LoadingScreen from "@/components/LoadingScreen";
 import NavBar from "@/components/NavBar";
+import Eyebrow from "@/components/Eyebrow";
 import DraggablePhotos from "@/components/DraggablePhotos";
 import Carousel from "@/components/Carousel";
 import ShuffleText from "@/components/ShuffleText";
@@ -21,16 +22,14 @@ const Logo3D = dynamic(() => import("../components/Logo3D"), { ssr: false });
 export default function SundaysPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [canHide, setCanHide] = useState(false);
-  const [logoReady, setLogoReady] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const canLiftLoader = canHide && (isMobile || logoReady);
 
   useEffect(() => {
-    if (canLiftLoader) {
+    if (canHide) {
       setIsLoading(false);
     }
-  }, [canLiftLoader]);
+  }, [canHide]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -120,9 +119,10 @@ export default function SundaysPage() {
           }}
         >
           {/* Header */}
-          <div
-            ref={headerRef}
-            className={`col-start-8 col-span-2 pt-2 sm:pt-3 pb-0 sm:pb-0 text-sm whitespace-nowrap flex items-center justify-center font-['Monument-Grotesk'] relative z-10 text-[#C0B9A5]`}
+          <Eyebrow
+            as="div"
+            ref={headerRef as React.Ref<HTMLElement>}
+            className="col-start-8 col-span-2 pt-2 sm:pt-3 pb-0 sm:pb-0 whitespace-nowrap flex items-center justify-center relative z-10"
             style={{
               transition: "all 1s ease-in-out 0.2s",
               opacity: !isLoading && headerInView ? "1" : "0",
@@ -137,7 +137,7 @@ export default function SundaysPage() {
             ) : (
               "SUNDAYS IN LA"
             )}
-          </div>
+          </Eyebrow>
 
           {/* Logo row */}
           <div
@@ -168,7 +168,7 @@ export default function SundaysPage() {
                   />
                 </div>
               ) : (
-                <Logo3D onReady={() => setLogoReady(true)} />
+                <Logo3D />
               )}
             </div>
           </div>
@@ -187,7 +187,7 @@ export default function SundaysPage() {
             <div
               className="mx-auto w-full sm:max-w-[50%] md:max-w-[40%] lg:max-w-[30%] xl:max-w-[28%] flex flex-col items-center"
             >
-              <p className="text-base md:text-[0.9em] lg:text-[1em] font-light font-['Office-Times-Round'] text-[#2A2A24] pt-0 sm:whitespace-nowrap text-center leading-relaxed">
+              <p className="text-sm md:text-base font-light font-['Office-Times-Round'] text-[#2A2A24] pt-0 sm:whitespace-nowrap text-center leading-relaxed">
                 A home for the passions that excite you.<br />Weekly coworking sessions, every Sunday.
               </p>
               <div className="mt-12 sm:mt-10 flex justify-center mb-2 sm:mb-1 relative z-20">
@@ -195,7 +195,7 @@ export default function SundaysPage() {
                   href="https://luma.com/sundaysinla"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-black rounded-xl px-4 pt-2 pb-1.5 text-sm md:text-[0.8em] lg:text-[0.9em] font-['Monument-Grotesk'] uppercase transition-colors duration-300 ease-out hover:bg-[#EEEBE3] relative overflow-hidden group"
+                  className="bg-black rounded-xl px-4 pt-2 pb-1.5 text-sm md:text-base font-['Monument-Grotesk'] uppercase transition-colors duration-300 ease-out hover:bg-[#EEEBE3] relative overflow-hidden group"
                   style={{
                     textAlign: "center",
                     cornerShape: "squircle",

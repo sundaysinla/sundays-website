@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
+import BigQuote from "@/components/BigQuote";
+import Eyebrow from "@/components/Eyebrow";
 
 function PhotoLightbox({ src, onClose }: { src: string; onClose: () => void }) {
   const [mounted, setMounted] = useState(false)
@@ -167,26 +169,22 @@ export default function Who() {
       {/* Content */}
       <div className="relative z-10">
         <div className="text-center mb-8">
-          <p className="text-sm uppercase text-[#C0B9A5] font-['ABC Monument Grotesk Unlicensed Trial']">
-            Who we are
-          </p>
+          <Eyebrow>Who we are</Eyebrow>
         </div>
 
         <div className="flex flex-col items-center text-center space-y-0 md:space-y-1 max-w-4xl mx-auto py-6">
-          <p className="text-lg md:text-2xl lg:text-3xl font-['Office-Times-Sharp-Regular'] text-black leading-snug">
+          <BigQuote>
             <span className="text-[#C0B9A5]">⁂ ​​</span>this is a home for the
-          </p>
+          </BigQuote>
 
-          <p className="text-lg md:text-2xl lg:text-3xl font-['Office-Times-Sharp-Regular'] text-black leading-snug">
+          <BigQuote>
             <span className="italic">makers</span>, artists, filmmakers,
-          </p>
-          <p className="text-lg md:text-2xl lg:text-3xl font-['Office-Times-Sharp-Regular'] text-black leading-snug">
-            learners, researchers, creatives,
-          </p>
-          <p className="text-lg md:text-2xl lg:text-3xl font-['Office-Times-Sharp-Regular'] text-black leading-snug">
+          </BigQuote>
+          <BigQuote>learners, researchers, creatives,</BigQuote>
+          <BigQuote>
             founders, movers, <span className="text-[#C0B9A5]">&</span> shakers.
-          </p>
-          
+          </BigQuote>
+
           <p className="text-sm md:text-base font-sans text-stone-600 leading-relaxed pt-8 max-w-[220px] md:max-w-none mx-auto">
             sundays is a node of <Link href="https://socratica.info/" target="_blank" rel="noopener noreferrer" className="text-[#C0B9A5] underline decoration-dotted decoration-[#C0B9A5]/40 underline-offset-[3px] hover:text-[#8a7f6b] hover:decoration-solid hover:decoration-[#8a7f6b]/60 transition-all duration-300">Socratica</Link>, a global creative community.
           </p>

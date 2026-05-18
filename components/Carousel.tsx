@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import ShuffleText from "@/components/ShuffleText";
+import BigQuote from "@/components/BigQuote";
+import Eyebrow from "@/components/Eyebrow";
 import { useInView } from "react-intersection-observer";
 
 const cards = [
@@ -35,22 +37,18 @@ export default function WhatWeDoCarousel() {
         ref={headerRef}
         className="col-span-full flex flex-col items-center text-center relative z-10"
       >
-        <div className="text-sm uppercase tracking-wide font-['Monument-Grotesk'] text-[#C0B9A5] mb-6">
+        <Eyebrow as="div" className="mb-6">
           <ShuffleText text="WHAT WE DO" />
-        </div>
+        </Eyebrow>
 
         {/* Main text */}
         <div className="flex flex-col items-center space-y-0 md:space-y-1 max-w-xl py-4">
-          <p className="text-lg md:text-2xl lg:text-3xl font-['Office-Times-Sharp-Regular'] text-black leading-snug">
+          <BigQuote>
             we meet every <span className="italic">sunday</span>
-          </p>
+          </BigQuote>
 
-          <p className="text-lg md:text-2xl lg:text-3xl font-['Office-Times-Sharp-Regular'] text-black leading-snug">
-            to create whatever it is
-          </p>
-          <p className="text-lg md:text-2xl lg:text-3xl font-['Office-Times-Sharp-Regular'] text-black leading-snug">
-            that makes us feel alive.
-          </p>
+          <BigQuote>to create whatever it is</BigQuote>
+          <BigQuote>that makes us feel alive.</BigQuote>
         </div>
       </div>
 
@@ -80,7 +78,7 @@ export default function WhatWeDoCarousel() {
                   priority={i < 6}
                 />
               </div>
-              <p className="w-[135px] md:w-[270px] text-left font-['Office-Times-Round'] text-[10px] md:text-[17px] text-[#3600cf] tracking-[-0.17px] lowercase leading-[1.2]">
+              <p className="w-[135px] md:w-[270px] text-left font-['Office-Times-Round'] text-sm md:text-base text-[#3600cf] tracking-[-0.17px] lowercase leading-[1.2]">
                 {card.label}
               </p>
             </div>

@@ -1,6 +1,8 @@
 "use client";
 import React from "react";
 import DashedDivider from "@/components/DashedDivider";
+import BigQuote from "@/components/BigQuote";
+import Eyebrow from "@/components/Eyebrow";
 
 const linkClass =
   "relative after:absolute after:left-0 after:-bottom-0.5 after:h-[1px] after:w-full after:bg-current after:opacity-20 md:after:opacity-0 after:transition-opacity after:duration-300 after:ease-out hover:after:opacity-20";
@@ -9,7 +11,7 @@ type Member = { name: string; href?: string };
 
 function MemberList({ members }: { members: Member[] }) {
   return (
-    <ul className="space-y-2 md:space-y-1 text-[16px] font-['Office-Times-Sharp-Regular'] tracking-[-0.16px]">
+    <BigQuote as="ul" className="space-y-2 md:space-y-1 tracking-[-0.16px] text-sm md:text-base lg:text-base">
       {members.map((m) => (
         <li key={m.name}>
           {m.href ? (
@@ -26,7 +28,7 @@ function MemberList({ members }: { members: Member[] }) {
           )}
         </li>
       ))}
-    </ul>
+    </BigQuote>
   );
 }
 
@@ -103,12 +105,10 @@ export default function Team() {
       <div className="max-w-[960px] mx-auto flex flex-col gap-20 items-center relative z-10">
         {/* Header */}
         <div className="text-center flex flex-col gap-1">
-          <p className="text-sm text-[#C0B9A5] font-['Monument-Grotesk'] tracking-wide uppercase">
-            Meet the Team
-          </p>
-          <p className="text-sm font-bold font-['Monument-Grotesk'] text-stone-400 uppercase">
+          <Eyebrow>Meet the Team</Eyebrow>
+          <Eyebrow className="font-bold text-stone-400">
             Season 6: 2025–26
-          </p>
+          </Eyebrow>
         </div>
 
         <DashedDivider />
@@ -119,9 +119,9 @@ export default function Team() {
           <div className="flex flex-col gap-6 items-center">
             <div className="flex flex-col gap-3 items-center">
               <div className="text-[44px] leading-none h-[52px] flex items-end">✌️</div>
-              <h2 className="text-4xl font-['Office-Times-Sharp-Regular'] text-[#C0B9A5] lowercase tracking-[-0.36px]">
+              <BigQuote as="h2" className="text-[#C0B9A5] lowercase tracking-[-0.36px]">
                 usc hosts
-              </h2>
+              </BigQuote>
             </div>
             <MemberList members={uscHosts} />
           </div>
@@ -130,9 +130,9 @@ export default function Team() {
           <div className="flex flex-col gap-6 items-center">
             <div className="flex flex-col gap-3 items-center">
               <div className="text-[44px] leading-none h-[52px] flex items-end">🐻</div>
-              <h2 className="text-4xl font-['Office-Times-Sharp-Regular'] text-[#C0B9A5] lowercase tracking-[-0.36px]">
+              <BigQuote as="h2" className="text-[#C0B9A5] lowercase tracking-[-0.36px]">
                 ucla hosts
-              </h2>
+              </BigQuote>
             </div>
             <MemberList members={uclaHosts} />
           </div>
@@ -141,9 +141,9 @@ export default function Team() {
           <div className="flex flex-col gap-6 items-center">
             <div className="flex flex-col gap-3 items-center">
               <div className="text-[44px] leading-none h-[52px] flex items-end">🎥</div>
-              <h2 className="text-4xl font-['Office-Times-Sharp-Regular'] text-[#C0B9A5] lowercase tracking-[-0.36px]">
+              <BigQuote as="h2" className="text-[#C0B9A5] lowercase tracking-[-0.36px]">
                 media team
-              </h2>
+              </BigQuote>
             </div>
             <MemberList members={mediaTeam} />
           </div>
@@ -155,9 +155,9 @@ export default function Team() {
         <div className="flex flex-col gap-8 items-center w-full">
           <div className="flex flex-col gap-3 items-center">
             <div className="text-[44px] leading-none h-[52px] flex items-end text-[#C0B9A5]">⁂</div>
-            <h2 className="text-4xl font-['Office-Times-Sharp-Regular'] text-[#C0B9A5] lowercase tracking-[-0.36px]">
+            <BigQuote as="h2" className="text-[#C0B9A5] lowercase tracking-[-0.36px]">
               hosts alumni
-            </h2>
+            </BigQuote>
           </div>
           <div className="md:hidden text-center w-full">
             <MemberList members={[...alumniCol1, ...alumniCol2, ...alumniCol3]} />

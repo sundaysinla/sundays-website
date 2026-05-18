@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import Button from './Button'
+import BigQuote from './BigQuote'
 
 export default function NavBar() {
     const [open, setOpen] = useState(false)
@@ -81,7 +82,10 @@ export default function NavBar() {
                     </button>
                 </div>
 
-                <div className="flex flex-col flex-1 justify-center px-6 pb-16 gap-6 font-serif text-lg lowercase text-[#010101]">
+                <BigQuote
+                    as="div"
+                    className="flex flex-col flex-1 justify-center px-6 pb-16 gap-6 lowercase text-[#010101]"
+                >
                     {[
                         { href: '#about', label: 'about' },
                         { href: '#projects', label: 'projects' },
@@ -104,7 +108,7 @@ export default function NavBar() {
                             {item.label}
                         </Link>
                     ))}
-                </div>
+                </BigQuote>
             </div>
         </>
     )

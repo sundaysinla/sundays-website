@@ -2,6 +2,8 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import DashedDivider from "@/components/DashedDivider";
 import AsciiBackground from "@/components/AsciiBackground";
+import BigQuote from "@/components/BigQuote";
+import Eyebrow from "@/components/Eyebrow";
 
 type Creator = {
   name: string;
@@ -30,6 +32,10 @@ const FALLBACK: Project[] = [
 ];
 
 const MISSPELLINGS = ["spel"];
+
+function lowercaseFirstWord(text: string): string {
+  return text.replace(/^\S+/, (word) => word.toLowerCase());
+}
 
 function highlightMisspellings(text: string): React.ReactNode {
   const pattern = new RegExp(`(${MISSPELLINGS.join("|")})`, "gi");
@@ -86,7 +92,7 @@ function CreatorRow({ creator, avatar }: { creator: Creator; avatar?: string }) 
           <div className="w-full h-full bg-stone-200" />
         )}
       </div>
-      <span className="text-[14px] font-['Monument-Grotesk'] text-black/70 lowercase leading-normal">
+      <span className="text-sm md:text-base font-['Monument-Grotesk'] text-black/70 lowercase leading-normal">
         {creator.name}
       </span>
     </div>
@@ -108,7 +114,7 @@ function ProjectCard({ project }: { project: Project }) {
   return (
     <div className="w-[318px] bg-white rounded-[8px] p-6 flex flex-col items-start gap-4 shadow-[0px_4px_14px_0px_rgba(0,0,0,0.12)] border border-[#FCFAF7] text-left">
       <div className="flex items-center gap-2.5 w-full">
-        <p className="flex-1 text-[20px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.2px] leading-[1.4]">
+        <p className="flex-1 text-sm md:text-base font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.2px] leading-[1.4]">
           {project.projectUrl ? (
             <a href={project.projectUrl} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted decoration-stone-400/60 underline-offset-[3px] hover:decoration-solid hover:decoration-stone-500/80 hover:text-stone-900 transition-all duration-300">
               {project.name}
@@ -117,7 +123,7 @@ function ProjectCard({ project }: { project: Project }) {
             project.name
           )}
         </p>
-        <span className="bg-[#BDFF00] text-[15px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.15px] px-2 pt-0.5 pb-1 rounded-[8px] shrink-0" style={{ cornerShape: 'squircle' } as React.CSSProperties}>
+        <span className="bg-[#BDFF00] text-sm md:text-base font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.15px] px-2 pt-0.5 pb-1 rounded-[8px] shrink-0" style={{ cornerShape: 'squircle' } as React.CSSProperties}>
           ({project.number})
         </span>
       </div>
@@ -153,8 +159,8 @@ function ProjectCard({ project }: { project: Project }) {
       )}
 
       {project.description && (
-        <p className="text-sm font-['Monument-Grotesk'] text-[#4d4d4d] w-full">
-          {highlightMisspellings(project.description)}
+        <p className="text-sm md:text-base font-['Monument-Grotesk'] text-[#4d4d4d] w-full">
+          {highlightMisspellings(lowercaseFirstWord(project.description))}
         </p>
       )}
 
@@ -180,10 +186,10 @@ function MobileProjectCard({ project }: { project: Project }) {
       <div className="flex items-center gap-4">
         <div className="flex-1 min-w-0 flex flex-col items-start gap-1.5">
           <div className="flex items-center gap-2">
-            <span className="bg-[#BDFF00] text-[13px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.15px] px-1.5 pt-px pb-0.5 rounded-[8px] shrink-0" style={{ cornerShape: 'squircle' } as React.CSSProperties}>
+            <span className="bg-[#BDFF00] text-sm md:text-base font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.15px] px-1.5 pt-px pb-0.5 rounded-[8px] shrink-0" style={{ cornerShape: 'squircle' } as React.CSSProperties}>
               ({project.number})
             </span>
-            <p className="text-[18px] font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.2px] leading-tight truncate text-left">
+            <p className="text-sm md:text-base font-['Office-Times-Sharp-Regular'] text-black lowercase tracking-[-0.2px] leading-tight truncate text-left">
               {project.projectUrl ? (
                 <a href={project.projectUrl} target="_blank" rel="noopener noreferrer" className="pointer-events-auto underline decoration-dotted decoration-stone-400/60 underline-offset-[3px] hover:decoration-solid hover:decoration-stone-500/80 hover:text-stone-900 transition-all duration-300">
                   {project.name}
@@ -194,8 +200,8 @@ function MobileProjectCard({ project }: { project: Project }) {
             </p>
           </div>
           {project.description && (
-            <p className="text-[13px] font-['Monument-Grotesk'] text-[#4d4d4d] leading-snug line-clamp-2 text-left">
-              {highlightMisspellings(project.description)}
+            <p className="text-sm md:text-base font-['Monument-Grotesk'] text-[#4d4d4d] leading-snug line-clamp-2 text-left">
+              {highlightMisspellings(lowercaseFirstWord(project.description))}
             </p>
           )}
         </div>
@@ -244,7 +250,7 @@ function MobileProjectCard({ project }: { project: Project }) {
                   <div className="w-full h-full bg-stone-200" />
                 )}
               </div>
-              <span className="text-[12px] font-['Monument-Grotesk'] text-black/70 lowercase">
+              <span className="text-sm md:text-base font-['Monument-Grotesk'] text-black/70 lowercase">
                 {c.name}
               </span>
             </a>
@@ -387,14 +393,12 @@ export default function Projects() {
         <AsciiBackground />
       </div>
       <div className="relative z-10 text-center mb-8">
-        <p className="text-sm uppercase text-[#C0B9A5] font-['ABC Monument Grotesk Unlicensed Trial']">
-          Projects
-        </p>
+        <Eyebrow>Projects</Eyebrow>
       </div>
 
-      <h2 className="relative z-10 text-2xl md:text-3xl ml-8 font-['Office-Times-Sharp-Regular'] text-[#C0B9A5] mb-4 text-left">
+      <BigQuote as="h2" className="relative z-10 ml-8 text-[#C0B9A5] mb-4 text-left">
         what have we been jamming on?
-      </h2>
+      </BigQuote>
 
       <DashedDivider className="relative z-10 w-[85%] ml-8 my-8" />
 
@@ -427,11 +431,12 @@ export default function Projects() {
             const desktopActive =
               hoveredIdx !== null ? hoveredIdx === i : i === defaultIdx;
             return (
-            <li
+            <BigQuote
+              as="li"
               key={project.number}
-              ref={(el) => setItemRef(el, i)}
+              ref={(el: HTMLElement | null) => setItemRef(el as HTMLLIElement | null, i)}
               data-idx={i}
-              className={`text-[22px] font-['Office-Times-Sharp-Regular'] py-4 cursor-default transition-colors duration-200 ${
+              className={`py-4 cursor-default transition-colors duration-200 ${
                 isMobile
                   ? scrollIdx === i ? "text-stone-800" : "text-stone-400"
                   : desktopActive ? "text-stone-800" : "text-stone-400 hover:text-stone-800"
@@ -439,7 +444,7 @@ export default function Projects() {
               onMouseEnter={() => handleItemEnter(i)}
             >
               <span className="ml-8">({project.number}) {project.name}</span>
-            </li>
+            </BigQuote>
             );
           })}
         </ul>

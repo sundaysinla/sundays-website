@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { Texture, Object3D, Mesh } from 'three'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
@@ -84,16 +85,62 @@ export default function Logo3D({ onReady }: Logo3DProps) {
     const pmremGenerator = new THREE.PMREMGenerator(renderer)
     pmremGenerator.compileEquirectangularShader()
 
-    // Load model immediately with a bright default environment so it appears silver
+    // Default environment so the model is renderable as soon as it loads.
+    // The shiny HDR env swaps in place once it finishes downloading.
     const defaultScene = new THREE.Scene()
     defaultScene.background = new THREE.Color(0xffffff)
     const defaultLight = new THREE.AmbientLight(0xffffff, 2)
     defaultScene.add(defaultLight)
     const defaultEnvMap = pmremGenerator.fromScene(defaultScene).texture
     scene.environment = defaultEnvMap
-    loadModel(defaultEnvMap)
 
-    // Try to load HDR environment map
+    // Fire ready as soon as the model is in scene with the default env. HDR
+    // arrives later and swaps in place on the existing material (no reload,
+    // smooth dull→shiny transition), so we don't gate the loader lift on it.
+    let activeEnvMap: THREE.Texture = defaultEnvMap
+    let hasFiredReady = false
+
+    function fireReady() {
+      if (hasFiredReady) return
+      hasFiredReady = true
+      setIsLoading(false)
+      onReadyRef.current?.()
+    }
+
+    function buildMaterial(envMap: THREE.Texture) {
+      return new THREE.MeshPhysicalMaterial({
+        metalness: 1.0,
+        roughness: 0.1,
+        envMap,
+        envMapIntensity: 0.5,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.0,
+        transmission: 0.0,
+        reflectivity: 0.8,
+        opacity: 1,
+      })
+    }
+
+    function applyEnvMapToModel(envMap: THREE.Texture) {
+      activeEnvMap = envMap
+      if (!model) return
+      model.traverse((child: THREE.Object3D) => {
+        if (!(child instanceof THREE.Mesh)) return
+        const existing = child.material as THREE.MeshPhysicalMaterial | undefined
+        if (existing && 'envMap' in existing) {
+          existing.envMap = envMap
+          existing.needsUpdate = true
+        } else {
+          child.material = buildMaterial(envMap)
+        }
+      })
+    }
+
+    loadModel()
+
+    // Try to load HDR environment map in parallel; swap in place when ready.
+    // Loader has already lifted by the time this arrives — the swap is a
+    // smooth material property update on the existing meshes.
     new RGBELoader()
       .setDataType(THREE.HalfFloatType)
       .load('/environment/modern_bathroom_4k.hdr',
@@ -101,7 +148,7 @@ export default function Logo3D({ onReady }: Logo3DProps) {
           const envMap = pmremGenerator.fromEquirectangular(hdrEquirect).texture
           scene.environment = envMap
           scene.background = null
-          loadModel(envMap)
+          applyEnvMapToModel(envMap)
           hdrEquirect.dispose()
           pmremGenerator.dispose()
         },
@@ -129,46 +176,31 @@ export default function Logo3D({ onReady }: Logo3DProps) {
       model.position.set(-center.x, -center.y, -center.z)
     }
 
-    // Separate model loading function
-    function loadModel(envMap: THREE.Texture) {
+    // Load the (Draco-compressed) GLTF once. Materials get their env map from
+    // applyEnvMapToModel so HDR can swap in later without a reload.
+    function loadModel() {
+      const dracoLoader = new DRACOLoader()
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
+      dracoLoader.setDecoderConfig({ type: 'js' })
+
       const loader = new GLTFLoader()
+      loader.setDRACOLoader(dracoLoader)
       loader.load(
-        '/sundays_metallic_logo_only.gltf',
+        '/sundays_metallic_logo_only.min.gltf',
         (gltf) => {
-          setIsLoading(false)
-          onReadyRef.current?.()
           cleanScene()
           model = gltf.scene
-          
-          // Center the model once
           adjustModelScale()
-          
-          model.traverse((child: THREE.Object3D) => {
-            if (child instanceof THREE.Mesh) {
-              const material = new THREE.MeshPhysicalMaterial({
-                metalness: 1.0,
-                roughness: 0.1,
-                envMap: envMap,
-                envMapIntensity: 0.5,    // significantly reduced from 0.4
-                clearcoat: 1.0,
-                clearcoatRoughness: 0.0,
-                transmission: 0.0,
-                reflectivity: 0.8,       // reduced further
-                opacity: 1
-              })
-              child.material = material
-            }
-          })
+          applyEnvMapToModel(activeEnvMap)
           adjustModelScale()
           scene.add(model)
+          dracoLoader.dispose()
+          fireReady()
         },
-        (progress) => {
-          if (progress.total > 0) {
-            console.log(`Loading model: ${(progress.loaded / progress.total * 100).toFixed(2)}%`)
-          }
-        },
+        undefined,
         (error) => {
           console.error('Error loading model:', error)
+          dracoLoader.dispose()
         }
       )
     }
