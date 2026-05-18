@@ -27,7 +27,7 @@ export default function SundaysPage() {
 
   useEffect(() => {
     if (!canHide) return;
-    const id = setTimeout(() => setIsLoading(false), 200);
+    const id = setTimeout(() => setIsLoading(false), 400);
     return () => clearTimeout(id);
   }, [canHide]);
 
