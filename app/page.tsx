@@ -1,5 +1,7 @@
 "use client";
 
+// test: auto-deployment trigger.
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
