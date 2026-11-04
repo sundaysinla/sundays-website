@@ -1,6 +1,6 @@
 "use client";
 
-// test: auto-deployment trigger.
+// test: PR preview auto-deployment trigger.
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
