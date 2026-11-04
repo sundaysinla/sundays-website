@@ -190,7 +190,7 @@ export default function SundaysPage() {
               className="mx-auto w-full sm:max-w-[50%] md:max-w-[40%] lg:max-w-[30%] xl:max-w-[28%] flex flex-col items-center"
             >
               <p className="text-sm md:text-base font-light font-['Office-Times-Round'] text-[#2A2A24] pt-0 sm:whitespace-nowrap text-center leading-relaxed">
-                A home for the passions that excite you.<br />Weekly coworking sessions, every Sunday
+                A home for the passions that excite you.<br />Weekly coworking sessions, every Sunday.
               </p>
               <div className="mt-12 sm:mt-10 flex justify-center mb-2 sm:mb-1 relative z-20">
                 <Link
