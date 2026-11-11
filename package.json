@@ -6,7 +6,12 @@
     "dev": "next dev -p 4000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "pilot:dev": "COMMUNITY_PILOT_ENABLED=true next dev --hostname 127.0.0.1 -p 4000",
+    "pilot:start": "COMMUNITY_PILOT_ENABLED=true COMMUNITY_DEMO_ENABLED=true next start --hostname 127.0.0.1 -p 4000",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.mjs && npm run test:community",
+    "test:community": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test --test-reporter=spec tests/community/*.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

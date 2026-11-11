@@ -19,6 +19,9 @@ yarn-error.log*
 # env files
 .env*
 
+# Private local RSVP pilot data
+/.sundays-pilot/
+
 # vercel
 .vercel
 

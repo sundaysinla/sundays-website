@@ -27,6 +27,7 @@ export default function NavBar() {
                     <Link href="#about" className="hover:opacity-70 transition-opacity">ABOUT</Link>
                     <Link href="#projects" className="hover:opacity-70 transition-opacity">PROJECTS</Link>
                     <Link href="#team" className="hover:opacity-70 transition-opacity">TEAM</Link>
+                    {process.env.NODE_ENV !== 'production' && <Link href="/meet" className="hover:opacity-70 transition-opacity">YOU SHOULD MEET</Link>}
                     <span className="flex items-center gap-5">
                         <Button href="/timer" size="sm" className="text-[12px] md:text-[14px] bg-stone-50 border-stone-200 hover:bg-stone-100" external>LIVE TIMER</Button>
                         <Button href="https://luma.com/sundaysinla" variant="dark" size="sm" className="text-[12px] md:text-[14px]" external>JOIN US</Button>
@@ -90,6 +91,7 @@ export default function NavBar() {
                         { href: '#about', label: 'about' },
                         { href: '#projects', label: 'projects' },
                         { href: '#team', label: 'team' },
+                        ...(process.env.NODE_ENV !== 'production' ? [{ href: '/meet', label: 'you should meet' }] : []),
                         { href: '/timer', label: 'live timer' },
                         { href: 'https://luma.com/sundaysinla', label: 'join us', external: true },
                     ].map((item, i) => (

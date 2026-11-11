@@ -1,0 +1,277 @@
+.meet-surface {
+  --meet-paper: #fcfaf7;
+  --meet-white: #fffefa;
+  --meet-ink: #2a2a24;
+  --meet-muted: #766f61;
+  --meet-line: #e4dfd5;
+  --meet-lime: #bdff00;
+  --meet-purple: #3600cf;
+  color: var(--meet-ink);
+  font-family: "Office-Times-Sharp-Regular", Georgia, serif;
+  -webkit-font-smoothing: antialiased;
+}
+.meet-surface *, .meet-surface *::before, .meet-surface *::after { box-sizing: border-box; }
+.meet-surface button, .meet-surface input, .meet-surface textarea, .meet-surface select { font: inherit; }
+.meet-surface button { cursor: pointer; }
+.meet-surface button:disabled { opacity: .5; cursor: default; }
+.meet-surface :focus-visible { outline: 2px solid var(--meet-purple); outline-offset: 4px; }
+.meet-page { min-height: 100vh; background-color: var(--meet-paper); background-image: repeating-linear-gradient(to right, transparent 0, transparent calc(12.5% - 1px), #e9e4da65 calc(12.5% - 1px), #e9e4da65 12.5%); }
+.meet-header { max-width: 1520px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 24px 46px; gap: 24px; }
+.meet-brand { display: flex; align-items: center; gap: 13px; font: 10px "Monument-Grotesk", sans-serif; letter-spacing: .08em; text-decoration: none; }
+.meet-brand img { width: 31px; height: 31px; }
+.meet-header nav { display: flex; align-items: center; gap: 32px; margin-left: 60px; font: 11px "Monument-Grotesk", sans-serif; }
+.meet-header nav a { padding: 8px 0; color: #767164; text-decoration: none; }
+.meet-header nav a[aria-current] { color: #292923; }
+.meet-header nav a[aria-current] span { color: var(--meet-purple); margin-left: 5px; }
+.meet-profile-toggle { display: flex; align-items: center; gap: 10px; background: none; border: none; font: 11px "Monument-Grotesk", sans-serif !important; padding: 8px 0; }
+.meet-avatar { width: 29px; height: 29px; display: grid; place-items: center; border: 1px solid #d7d1c6; border-radius: 50%; font-family: "Office-Times-Sharp-Regular", serif; font-size: 15px; background: #eae5d9; }
+.meet-content { width: min(1240px, calc(100% - 104px)); margin: 0 auto; }
+.meet-hero { display: flex; justify-content: space-between; gap: 48px; align-items: center; padding: 34px 0 36px; }
+.meet-eyebrow { display: block; text-transform: uppercase; font: 10px/1.5 "Monument-Grotesk", sans-serif; letter-spacing: .065em; color: var(--meet-muted); }
+.meet-hero h1 { position: relative; margin: 0; font-size: clamp(62px, 6.4vw, 92px); line-height: .98; letter-spacing: -.035em; font-weight: 400; }
+.meet-hero h1 em { font-family: "PP-Editorial-New-UltraLightItalic", Georgia, serif; font-weight: 200; letter-spacing: -.03em; }
+.meet-title-word { display: inline-block; position: relative; white-space: nowrap; }
+.meet-hero h1 svg { position: absolute; width: 94%; height: 12px; right: 0; bottom: -9px; fill: none; stroke: #776a9f; stroke-width: 1.15; opacity: .8; }
+.meet-hero-description { margin: 24px 0 0; font-size: 18px; line-height: 1.45; color: #6a665a; }
+.meet-your-note { position: relative; width: 300px; flex-shrink: 0; padding: 22px 24px 15px; border: 1px solid #dcd7cc; background: #f1eee4; transform: rotate(2deg); box-shadow: 2px 5px 10px #5c4a2110; margin: 13px 12px 0 0; }
+.meet-note-pin { width: 44px; height: 14px; position: absolute; top: -8px; left: calc(50% - 22px); background: #d5d0c285; transform: rotate(-5deg); }
+.meet-note-top { display: flex; justify-content: space-between; align-items: center; }
+.meet-note-top .meet-text-button { min-height: 24px; }
+.meet-your-note > p { font-size: 19px; line-height: 1.4; margin: 17px 0 24px; }
+.meet-note-foot { display: flex; align-items: center; justify-content: space-between; font: 9px "Monument-Grotesk", sans-serif; text-transform: uppercase; letter-spacing: .03em; color: #6e6755; }
+.meet-note-foot > span { font: 26px Georgia, serif; }
+.meet-notice { display: flex; align-items: center; gap: 10px; padding: 12px 16px; margin: 0 0 22px; background: #eaf1dc; border: 1px solid #d4dfc3; font: 12px/1.5 "Monument-Grotesk", sans-serif; }
+.meet-notice > p { margin: 0; flex: 1; }
+.meet-notice > svg { flex-shrink: 0; }
+.meet-discovery-controls { border-top: 1px dashed #d8d2c7; }
+.meet-scope-row { display: flex; align-items: center; justify-content: space-between; margin: 22px 0 18px; gap: 18px; }
+.meet-scope-picker { display: flex; gap: 5px; background: #eeebe3; padding: 4px; border-radius: 7px; }
+.meet-scope-picker button { display: flex; align-items: center; gap: 9px; border: none; background: transparent; padding: 10px 15px; border-radius: 4px; color: #767164; font: 11px "Monument-Grotesk", sans-serif; min-height: 38px; }
+.meet-scope-picker button.is-active { background: #fffefa; color: #292923; box-shadow: 0 1px 4px #251b1410; }
+.meet-scope-picker button > span { font: 10px "Office-Times-Sharp-Mono", monospace; color: #837e70; }
+.meet-search-form { min-height: 67px; display: flex; gap: 16px; align-items: center; padding: 9px 10px 9px 22px; border: 1px solid #d8d3c8; border-radius: 8px; background: #fffefa; box-shadow: 0 2px 4px #3a2b1110; }
+.meet-search-form:focus-within { border-color: #8e83ae; box-shadow: 0 0 0 2px #3600cf08; }
+.meet-search-form > svg { color: #8b8374; flex-shrink: 0; }
+.meet-search-form input { border: none; background: none; min-width: 0; width: 100%; font-size: 20px; outline: none !important; color: #343129; }
+.meet-search-form input::placeholder { color: #97907f; }
+.meet-search-submit { display: flex; gap: 18px; align-items: center; flex-shrink: 0; border: none; border-radius: 5px; padding: 15px 19px; font: 11px "Monument-Grotesk", sans-serif !important; background: #302f29; color: #fffefa; transition: background .15s; }
+.meet-search-submit:hover { background: #49463b; }
+.meet-examples { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; margin: 15px 0 0; }
+.meet-example { display: flex; align-items: center; gap: 5px; border: none; background: none; padding: 7px 0; font-size: 12px !important; color: #6a6354; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
+.meet-example:hover { color: var(--meet-purple); }
+.meet-results { padding: 44px 0 0; scroll-margin-top: 18px; }
+.meet-results-heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 22px; }
+.meet-results-heading > div { min-width: 0; }
+.meet-results-heading h2, .meet-your-note p, .meet-card h3, .meet-source-note { overflow-wrap: anywhere; }
+.meet-results-heading h2 { margin: 0; font-weight: 400; font-size: 34px; line-height: 1.2; letter-spacing: -.025em; }
+.meet-results-heading h2 em { font-family: "PP-Editorial-New-UltraLightItalic", Georgia, serif; font-weight: 200; }
+.meet-surprise { display: flex; align-items: center; gap: 9px; background: none; border: 1px solid #d8d2c7; border-radius: 5px; min-height: 39px; padding: 10px 15px; color: #4d493d; font: 11px "Monument-Grotesk", sans-serif !important; transition: background .15s; flex-shrink: 0; }
+.meet-surprise:hover, .meet-surprise.is-active { background: #e8e4d9; }
+.meet-surprise svg { color: #63518e; }
+.meet-result-description { display: flex; justify-content: space-between; align-items: center; min-height: 43px; gap: 16px; color: #797263; font: 10px/1.5 "Monument-Grotesk", sans-serif; margin: 2px 0 12px; }
+.meet-result-description > span { display: flex; align-items: center; gap: 7px; }
+.meet-result-description.is-compact { min-height: 24px; margin-bottom: 0; }
+.meet-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 23px; transition: opacity .15s; }
+.meet-cards.is-pending { opacity: .45; pointer-events: none; }
+.meet-card { position: relative; display: flex; flex-direction: column; padding: 25px 26px 19px; min-width: 0; background: #fffefa; border: 1px solid #e8e2d8; border-radius: 3px; box-shadow: 1px 5px 12px #4a391708; transition: transform .2s, box-shadow .2s; }
+.meet-card:hover { transform: translateY(-4px); box-shadow: 1px 10px 20px #4a391711; }
+.meet-fold { position: absolute; top: -1px; right: -1px; width: 24px; height: 24px; background: linear-gradient(45deg, #eee9dc 49%, #e0dacc 50%, var(--meet-paper) 52%); }
+.meet-card-top { height: 97px; display: flex; align-items: flex-start; position: relative; }
+.meet-connection { position: relative; z-index: 1; display: inline-block; margin-top: 7px; max-width: 60%; font: 9px/1.6 "Monument-Grotesk", sans-serif; text-transform: uppercase; letter-spacing: .04em; color: #675783; }
+.meet-practice-object { width: 107px; height: 95px; object-fit: contain; position: absolute; right: 1px; top: -4px; transform: rotate(-10deg); filter: drop-shadow(2px 4px 2px #392f1710); }
+.discipline-film .meet-practice-object { transform: rotate(9deg); }
+.discipline-design .meet-practice-object { transform: rotate(-4deg); }
+.meet-card-identity h3 { margin: 0 0 5px; font-size: 31px; line-height: 1.1; letter-spacing: -.025em; font-weight: 400; }
+.meet-card-identity > p { font: 11px/1.55 "Monument-Grotesk", sans-serif; margin: 0; color: #625c50; }
+.meet-card-identity > p > span { color: #8c8372; }
+.meet-card-project { border-top: 1px dashed #e1dbcf; margin-top: 22px; padding-top: 17px; }
+.meet-card-project .meet-eyebrow { font-size: 8px; }
+.meet-card-project > p { margin: 4px 0 0; font-size: 18px; line-height: 1.3; }
+.meet-card-reason { display: flex; align-items: flex-start; gap: 8px; margin: 18px 0 25px; flex: 1; }
+.meet-small-star { color: #9b8c72; font-size: 19px; line-height: 1.2; }
+.meet-card-reason p { font-size: 15px; color: #706758; line-height: 1.55; margin: 0; }
+.meet-card-bottom { border-top: 1px solid #ede8de; padding-top: 12px; }
+.meet-presence { display: inline-flex; gap: 6px; align-items: center; font: 9px/1.6 "Monument-Grotesk", sans-serif; color: #79715e; }
+.meet-presence > span { width: 5px; height: 5px; border-radius: 50%; background: #7d915a; flex-shrink: 0; }
+.meet-presence.is-away > span { background: #a8a191; }
+.meet-presence.is-focusing > span { background: #b6a268; }
+.meet-card-link { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 12px 0 2px; border: none; background: none; color: #373327; font: 11px "Monument-Grotesk", sans-serif !important; min-height: 42px; }
+.meet-card-link svg { color: #786a54; transition: transform .2s; }
+.meet-card-link:hover svg { transform: translate(2px, -2px); color: var(--meet-purple); }
+.meet-more-row { display: flex; justify-content: center; margin: 24px 0 0; }
+.meet-more-row .meet-text-button { color: #756c59; font-size: 11px; }
+.meet-more-row .is-up { transform: rotate(180deg); }
+.meet-meeting-count { margin-left: auto; font: 9px "Office-Times-Sharp-Mono", monospace; color: #827761; }
+.meet-footer { border-top: 1px dashed #d8d1c2; margin-top: 40px; padding: 26px 0 35px; display: flex; align-items: center; justify-content: space-between; gap: 24px; font: 9px/1.5 "Monument-Grotesk", sans-serif; color: #786f5f; }
+.meet-footer > a { text-decoration: none; }
+.meet-text-button { display: inline-flex; justify-content: center; align-items: center; gap: 7px; padding: 7px 0; min-height: 30px; border: none; background: none; color: inherit; font: 10px/1.4 "Monument-Grotesk", sans-serif !important; }
+.meet-text-button:hover { color: var(--meet-purple); }
+.meet-icon-button { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: none; border-radius: 50%; background: transparent; flex-shrink: 0; }
+.meet-icon-button:hover { background: #e9e3d5; }
+.meet-button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 42px; padding: 12px 16px; border: 1px solid #d7d0c1; border-radius: 5px; background: #f5f1e7; color: #3e382a; font: 11px/1.4 "Monument-Grotesk", sans-serif !important; }
+.meet-button:hover { background: #eae4d6; }
+.meet-button.is-dark { border-color: #2d2a22; background: #2d2a22; color: #fffdfa; }
+.meet-button.is-dark:hover { background: #484134; }
+.meet-chip { border: 1px solid #dcd4c2; border-radius: 20px; background: none; padding: 10px 13px; min-height: 38px; font: 10px "Monument-Grotesk", sans-serif !important; }
+.meet-chip.is-selected { border-color: #949b68; background: #e7efce; }
+.meet-empty { text-align: center; background: #f4f0e6; padding: 55px 20px; border: 1px dashed #d5cdbb; }
+.meet-empty > span { font-size: 38px; color: #a39478; }
+.meet-empty h3 { font-size: 29px; font-weight: 400; margin: 10px 0; }
+.meet-empty p { font-size: 16px; color: #7c705a; line-height: 1.6; margin: 0 auto 20px; max-width: 370px; }
+.meet-empty > div { display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap; }
+.meet-overlay { position: fixed; inset: 0; background: #2f2c2373; backdrop-filter: blur(4px); z-index: 80; animation: meet-fade-in .15s ease; }
+.meet-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(540px, calc(100vw - 32px)); max-height: 90dvh; overflow-y: auto; padding: 32px; border-radius: 9px; background: var(--meet-paper); border: 1px solid #e3dbcd; box-shadow: 0 20px 80px #20180d45; z-index: 81; animation: meet-fade-in .15s ease; overscroll-behavior: contain; }
+.meet-dialog-wide { width: min(740px, calc(100vw - 32px)); }
+.meet-dialog-close { position: absolute; right: 14px; top: 14px; }
+.meet-dialog-heading { margin: 5px 0 23px; padding-right: 20px; }
+.meet-dialog-title { margin: 0 0 7px; font-size: 38px; font-weight: 400; letter-spacing: -.025em; line-height: 1.1; }
+.meet-dialog-description { margin: 0; color: #7b705e; font: 12px/1.55 "Monument-Grotesk", sans-serif; }
+.meet-person-art { background: #eeeadf; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border-radius: 4px; }
+.meet-person-art img { width: 113px; height: 100px; object-fit: contain; transform: rotate(-8deg); }
+.meet-profile-bio { font-size: 20px; margin: 22px 0; line-height: 1.4; }
+.meet-profile-project { padding: 20px 0; border-top: 1px dashed #d9d1c0; border-bottom: 1px dashed #d9d1c0; }
+.meet-profile-project h3 { display: flex; justify-content: space-between; align-items: center; font-size: 25px; font-weight: 400; margin: 6px 0 9px; }
+.meet-profile-project p { font-size: 16px; line-height: 1.5; color: #6c6250; margin: 0; }
+.meet-ask-offer { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; padding: 24px 0; }
+.meet-ask-offer p { font-size: 15px; line-height: 1.65; margin: 7px 0 0; }
+.meet-conversation-note { padding: 20px; background: #edf0df; border-left: 2px solid #b8c485; }
+.meet-conversation-note p { font-size: 20px; line-height: 1.45; margin: 8px 0 0; }
+.meet-source-details { font: 10px/1.7 "Monument-Grotesk", sans-serif; color: #7a705e; margin: 20px 0; }
+.meet-source-details summary { cursor: pointer; padding: 4px 0; }
+.meet-source-details ul { padding-left: 15px; margin: 8px 0; }
+.meet-source-note { margin: -4px 0 20px; padding: 12px 14px; border-left: 2px solid #b5bd98; background: #edf0df; color: #665e4c; font: 10px/1.7 "Monument-Grotesk", sans-serif; }
+.meet-source-note a { text-decoration: underline; text-underline-offset: 3px; }
+.meet-dialog-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.meet-intro-note { padding: 20px; margin-top: 22px; border: 1px dashed #ccbfa5; background: #f0eadd; }
+.meet-intro-note > p { font-size: 16px; line-height: 1.6; }
+.meet-intro-note small, .meet-feedback small { display: block; font: 10px/1.6 "Monument-Grotesk", sans-serif; color: #81725b; margin-top: 10px; }
+.meet-feedback { border-top: 1px dashed #d9d1c0; margin-top: 24px; padding-top: 12px; }
+.meet-feedback p { font-size: 18px; }
+.meet-feedback > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.meet-quiet-note { background: #eee8d7; padding: 16px; font-size: 16px; line-height: 1.6; }
+.meet-profile-form > label, .meet-editor-grid > label, .meet-import-section > label { display: flex; flex-direction: column; gap: 7px; font: 11px/1.5 "Monument-Grotesk", sans-serif; margin-bottom: 18px; }
+.meet-profile-form input:not([type=checkbox]):not([type=radio]), .meet-profile-form textarea, .meet-profile-form select { width: 100%; padding: 11px 12px; min-height: 43px; border: 1px solid #d9d1c1; border-radius: 4px; background: #fffefa; color: #352f24; font: 15px/1.5 "Office-Times-Sharp-Regular", serif; }
+.meet-profile-form textarea { resize: vertical; }
+.meet-profile-form label > small, .meet-profile-form section > small, .meet-draft-review > small { color: #7d725d; font: 10px/1.6 "Monument-Grotesk", sans-serif; }
+.meet-editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+.meet-form-divider { border-top: 1px dashed #d6cbb7; padding-top: 20px; margin: 8px 0 18px; display: flex; justify-content: space-between; align-items: center; gap: 15px; }
+.meet-form-divider > small { font: 10px "Monument-Grotesk", sans-serif; color: #8b7b61; }
+.meet-import-section { margin-top: 25px; }
+.meet-import-section > p { font-size: 16px; line-height: 1.5; margin: 0 0 18px; }
+.meet-checkbox-label { display: flex !important; flex-direction: row !important; align-items: flex-start; gap: 10px !important; font: 11px/1.7 "Monument-Grotesk", sans-serif; margin: 16px 0; }
+.meet-profile-form input[type=checkbox], .meet-profile-form input[type=radio] { accent-color: #696046; width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0; }
+.meet-source-picker { display: flex; gap: 10px; margin: 18px 0; }
+.meet-draft-review { padding: 20px; border: 1px solid #d3c7ad; background: #f1ead9; margin-top: 20px; }
+.meet-draft-review > p { font-size: 15px; line-height: 1.5; }
+.meet-draft-review > small { display: block; margin-top: 12px; }
+.meet-claim { display: flex; align-items: flex-start; gap: 10px; padding: 12px 0; border-top: 1px solid #dfd4bd; font: 13px "Monument-Grotesk", sans-serif; }
+.meet-claim > span { flex: 1; }
+.meet-claim small { display: block; color: #827154; font: 10px/1.6 "Monument-Grotesk", sans-serif; margin-top: 5px; }
+.meet-draft-review .meet-button { margin-top: 12px; }
+.meet-inline-success { display: flex; gap: 8px; align-items: flex-start; color: #4f5e37; font: 11px/1.6 "Monument-Grotesk", sans-serif; }
+.meet-inline-success svg { flex-shrink: 0; margin-top: 1px; }
+.meet-visibility-section { border-top: 1px dashed #d6cbb7; margin-top: 30px; padding-top: 22px; }
+.meet-visibility-section fieldset { border: none; margin: 17px 0 0; padding: 0; }
+.meet-visibility-section legend { font: 11px "Monument-Grotesk", sans-serif; margin-bottom: 12px; }
+.meet-radio-card { display: flex; align-items: flex-start; gap: 11px; padding: 13px; margin-bottom: 8px; border: 1px solid #ded3bd; border-radius: 4px; font: 12px "Monument-Grotesk", sans-serif; }
+.meet-radio-card.is-selected { background: #edf0df; border-color: #b5bd98; }
+.meet-radio-card small { display: block; margin-top: 5px; font-size: 10px; color: #7f735c; }
+.meet-save-row { border-top: 1px solid #d9cdb6; padding-top: 22px; margin-top: 24px; display: flex; align-items: center; gap: 24px; }
+.meet-reset-row { border-top: 1px dashed #d9cdb6; padding-top: 15px; margin-top: 25px; font: 11px/1.7 "Monument-Grotesk", sans-serif; color: #847357; }
+.meet-reset-row .meet-button { margin-right: 20px; }
+.meet-error-text { color: #9b3e2f; font: 12px/1.6 "Monument-Grotesk", sans-serif; background: #fae9e1; padding: 12px; margin-top: 18px; }
+.meet-loading { min-height: 70vh; padding: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; background: #fcfaf7; }
+.meet-loading h1 { font-size: 42px; font-weight: 400; }
+.meet-skip-link { position: absolute; left: 16px; top: -90px; z-index: 100; padding: 12px; background: #bdff00; font: 12px "Monument-Grotesk", sans-serif; }
+.meet-skip-link:focus { top: 40px; }
+.meet-spin { animation: meet-spin 1s linear infinite; }
+@keyframes meet-spin { to { transform: rotate(360deg); } }
+@keyframes meet-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@media (min-width: 1600px) { .meet-content { width: min(1280px, calc(100% - 160px)); } .meet-hero { padding-top: 78px; padding-bottom: 70px; } }
+@media (max-width: 1100px) {
+  .meet-content { width: calc(100% - 70px); }
+  .meet-header { padding: 22px 32px; }
+  .meet-header nav { margin-left: 0; gap: 22px; }
+  .meet-brand > span { display: none; }
+  .meet-hero { gap: 32px; padding: 45px 0; }
+  .meet-hero h1 { font-size: 82px; }
+  .meet-your-note { width: 265px; padding: 20px; }
+  .meet-your-note > p { font-size: 17px; }
+  .meet-cards { gap: 16px; }
+  .meet-card { padding: 22px 20px 17px; }
+  .meet-card-identity h3 { font-size: 27px; }
+  .meet-connection { font-size: 8px; }
+  .meet-practice-object { width: 85px; right: -5px; }
+  .meet-card-reason p { font-size: 14px; }
+}
+@media (max-width: 900px) {
+  .meet-hero h1 { font-size: 67px; }
+  .meet-hero-description { font-size: 18px; }
+  .meet-your-note { width: 235px; margin-right: 0; }
+  .meet-your-note > p { font-size: 16px; }
+  .meet-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .meet-card { padding: 25px; }
+  .meet-card-identity h3 { font-size: 31px; }
+  .meet-header nav { gap: 18px; font-size: 10px; }
+  .meet-profile-toggle { font-size: 10px !important; }
+  .meet-footer { flex-wrap: wrap; gap: 12px; }
+}
+@media (max-width: 600px) {
+  .meet-surface button, .meet-header a, .meet-footer a, .meet-source-details summary { min-height: 44px; }
+  .meet-icon-button { width: 44px; height: 44px; }
+  .meet-note-top .meet-text-button { min-height: 44px; min-width: 44px; }
+  .meet-header { padding: 17px 21px; gap: 12px; }
+  .meet-header nav { display: none; }
+  .meet-brand > span { display: block; font-size: 9px; }
+  .meet-profile-toggle { gap: 7px; font-size: 9px !important; }
+  .meet-profile-toggle > .meet-avatar { display: none; }
+  .meet-content { width: calc(100% - 40px); }
+  .meet-hero { padding: 34px 0 33px; flex-direction: column; align-items: stretch; gap: 28px; }
+  .meet-hero h1 { font-size: clamp(56px, 14.2vw, 83px); }
+  .meet-hero-description { margin-top: 24px; font-size: 18px; line-height: 1.4; }
+  .meet-your-note { width: 100%; margin: 3px 0 0; transform: rotate(1deg); padding: 17px 20px 12px; }
+  .meet-your-note > p { font-size: 17px; margin: 12px 0 10px; }
+  .meet-note-foot { font-size: 8px; }
+  .meet-scope-row { margin-top: 20px; margin-bottom: 15px; }
+  .meet-scope-picker { width: 100%; }
+  .meet-scope-picker button { justify-content: center; flex: 1; font-size: 10px; padding: 10px 8px; gap: 6px; }
+  .meet-search-form { gap: 10px; min-height: 60px; padding: 8px 8px 8px 15px; }
+  .meet-search-form input { font-size: 17px; }
+  .meet-search-submit { font-size: 0 !important; padding: 12px; gap: 0; min-height: 42px; min-width: 42px; }
+  .meet-examples { gap: 3px 12px; margin-top: 12px; }
+  .meet-example { font-size: 11px !important; }
+  .meet-example:nth-last-child(-n+2) { display: none; }
+  .meet-results { padding-top: 33px; }
+  .meet-results-heading { gap: 12px; align-items: flex-start; }
+  .meet-results-heading h2 { font-size: 28px; line-height: 1.2; }
+  .meet-surprise { gap: 7px; font-size: 9px !important; padding: 9px 10px; min-height: 38px; margin-top: 18px; }
+  .meet-surprise svg { width: 13px; height: 13px; }
+  .meet-result-description { font-size: 9px; line-height: 1.6; margin-top: 12px; min-height: 40px; }
+  .meet-cards { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .meet-card { padding: 23px 25px 18px; }
+  .meet-card-top { height: 89px; }
+  .meet-practice-object { width: 112px; right: 0; }
+  .meet-connection { font-size: 9px; max-width: 60%; }
+  .meet-card-identity h3 { font-size: 33px; }
+  .meet-card-project { margin-top: 18px; }
+  .meet-card-reason p { font-size: 15px; }
+  .meet-card-link { min-height: 46px; }
+  .meet-footer { padding: 20px 0; font-size: 9px; }
+  .meet-footer .meet-text-button { font-size: 9px !important; }
+  .meet-dialog { padding: 25px 21px; max-height: 92dvh; }
+  .meet-dialog-title { font-size: 32px; }
+  .meet-dialog-description { font-size: 11px; }
+  .meet-editor-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .meet-ask-offer { gap: 18px; }
+  .meet-dialog-actions { flex-direction: column; }
+  .meet-dialog-actions .meet-button { width: 100%; }
+  .meet-person-art { padding: 8px 12px; }
+  .meet-person-art img { width: 95px; }
+  .meet-person-art .meet-presence { font-size: 8px; }
+  .meet-form-divider { gap: 10px; }
+  .meet-form-divider > small { font-size: 9px; }
+  .meet-search-form input, .meet-profile-form input:not([type=checkbox]):not([type=radio]), .meet-profile-form textarea, .meet-profile-form select { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .meet-surface *, .meet-surface *::before, .meet-surface *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
