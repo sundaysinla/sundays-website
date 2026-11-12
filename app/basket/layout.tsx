@@ -3,6 +3,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
+import SiteGrid from '@/components/SiteGrid';
+import SundaysWordmark from '@/components/SundaysWordmark';
 import { basketHostKey, localOrigin } from '@/lib/suggestions/access';
 import '@/styles/suggestions-basket.css';
 
@@ -20,11 +22,12 @@ export default function BasketLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="basket-page">
-      <header className="basket-masthead basket-shell">
+      <SiteGrid />
+      <header className="basket-masthead px-6 md:px-12">
         <Link className="basket-brand" href="/" prefetch={false} aria-label="Sundays in LA home">
           <Image src="/smiley.png" width={32} height={32} alt="" className="opacity-80 hover:opacity-100 transition-opacity" />
         </Link>
-        <Image className="basket-wordmark" src="/sundays-mobile.png" width={1528} height={490} alt="" />
+        <SundaysWordmark compact />
       </header>
       {children}
     </div>

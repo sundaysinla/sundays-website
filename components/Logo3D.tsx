@@ -1,32 +1,37 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
-import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
-import { Texture, Object3D, Mesh } from 'three'
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
-import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js'
-
-// Add type safety
-type GLTFResult = GLTF & {
-  nodes: {
-    [key: string]: THREE.Mesh
-  }
-}
 
 interface Logo3DProps {
+  cameraDistance?: number
   onReady?: () => void
+  onUnavailable?: () => void
 }
 
-export default function Logo3D({ onReady }: Logo3DProps) {
+function disposeMaterial(mesh: THREE.Mesh) {
+  const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+  materials.forEach(material => material.dispose())
+}
+
+function disposeModel(model: THREE.Object3D) {
+  model.traverse(child => {
+    if (child instanceof THREE.Mesh) {
+      child.geometry.dispose()
+      disposeMaterial(child)
+    }
+  })
+}
+
+export default function Logo3D({ cameraDistance, onReady, onUnavailable }: Logo3DProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const onReadyRef = useRef(onReady)
   onReadyRef.current = onReady
+  const onUnavailableRef = useRef(onUnavailable)
+  onUnavailableRef.current = onUnavailable
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -34,6 +39,9 @@ export default function Logo3D({ onReady }: Logo3DProps) {
     // Scene setup
     const scene = new THREE.Scene()
     let model: THREE.Group | null = null
+    let disposed = false
+    let frame: number | null = null
+    let ready = false
     const el = containerRef.current
     const getW = () => el.clientWidth || window.innerWidth
     const getH = () => el.clientHeight || 300
@@ -41,12 +49,18 @@ export default function Logo3D({ onReady }: Logo3DProps) {
 
     camera.position.set(0, 0, 10)
 
-    const renderer = new THREE.WebGLRenderer({ 
-      antialias: true, 
-      alpha: true,
-      powerPreference: "high-performance",
-      precision: "highp"
-    })
+    let renderer: THREE.WebGLRenderer
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        powerPreference: "high-performance",
+        precision: "highp"
+      })
+    } catch {
+      onUnavailableRef.current?.()
+      return
+    }
     renderer.setSize(getW(), getH())
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.toneMapping = THREE.ACESFilmicToneMapping
@@ -91,20 +105,20 @@ export default function Logo3D({ onReady }: Logo3DProps) {
     defaultScene.background = new THREE.Color(0xffffff)
     const defaultLight = new THREE.AmbientLight(0xffffff, 2)
     defaultScene.add(defaultLight)
-    const defaultEnvMap = pmremGenerator.fromScene(defaultScene).texture
-    scene.environment = defaultEnvMap
+    let environment = pmremGenerator.fromScene(defaultScene)
+    scene.environment = environment.texture
 
-    // Fire ready as soon as the model is in scene with the default env. HDR
-    // arrives later and swaps in place on the existing material (no reload,
-    // smooth dull→shiny transition), so we don't gate the loader lift on it.
-    let activeEnvMap: THREE.Texture = defaultEnvMap
-    let hasFiredReady = false
-
-    function fireReady() {
-      if (hasFiredReady) return
-      hasFiredReady = true
-      setIsLoading(false)
-      onReadyRef.current?.()
+    // The model moves with the pointer. Render only after a scene change.
+    function requestRender() {
+      if (disposed || !model || frame !== null) return
+      frame = requestAnimationFrame(() => {
+        frame = null
+        renderer.render(scene, camera)
+        if (!ready) {
+          ready = true
+          onReadyRef.current?.()
+        }
+      })
     }
 
     function buildMaterial(envMap: THREE.Texture) {
@@ -122,7 +136,6 @@ export default function Logo3D({ onReady }: Logo3DProps) {
     }
 
     function applyEnvMapToModel(envMap: THREE.Texture) {
-      activeEnvMap = envMap
       if (!model) return
       model.traverse((child: THREE.Object3D) => {
         if (!(child instanceof THREE.Mesh)) return
@@ -131,12 +144,40 @@ export default function Logo3D({ onReady }: Logo3DProps) {
           existing.envMap = envMap
           existing.needsUpdate = true
         } else {
+          disposeMaterial(child)
           child.material = buildMaterial(envMap)
         }
       })
     }
 
-    loadModel()
+    const dracoLoader = new DRACOLoader()
+    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
+    dracoLoader.setDecoderConfig({ type: 'js' })
+    const loader = new GLTFLoader()
+    loader.setDRACOLoader(dracoLoader)
+    loader.load(
+      '/sundays_metallic_logo_only.min.gltf',
+      gltf => {
+        dracoLoader.dispose()
+        if (disposed) {
+          disposeModel(gltf.scene)
+          return
+        }
+        model = gltf.scene
+        adjustModelScale()
+        applyEnvMapToModel(environment.texture)
+        adjustModelScale()
+        scene.add(model)
+        requestRender()
+      },
+      undefined,
+      error => {
+        dracoLoader.dispose()
+        if (disposed) return
+        console.warn('Unable to load the Sundays 3D wordmark', error)
+        onUnavailableRef.current?.()
+      }
+    )
 
     // Try to load HDR environment map in parallel; swap in place when ready.
     // Loader has already lifted by the time this arrives — the swap is a
@@ -145,64 +186,32 @@ export default function Logo3D({ onReady }: Logo3DProps) {
       .setDataType(THREE.HalfFloatType)
       .load('/environment/modern_bathroom_1k.hdr',
         (hdrEquirect) => {
-          const envMap = pmremGenerator.fromEquirectangular(hdrEquirect).texture
-          scene.environment = envMap
-          scene.background = null
-          applyEnvMapToModel(envMap)
+          if (disposed) {
+            hdrEquirect.dispose()
+            return
+          }
+          const previous = environment
+          environment = pmremGenerator.fromEquirectangular(hdrEquirect)
+          scene.environment = environment.texture
+          applyEnvMapToModel(environment.texture)
+          previous.dispose()
           hdrEquirect.dispose()
-          pmremGenerator.dispose()
+          requestRender()
         },
         undefined,
         (err: unknown) => {
-          console.warn('HDR load failed, using default environment', err)
+          if (!disposed) console.warn('HDR load failed, using default environment', err)
         }
       )
-
-    // Cleanup function to remove only the model
-    function cleanScene() {
-      if (model) {
-        scene.remove(model)
-        model = null
-      }
-    }
 
     // Function to adjust model scale and position based on window width
     function adjustModelScale() {
       if (!model) return
       model.scale.set(1, 1, 0.6)
       
-      const box = new THREE.Box3().setFromObject(model as Object3D)
+      const box = new THREE.Box3().setFromObject(model)
       const center = box.getCenter(new THREE.Vector3())
       model.position.set(-center.x, -center.y, -center.z)
-    }
-
-    // Load the (Draco-compressed) GLTF once. Materials get their env map from
-    // applyEnvMapToModel so HDR can swap in later without a reload.
-    function loadModel() {
-      const dracoLoader = new DRACOLoader()
-      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
-      dracoLoader.setDecoderConfig({ type: 'js' })
-
-      const loader = new GLTFLoader()
-      loader.setDRACOLoader(dracoLoader)
-      loader.load(
-        '/sundays_metallic_logo_only.min.gltf',
-        (gltf) => {
-          cleanScene()
-          model = gltf.scene
-          adjustModelScale()
-          applyEnvMapToModel(activeEnvMap)
-          adjustModelScale()
-          scene.add(model)
-          dracoLoader.dispose()
-          fireReady()
-        },
-        undefined,
-        (error) => {
-          console.error('Error loading model:', error)
-          dracoLoader.dispose()
-        }
-      )
     }
 
     // Mouse movement
@@ -213,18 +222,10 @@ export default function Logo3D({ onReady }: Logo3DProps) {
         const centerY = window.innerHeight * 0.5
         model.rotation.y = (e.clientX - centerX) / centerX * mouseTolerance
         model.rotation.x = (e.clientY - centerY) / centerY * mouseTolerance
+        requestRender()
       }
     }
     document.addEventListener('mousemove', handleMouseMove)
-
-    // Animation
-    function animate() {
-      requestAnimationFrame(animate)
-      if (model) {
-        renderer.render(scene, camera)
-      }
-    }
-    animate()
 
     function adjustCamera() {
       const w = getW()
@@ -238,7 +239,7 @@ export default function Logo3D({ onReady }: Logo3DProps) {
       
       camera.aspect = w / h
       camera.updateProjectionMatrix()
-      camera.position.set(0, 0, Math.max(minZ, Math.min(maxZ, z)))
+      camera.position.set(0, 0, cameraDistance ?? z)
     }
 
     // Initial camera setup
@@ -249,25 +250,23 @@ export default function Logo3D({ onReady }: Logo3DProps) {
       renderer.setSize(getW(), getH())
       adjustModelScale()
       adjustCamera()
+      requestRender()
     }
     window.addEventListener('resize', handleResize)
 
     return () => {
+      disposed = true
+      if (frame !== null) cancelAnimationFrame(frame)
       window.removeEventListener('resize', handleResize)
       document.removeEventListener('mousemove', handleMouseMove)
-      cleanScene()
+      dracoLoader.dispose()
+      if (model) disposeModel(model)
+      environment.dispose()
+      pmremGenerator.dispose()
       renderer.dispose()
-      el.removeChild(renderer.domElement)
+      renderer.domElement.remove()
     }
-  }, [])
+  }, [cameraDistance])
 
-  return (
-    <div ref={containerRef} className="w-full h-full overflow-visible relative">
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-black rounded-full animate-spin border-t-transparent" />
-        </div>
-      )}
-    </div>
-  )
-} 
+  return <div ref={containerRef} className="w-full h-full overflow-visible relative" />
+}

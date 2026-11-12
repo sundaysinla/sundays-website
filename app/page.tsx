@@ -3,9 +3,7 @@
 // test: PR preview auto-deployment trigger.
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { useInView } from "react-intersection-observer";
 import AssetPreloader from "@/components/AssetPreloader";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -18,42 +16,20 @@ import ImageExplosion from "@/components/ImageExplosion";
 import Team from "@/components/Team";
 import Projects from "@/components/Projects";
 import Who from "@/components/Who";
+import SiteGrid from "@/components/SiteGrid";
+import SundaysWordmark from "@/components/SundaysWordmark";
 import "../styles/grain.css";
-
-const Logo3D = dynamic(() => import("../components/Logo3D"), { ssr: false });
 
 export default function SundaysPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [canHide, setCanHide] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     if (!canHide) return;
     const id = setTimeout(() => setIsLoading(false), 400);
     return () => clearTimeout(id);
   }, [canHide]);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(
-        window.innerWidth < 500 ||
-          /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-            navigator.userAgent
-          )
-      );
-    };
-
-    checkMobile();
-
-    window.addEventListener("resize", checkMobile);
-    window.addEventListener("orientationchange", checkMobile);
-
-    return () => {
-      window.removeEventListener("resize", checkMobile);
-      window.removeEventListener("orientationchange", checkMobile);
-    };
-  }, []);
 
   const [headerRef, headerInView] = useInView({
     triggerOnce: true,
@@ -92,26 +68,7 @@ export default function SundaysPage() {
         <div
           className={`min-h-screen relative overflow-x-clip overflow-y-visible transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"}`}
         >
-        {/* Grid lines */}
-        <div
-          className="fixed inset-0 -z-10 pointer-events-none grid grid-cols-8 md:grid-cols-[repeat(16,1fr)]"
-        >
-          {[...Array(16)].map((_, i) => (
-            <div
-              key={i}
-              className={`h-full ${i >= 8 ? 'hidden md:block' : ''}`}
-              style={{
-                backgroundImage:
-                  i > 0
-                    ? "linear-gradient(#f5f5f4 4px, transparent 2px)"
-                    : "none",
-                backgroundSize: "1px 12px",
-                backgroundPosition: "left top",
-                backgroundRepeat: "repeat-y",
-              }}
-            />
-          ))}
-        </div>
+        <SiteGrid />
 
         {/* Content */}
         <div
@@ -151,30 +108,7 @@ export default function SundaysPage() {
               transition: "opacity 0.4s ease-in-out",
             }}
           >
-            <div
-              className="w-full relative"
-              style={{
-                height: isMobile ? "auto" : "clamp(160px, 24vw, 420px)",
-              }}
-            >
-              {isMobile ? (
-                <div
-                  className="w-full h-full flex items-center justify-center"
-                >
-                  <Image
-                    src="/sundays-mobile.png"
-                    alt="Sundays Logo"
-                    width={300}
-                    height={100}
-                    className="w-[85%] h-auto object-contain"
-                    priority
-                    sizes="100vw"
-                  />
-                </div>
-              ) : (
-                <Logo3D />
-              )}
-            </div>
+            <SundaysWordmark />
           </div>
 
           {/* Text */}
@@ -191,7 +125,7 @@ export default function SundaysPage() {
             <div
               className="mx-auto w-full sm:max-w-[50%] md:max-w-[40%] lg:max-w-[30%] xl:max-w-[28%] flex flex-col items-center"
             >
-              <p className="text-sm md:text-base font-light font-['Office-Times-Round'] text-[#2A2A24] pt-0 sm:whitespace-nowrap text-center leading-relaxed">
+              <p className="text-sm md:text-base font-light font-['Office-Times-Round'] text-[color:var(--sundays-ink)] pt-0 sm:whitespace-nowrap text-center leading-relaxed">
                 A home for the passions that excite you.<br />Weekly coworking sessions, every Sunday.
               </p>
               <div className="mt-12 sm:mt-10 flex justify-center mb-2 sm:mb-1 relative z-20">
@@ -199,16 +133,16 @@ export default function SundaysPage() {
                   href="https://luma.com/sundaysinla"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-black rounded-xl px-4 pt-2 pb-1.5 text-sm md:text-base font-['Monument-Grotesk'] uppercase transition-colors duration-300 ease-out hover:bg-[#EEEBE3] relative overflow-hidden group"
+                  className="bg-[color:var(--sundays-action-ink)] rounded-xl px-4 pt-2 pb-1.5 text-sm md:text-base font-['Monument-Grotesk'] uppercase transition-colors duration-300 ease-out hover:bg-[color:var(--sundays-action-paper)] relative overflow-hidden group"
                   style={{
                     textAlign: "center",
                     cornerShape: "squircle",
                   } as React.CSSProperties}
                 >
-                  <span className="inline-block transition-transform duration-300 ease-out group-hover:-translate-y-full text-[#EEEBE3]">
+                  <span className="inline-block transition-transform duration-300 ease-out group-hover:-translate-y-full text-[color:var(--sundays-action-paper)]">
                     ATTEND A SESSION
                   </span>
-                  <span className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-out translate-y-full group-hover:translate-y-0 text-black">
+                  <span className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-out translate-y-full group-hover:translate-y-0 text-[color:var(--sundays-action-ink)]">
                     ATTEND A SESSION
                   </span>
                 </Link>
@@ -244,7 +178,7 @@ export default function SundaysPage() {
               <Projects></Projects>
             </div>
 
-            <div id="team" className="bg-[#FCFAF7]/80">
+            <div id="team" className="bg-[color:rgb(var(--sundays-paper)/.8)]">
               <Team></Team>
             </div>
           </div>
