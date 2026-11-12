@@ -19,6 +19,7 @@ export default function BasketComposer() {
   const [sending, setSending] = useState(false);
   const [uncertain, setUncertain] = useState(false);
   const [delivery, setDelivery] = useState<Delivery>(null);
+  const [missingNote, setMissingNote] = useState(false);
   const [error, setError] = useState('');
   const requestId = useRef<string | null>(null);
   const inFlight = useRef(false);
@@ -40,15 +41,16 @@ export default function BasketComposer() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (inFlight.current) return;
+    const animate = pointerSubmit.current;
+    pointerSubmit.current = false;
     const text = note.trim();
     if (!text) {
-      setError('Write a little note first.');
+      setMissingNote(true);
+      setError('');
       textarea.current?.focus();
       return;
     }
     const website = String(new FormData(event.currentTarget).get('website') ?? '');
-    const animate = pointerSubmit.current;
-    pointerSubmit.current = false;
     inFlight.current = true;
     setSending(true);
     setError('');
@@ -102,16 +104,23 @@ export default function BasketComposer() {
             </div>
           </div>
         ) : (
-          <form action="/api/suggestions" method="post" onSubmit={submit} aria-busy={!ready || sending}>
+          <form action="/api/suggestions" method="post" noValidate onSubmit={submit} aria-busy={!ready || sending}>
             <fieldset className="basket-fields" disabled={!ready || sending}>
               <div className="basket-sheet basket-note">
                 <label htmlFor="basket-note">Your note</label>
                 <textarea id="basket-note" ref={textarea} name="note" rows={3} required readOnly={uncertain} maxLength={NOTE_LIMIT} value={note}
-                  placeholder="What’s on your mind?" aria-describedby="basket-privacy basket-note-limit"
-                  onChange={event => { requestId.current = null; setNote(event.target.value); }} />
+                  placeholder="What’s on your mind?" aria-invalid={missingNote || undefined}
+                  aria-describedby={missingNote ? 'basket-note-error basket-privacy basket-note-limit' : 'basket-privacy basket-note-limit'}
+                  onChange={event => {
+                    const text = event.target.value;
+                    requestId.current = null;
+                    setNote(text);
+                    if (missingNote && text.trim()) setMissingNote(false);
+                  }} />
                 <span id="basket-note-limit" className={note.length > NOTE_LIMIT - 100 ? 'basket-note-count' : 'sr-only'}>
                   {note.length > NOTE_LIMIT - 100 ? `${note.length} / ${NOTE_LIMIT}` : `Up to ${NOTE_LIMIT} characters.`}
                 </span>
+                {missingNote && <p id="basket-note-error" className="basket-message basket-error" role="alert">Write a little note first.</p>}
               </div>
 
               <div className="basket-trap" aria-hidden="true">
