@@ -8,6 +8,7 @@ import { BasketRequestError, postBasket } from './client';
 export default function HostReview({ note, statusFilter }: { note: BasketNote; statusFilter?: ReviewStatus }) {
   const router = useRouter();
   const [status, setStatus] = useState(note.status);
+  const [savedStatus, setSavedStatus] = useState(note.status);
   const [publish, setPublish] = useState(note.published);
   const [published, setPublished] = useState(note.published);
   const [ready, setReady] = useState(false);
@@ -40,8 +41,10 @@ export default function HostReview({ note, statusFilter }: { note: BasketNote; s
       const response = await postBasket({ action: 'review', id: note.id, version: version.current, status, summary, outcome, publish });
       if (!response.note) throw new Error('The basket didn’t confirm your review. Try again.');
       version.current = response.note.version;
+      setSavedStatus(response.note.status);
       setPublished(response.note.published);
-      setMessage(response.note.published ? 'Recap published.' : 'Review saved.');
+      setMessage(response.note.publicPost && response.note.status === 'archived' ? 'Post and discussion archived.'
+        : response.note.published ? 'Recap published.' : 'Review saved.');
       if (statusFilter && statusFilter !== response.note.status) refresh(() => router.refresh());
     } catch (error) {
       setError(error instanceof BasketRequestError ? error.message : 'The basket couldn’t confirm the review. Try saving again.');
@@ -84,6 +87,9 @@ export default function HostReview({ note, statusFilter }: { note: BasketNote; s
           </div>
         </details>
         {published && !publish && <p className="basket-review-hint">Saving will take down the recap.</p>}
+        {note.publicPost && status === 'archived' && savedStatus !== 'archived' && (
+          <p className="basket-review-hint">Saving will take down the post and its discussion.</p>
+        )}
         <button className="basket-button" type="submit">{working || refreshing ? 'Saving…' : 'Save review'}</button>
       </fieldset>
       <p className="basket-message" aria-live="polite">{message}</p>

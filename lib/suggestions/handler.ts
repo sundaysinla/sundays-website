@@ -1,5 +1,5 @@
-import { basketHostKey, hostSessionCookie, localOrigin, requestHostSession, sameSecret, validHostSession } from './access.ts';
-import { BasketError } from './model.ts';
+import { basketHostKey, HOST_COOKIE, hostSessionCookie, localOrigin, sameSecret, validHostSession, voterHash } from './access.ts';
+import { basketCookie, BasketError, VOTER_COOKIE } from './model.ts';
 import { basketRequest } from './requests.ts';
 import { openBasket } from './store.ts';
 
@@ -46,20 +46,31 @@ export async function handleBasket(request: Request, env = process.env, now = Da
 
   try {
     const parsed = basketRequest.safeParse(await readRequest(request));
-    if (!parsed.success) throw new BasketError('Check the note and try again.', 400);
+    if (!parsed.success) throw new BasketError('Check your entry and try again.', 400);
     const input = parsed.data;
     if (input.action === 'sign-out') {
       const response = reply({ ok: true }, 200);
       response.headers.set('Set-Cookie', hostSessionCookie(null, now, protocol === 'https:'));
       return response;
     }
-    if (input.action === 'review' && !validHostSession(requestHostSession(request), key, now)) {
+    const cookies = request.headers.get('cookie') ?? '';
+    if (input.action === 'review' && !validHostSession(basketCookie(cookies, HOST_COOKIE), key, now)) {
       throw new BasketError('Sign in as a host to save this review.', 401);
     }
     const store = await openBasket(env.SUGGESTIONS_BASKET_DB_PATH);
     if (input.action === 'drop') {
-      store.drop(input, now);
-      return reply({ saved: true }, 201);
+      return reply({ saved: true, ...store.drop(input, now) }, 201);
+    }
+    if (input.action === 'comments') {
+      return reply({ discussion: store.comments(input.id, input.before) }, 200);
+    }
+    if (input.action === 'comment') {
+      return reply({ discussion: store.addComment(input, now) }, 201);
+    }
+    if (input.action === 'vote') {
+      const voter = voterHash(basketCookie(cookies, VOTER_COOKIE));
+      if (!voter) throw new BasketError('Allow cookies in this browser to vote.', 400);
+      return reply({ votes: store.vote(input.id, voter, input.value, now) }, 200);
     }
     if (input.action === 'sign-in') {
       store.signInAttempt(now);

@@ -3,9 +3,11 @@ import { randomUUID } from 'node:crypto';
 import { mkdtempSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
 import { handleBasket } from '../lib/suggestions/handler.ts';
 import { openBasket } from '../lib/suggestions/store.ts';
+import { voterHash } from '../lib/suggestions/access.ts';
 
 const host = 'localhost:4010';
 const origin = `http://${host}`;
@@ -99,8 +101,8 @@ test('publication needs a valid host session, explicit permission, a finished tr
   await send(drop({ note: 'Private original. Keep this inside the inbox.' }));
   await send(drop({ category: 'try', note: 'Separate raw text from the public recap.', allowRecap: true }));
   const basket = await store();
-  const [privateNote] = basket.inbox({ category: 'idea' }).notes;
-  const [allowedNote] = basket.inbox({ category: 'try' }).notes;
+  const [privateNote] = basket.inbox().notes.filter(note => !note.allowRecap);
+  const [allowedNote] = basket.inbox().notes.filter(note => note.allowRecap);
   assert.equal((await send(review(allowedNote))).status, 401);
   const headers = { cookie: await signIn() };
   assert.equal((await send(review(privateNote), { headers })).status, 409);
@@ -151,4 +153,110 @@ test('the persistent rate limit counts new notes and expires independently of ho
   const login = { action: 'sign-in', key: env.SUGGESTIONS_BASKET_HOST_KEY };
   assert.equal((await send(login)).status, 429);
   assert.equal((await send(login, { now: start + 5 * 60_000 })).status, 200);
+});
+
+function publicDrop(values = {}) {
+  return drop({ category: undefined, allowRecap: undefined, publicPost: true, ...values });
+}
+
+test('public posting is explicit and only public originals become discussions', async (t) => {
+  const { send, signIn, store } = fixture(t);
+  await send(drop({ note: 'Legacy consent for a short recap only.', allowRecap: true }));
+  await send(publicDrop({ note: 'A private note to hosts.', publicPost: false }));
+  assert.equal((await send(drop({ publicPost: true }))).status, 400);
+
+  const input = publicDrop({ note: 'Let’s put a sketchbook out at every Sunday.' });
+  const first = await send(input);
+  assert.equal(first.status, 201);
+  const saved = await first.json();
+  assert.match(saved.postId, /^[a-f0-9-]{36}$/);
+  assert.deepEqual(await (await send(input)).json(), saved);
+  assert.equal((await send({ ...input, publicPost: false })).status, 409);
+
+  const basket = await store();
+  const feed = basket.publicFeed(null);
+  assert.deepEqual(feed.posts.map(post => post.note), [input.note]);
+  assert(!('category' in feed.posts[0]));
+  const legacy = basket.inbox().notes.find(note => note.allowRecap && !note.publicPost);
+  const headers = { cookie: await signIn() };
+  assert.equal((await send(review(legacy), { headers })).status, 200);
+  assert.equal(basket.showcase().length, 1);
+  for (const id of basket.inbox().notes.filter(note => !note.publicPost).map(note => note.id)) {
+    assert.equal((await send({ action: 'comments', id })).status, 404);
+    assert.equal((await send({ action: 'comment', id, requestId: randomUUID(), body: 'Private?', website: '' })).status, 404);
+    assert.equal((await send({ action: 'vote', id, value: 1 }, { headers: { cookie: 'sundays_basket_voter=' + randomUUID() } })).status, 404);
+  }
+});
+
+test('existing SQLite notes keep their private originals when the public consent column is added', async (t) => {
+  const { path, store } = fixture(t);
+  const original = 'Original text from the previous schema.';
+  const db = new DatabaseSync(path);
+  try {
+    db.exec(`CREATE TABLE suggestions (
+      id TEXT PRIMARY KEY, request_id TEXT UNIQUE, note TEXT, category TEXT, allow_recap INTEGER,
+      created_at INTEGER, status TEXT, summary TEXT, outcome TEXT, published_at INTEGER, version INTEGER
+    )`);
+    db.prepare('INSERT INTO suggestions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+      randomUUID(), randomUUID(), original, 'idea', 1, start, 'tried', 'Existing summary', 'Existing outcome', start, 2,
+    );
+  } finally {
+    db.close();
+  }
+
+  const basket = await store();
+  assert.deepEqual(basket.publicFeed(null).posts, []);
+  assert.equal(basket.inbox().notes[0].note, original);
+  assert.equal(basket.inbox().notes[0].publicPost, false);
+  assert.equal(basket.showcase()[0].summary, 'Existing summary');
+});
+
+test('one browser can add, change, retry and remove a vote without affecting another browser’s vote', async (t) => {
+  const { send, store } = fixture(t);
+  const { postId: id } = await (await send(publicDrop())).json();
+  const a = randomUUID();
+  const b = randomUUID();
+  const vote = (token, value) => send({ action: 'vote', id, value }, { headers: { cookie: 'sundays_basket_voter=' + token } });
+  assert.equal((await send({ action: 'vote', id, value: 1 })).status, 400);
+  assert.equal((await vote(a, 2)).status, 400);
+  assert.deepEqual((await (await vote(a, 1)).json()).votes, { score: 1, vote: 1 });
+  assert.deepEqual((await (await vote(a, 1)).json()).votes, { score: 1, vote: 1 });
+  assert.deepEqual((await (await vote(b, -1)).json()).votes, { score: 0, vote: -1 });
+  assert.deepEqual((await (await vote(a, -1)).json()).votes, { score: -2, vote: -1 });
+  assert.deepEqual((await (await vote(a, 0)).json()).votes, { score: -1, vote: 0 });
+  assert.deepEqual((await store()).publicFeed(voterHash(b)).posts[0].votes, { score: -1, vote: -1 });
+});
+
+test('public comments have a bounded preview, a paginated history, and duplicate-safe retries', async (t) => {
+  const { send, signIn, store } = fixture(t);
+  const { postId: id } = await (await send(publicDrop())).json();
+  const comment = (body, extra = {}) => ({ action: 'comment', id, body, requestId: randomUUID(), website: '', ...extra });
+  for (const bad of [comment(' '), comment('x'.repeat(501)), comment('Spam', { website: 'https://spam.example' })]) {
+    assert.equal((await send(bad)).status, 400);
+  }
+
+  for (let index = 1; index <= 12; index++) assert.equal((await send(comment('Reply ' + index))).status, 201);
+  const retry = comment('  Reply 13  ');
+  assert.equal((await send(retry)).status, 201);
+  assert.equal((await send(retry)).status, 201);
+  assert.equal((await send({ ...retry, body: 'Different comment' })).status, 409);
+  const basket = await store();
+  const [post] = basket.publicFeed(null).posts;
+  assert.equal(post.discussion.count, 13);
+  assert.deepEqual(post.discussion.comments.map(item => item.body), ['Reply 13', 'Reply 12']);
+  assert.equal(Object.getPrototypeOf(post.discussion.comments[0]), Object.prototype);
+  const { discussion: page } = await (await send({ action: 'comments', id })).json();
+  assert.equal(page.comments.length, 10);
+  assert.deepEqual(Object.keys(page.comments[0]).sort(), ['body', 'createdAt', 'id']);
+  const { discussion: older } = await (await send({ action: 'comments', id, before: page.before })).json();
+  assert.deepEqual(older.comments.map(item => item.body), ['Reply 3', 'Reply 2', 'Reply 1']);
+  assert.equal(older.before, null);
+
+  const [row] = basket.inbox().notes;
+  const headers = { cookie: await signIn() };
+  assert.equal((await send(review(row, { status: 'archived', publish: false }), { headers })).status, 200);
+  assert.deepEqual(basket.publicFeed(null).posts, []);
+  assert.equal((await send({ action: 'comments', id })).status, 404);
+  assert.equal((await send(retry)).status, 404);
+  assert.equal((await send({ action: 'vote', id, value: 1 }, { headers: { cookie: 'sundays_basket_voter=' + randomUUID() } })).status, 404);
 });

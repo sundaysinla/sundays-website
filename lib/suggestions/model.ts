@@ -1,16 +1,10 @@
 export const NOTE_LIMIT = 600;
 export const SUMMARY_LIMIT = 180;
 export const OUTCOME_LIMIT = 500;
-
-export const categories = ['idea', 'try', 'improve', 'love'] as const;
-export type Category = typeof categories[number];
-
-export const categoryCopy: Record<Category, { label: string; example: string }> = {
-  idea: { label: 'Idea', example: 'What if we had a little wall of things we’re making?' },
-  try: { label: 'Try this', example: 'Anyone up for volleyball after a Sunday?' },
-  improve: { label: 'Improve', example: 'A quiet table would make it easier to focus.' },
-  love: { label: 'Loved it', example: 'I loved seeing what everyone made at demos.' },
-};
+export const COMMENT_LIMIT = 500;
+export const COMMENT_PREVIEW = 2;
+export const VOTER_COOKIE = 'sundays_basket_voter';
+export const VOTER_TOKEN_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export const reviewStatuses = ['new', 'considering', 'tried', 'implemented', 'archived'] as const;
 export type ReviewStatus = typeof reviewStatuses[number];
@@ -26,8 +20,8 @@ export function canShowRecap(status: ReviewStatus): status is 'tried' | 'impleme
 export type BasketNote = {
   id: string;
   note: string;
-  category: Category;
   allowRecap: boolean;
+  publicPost: boolean;
   createdAt: number;
   status: ReviewStatus;
   summary: string;
@@ -37,6 +31,21 @@ export type BasketNote = {
 };
 
 export type Recap = Pick<BasketNote, 'id' | 'summary' | 'outcome'> & { status: 'tried' | 'implemented' };
+
+export type Vote = -1 | 0 | 1;
+export type VoteState = { score: number; vote: Vote };
+export type BasketComment = { id: number; body: string; createdAt: number };
+export type DiscussionPage = { comments: BasketComment[]; count: number; before: number | null };
+export type PublicPost = Pick<BasketNote, 'id' | 'note' | 'createdAt' | 'status'> & {
+  votes: VoteState;
+  discussion: DiscussionPage;
+};
+
+export function basketCookie(header: string, name: string) {
+  const prefix = name + '=';
+  const values = header.split(';').map(part => part.trim()).filter(part => part.startsWith(prefix));
+  return values.length === 1 ? values[0].slice(prefix.length) : undefined;
+}
 
 export class BasketError extends Error {
   readonly status: number;

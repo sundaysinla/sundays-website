@@ -106,44 +106,6 @@
 .basket-composer { grid-area: compose; min-width: 0; max-width: 500px; }
 .basket-fields { display: block; min-inline-size: 0; }
 
-.basket-categories {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 7px;
-  min-inline-size: 0;
-  margin-bottom: 12px;
-}
-
-.basket-categories label { position: relative; display: block; min-width: 0; cursor: pointer; }
-.basket-categories input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-
-.basket-categories span {
-  position: relative;
-  display: grid;
-  min-height: 44px;
-  place-items: center;
-  padding: 4px;
-  border: 1px solid var(--basket-control-line);
-  border-radius: 4px;
-  background: var(--basket-paper);
-  font-size: .875rem;
-  text-align: center;
-  transition: background-color 140ms ease-out, border-color 140ms ease-out;
-}
-
-.basket-categories input:checked + span {
-  color: var(--basket-accent-ink);
-  background: var(--basket-accent-wash);
-  border-color: var(--basket-accent-edge);
-}
-
-.basket-category-check { position: absolute; right: 5px; bottom: 4px; }
-
-.basket-categories input:focus-visible + span {
-  outline: 2px solid var(--basket-accent-ink);
-  outline-offset: 3px;
-}
-
 .basket-sheet {
   position: relative;
   border: 1px solid var(--basket-rule);
@@ -258,10 +220,10 @@
 .basket-receipt h2 { font: italic 200 clamp(2.6rem, 5vw, 4.3rem)/1.05 var(--basket-editorial); letter-spacing: -.05em; }
 .basket-receipt h2:focus { outline: none; }
 .basket-receipt p { color: var(--basket-muted); }
+.basket-receipt-actions { display: flex; flex-wrap: wrap; column-gap: 18px; }
 
 .basket-recaps { border-top: 1px dashed var(--basket-rule); padding-block: 30px 76px; }
 .basket-recaps h2 { margin-bottom: 10px; font: 400 clamp(1.95rem, 4vw, 3.15rem)/1.1 var(--basket-serif); letter-spacing: -.055em; }
-.basket-recaps > p { color: var(--basket-muted); }
 .basket-recap-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 22px; }
 
 .basket-recap {
@@ -329,7 +291,6 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .basket-categories input:not(:checked):not(:disabled) + span:hover { background-color: #f0eadc; }
   .basket-button:hover:not(:disabled) {
     color: var(--basket-action-ink);
     background: var(--basket-action-paper);

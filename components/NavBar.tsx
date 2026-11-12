@@ -17,10 +17,10 @@ export default function NavBar() {
             href="/basket"
             prefetch={false}
             aria-label="Suggestions, new"
-            className="group inline-flex h-8 items-center gap-1 text-[12px] md:text-[14px] font-['Monument-Grotesk'] uppercase text-[#010101]"
+            className="group inline-flex h-11 lg:h-8 items-center gap-1.5 text-[12px] md:text-[14px] font-['Monument-Grotesk'] uppercase text-[#010101]"
         >
             <span className="transition-opacity group-hover:opacity-70">Suggestions</span>
-            <sup className="-top-1.5 inline-flex items-center gap-px font-['Office-Times-Round'] text-[11px] font-normal italic normal-case leading-none text-[#5f6b50]">
+            <sup className="-top-1.5 inline-flex items-center gap-0.5 font-['PP-Editorial-New-UltraLightItalic'] text-[12px] md:text-[13px] font-extralight italic normal-case leading-none text-[#4b593e]">
                 <svg width="6" height="9" viewBox="0 0 6 9" fill="none" stroke="currentColor" strokeWidth=".8" strokeLinecap="round" aria-hidden="true">
                     <path d="M4.5 3 2 1.5M4 6l-3 .8" />
                 </svg>
@@ -34,7 +34,7 @@ export default function NavBar() {
 
     return (
         <>
-            <nav className="flex items-center justify-between px-6 md:px-12 py-4 bg-transparent relative z-30">
+            <nav className="flex items-center justify-between px-6 md:px-12 py-2.5 lg:py-4 bg-transparent relative z-30">
                 <div className="flex items-center space-x-4">
                     <Image
                         src="/smiley.png"
@@ -57,11 +57,11 @@ export default function NavBar() {
                     </span>
                 </div>
 
-                <div className="flex items-center gap-4 lg:hidden">
+                <div className="flex items-center gap-3 lg:hidden">
                     {suggestionsLink}
                     <button
                         onClick={() => setOpen(!open)}
-                        className="relative w-8 h-8 flex items-center justify-center"
+                        className="relative -mr-1.5 w-11 h-11 flex items-center justify-center"
                         aria-label={open ? "Close menu" : "Open menu"}
                     >
                         <span
@@ -84,7 +84,7 @@ export default function NavBar() {
             <div
                 className={`fixed inset-0 z-50 bg-[#FEFDFB] flex flex-col transition-opacity duration-300 ${open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
             >
-                <div className="flex items-center justify-between px-6 py-4">
+                <div className="flex items-center justify-between px-6 py-2.5">
                     <Image
                         src="/smiley.png"
                         alt="Logo"
@@ -94,7 +94,7 @@ export default function NavBar() {
                     />
                     <button
                         onClick={() => setOpen(false)}
-                        className="relative w-8 h-8 flex items-center justify-center"
+                        className="relative -mr-1.5 w-11 h-11 flex items-center justify-center"
                         aria-label="Close menu"
                     >
                         <span

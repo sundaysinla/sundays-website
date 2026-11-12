@@ -53,8 +53,7 @@
 }
 
 .basket-inbox-paper { min-height: 100%; padding: 21px 23px; border-right: 1px dashed var(--basket-rule); background: var(--basket-sheet); }
-.basket-inbox-meta { display: flex; justify-content: space-between; gap: 8px; color: var(--basket-muted); font-size: .85rem; }
-.basket-inbox-meta > span { color: var(--basket-ink); }
+.basket-inbox-meta { color: var(--basket-muted); font-size: .85rem; }
 .basket-inbox-paper p { margin: 13px 0; font: 400 1.35rem/1.44 var(--basket-serif); white-space: pre-wrap; overflow-wrap: anywhere; }
 .basket-inbox-permission, .basket-review-hint { color: var(--basket-muted); font-size: .84rem; }
 

@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import HostAccess from '@/components/suggestions/HostAccess';
 import HostReview from '@/components/suggestions/HostReview';
 import { basketHostKey, HOST_COOKIE, localOrigin, validHostSession } from '@/lib/suggestions/access';
-import { categories, categoryCopy, reviewStatuses, statusLabels } from '@/lib/suggestions/model';
+import { reviewStatuses, statusLabels } from '@/lib/suggestions/model';
 import { openBasket } from '@/lib/suggestions/store';
 import '@/styles/suggestions-host.css';
 
@@ -16,15 +16,13 @@ export default async function BasketHostPage({ searchParams }: { searchParams: R
   if (!key || !localOrigin(headers().get('host'))) notFound();
   const signedIn = validHostSession(cookies().get(HOST_COOKIE)?.value, key);
 
-  const category = categories.find(value => value === searchParams.category);
   const status = reviewStatuses.find(value => value === searchParams.status);
   const rawPage = typeof searchParams.page === 'string' ? Number(searchParams.page) : 1;
   const page = Number.isSafeInteger(rawPage) && rawPage > 0 ? rawPage - 1 : 0;
-  const inbox = signedIn ? (await openBasket()).inbox({ category, status, page }) : null;
+  const inbox = signedIn ? (await openBasket()).inbox({ status, page }) : null;
 
   function pageLink(index: number) {
     const query = new URLSearchParams();
-    if (category) query.set('category', category);
     if (status) query.set('status', status);
     if (index > 0) query.set('page', String(index + 1));
     return query.size ? `/basket/host?${query}` : '/basket/host';
@@ -42,13 +40,6 @@ export default async function BasketHostPage({ searchParams }: { searchParams: R
         <>
           <form className="basket-host-filters" action="/basket/host" method="get" aria-label="Filter notes">
             <div>
-              <label htmlFor="basket-filter-category">Category</label>
-              <select id="basket-filter-category" name="category" defaultValue={category ?? ''}>
-                <option value="">All categories</option>
-                {categories.map(value => <option value={value} key={value}>{categoryCopy[value].label}</option>)}
-              </select>
-            </div>
-            <div>
               <label htmlFor="basket-filter-status">Review status</label>
               <select id="basket-filter-status" name="status" defaultValue={status ?? ''}>
                 <option value="">All statuses</option>
@@ -64,17 +55,18 @@ export default async function BasketHostPage({ searchParams }: { searchParams: R
                 <article className="basket-inbox-note" key={note.id}>
                   <div className="basket-inbox-paper">
                     <div className="basket-inbox-meta">
-                      <span>{categoryCopy[note.category].label}</span>
                       <time dateTime={new Date(note.createdAt).toISOString()}>{shortDate.format(note.createdAt)}</time>
                     </div>
                     <p>{note.note}</p>
-                    <span className="basket-inbox-permission">{note.allowRecap ? 'Recap permitted' : 'Private note'}</span>
+                    <span className="basket-inbox-permission">
+                      {note.publicPost ? 'Public posting allowed' : note.allowRecap ? 'Recap permitted' : 'Private note'}
+                    </span>
                   </div>
                   <HostReview key={note.version} note={note} statusFilter={status} />
                 </article>
               ))}
             </div>
-          ) : <p className="basket-host-empty">{category || status || page ? 'No notes match these filters.' : 'The basket is empty.'}</p>}
+          ) : <p className="basket-host-empty">{status || page ? 'No notes match this view.' : 'The basket is empty.'}</p>}
 
           {(page > 0 || inbox.hasNext) && (
             <nav className="basket-inbox-pages" aria-label="Inbox pages">

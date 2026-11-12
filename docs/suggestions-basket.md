@@ -16,7 +16,7 @@ Kelli Anderson's paper engineering informed the visible crease and the moment th
 | **Studio pinboard** | Offset paper scraps echo the Polaroids most directly. An open wall suggests other people can read the notes. | Pinning a note has a crisp snap. The cards need more space and hierarchy on a phone, especially alongside a private composer. | CSS layers are straightforward. The apparent public surface would need more copy to explain what is private. |
 | **Seed packet** | A printed seed envelope uses the editorial type and suggests ideas can grow over time. It ties to the garden metaphor and feels more whimsical. | A paper seed could slip into the envelope or sprout. A small packet scales down well, but growth at submission would imply a host has already acted. | Simple SVG in the composer. Meaningful growth stages would introduce extra state and graphics in the host and recap experience. |
 
-The woven basket best expresses a quiet handoff, and the paper treatment keeps it recognizable as Sundays. The left column is for writing and the right column is the illustrated object. On a phone, the illustration sits between the short intro and the form. Warm paper and near-black ink carry the page. Muted olive ties the selected category, receipt stamp, and illustrated slips together. A checkmark identifies the selected category. Office Times and Editorial set the headlines. Monument Grotesk labels the controls.
+The woven basket best expresses a quiet handoff, and the paper treatment keeps it recognizable as Sundays. The left column is for writing and the right column is the illustrated object. On a phone, the illustration sits between the short intro and the form. Warm paper and near-black ink carry the page. Muted olive ties the vote controls, receipt stamp, and illustrated slips together. Office Times and Editorial set the headlines. Monument Grotesk labels the controls.
 
 The masthead uses the homepage's original chrome smiley and still wordmark, arranged like the timer's header. The main actions use the homepage's rounded black button treatment.
 
@@ -24,12 +24,12 @@ Playwright screenshots and the existing CSS and font files grounded the design. 
 
 Morph's semantic search and editing endpoints returned 402. Source inspection and focused patches were used for the repository work.
 
-## Implementation plan
+## Posting and discussion
 
-1. Pin persistence, request validation, retry, host permissions, and publication rules with temporary SQLite tests. The server accepts a category, a note, and optional consent for a host-written recap. An opaque request key makes a retry safe. A honeypot and persistent aggregate limits guard the local endpoints without collecting IP addresses or member IDs in the Basket database.
-2. Add the member page, composer, illustration, and recaps. Confirm immediately after a committed write. Let motion illustrate the success without controlling it. Preserve the draft on failure.
-3. Add the host inbox and filters. Keep raw notes private. Hosts can save review status and outcome, and publish a separate idea summary and outcome only after consent and a Tried or Implemented status. Archiving removes a recap. Version checks prevent an older review from overwriting a newer one.
-4. Test the isolated local workflow in desktop and mobile browsers. Cover keyboard and reduced-motion use, failure and retry, empty states, permission checks, and a recap being published and taken down.
+1. Notes go to hosts by default. Checking **Post publicly so anyone can see it** puts the original text under **From the Basket** as soon as the write commits. Earlier recap consent applies to the host-written recap alone. Existing rows start with public posting off after migration.
+2. Each public suggestion has an upvote, a downvote, and a net score. A browser can change or clear its vote. The first vote creates a random browser cookie. SQLite stores its hash to identify that vote.
+3. Cards show two recent comments. Open a discussion to read ten comments at a time or leave a public reply. Opaque request keys make retries safe. A honeypot and persistent aggregate limits guard notes and comments.
+4. The host inbox distinguishes private notes, public posting consent, and earlier recap consent. Archiving a public note takes down its discussion. Version checks protect concurrent host reviews.
 
 ## Run locally
 
@@ -43,9 +43,9 @@ npm run basket:dev
 
 Open [The Suggestions Basket](http://localhost:4010/basket) and [the host inbox](http://localhost:4010/basket/host) on the same hostname. To read the local host key in your terminal, run `node --env-file=.env.local -p 'process.env.SUGGESTIONS_BASKET_HOST_KEY'`. The local homepage shows Suggestions in its top navigation when started with `basket:dev`.
 
-To exercise the full loop, leave a note and allow a recap. Sign in as a host, set its status to Tried, write an idea summary and outcome, check Publish, and save. Reload the member page to see the recap. Archive the note or clear Publish to take it down.
+To exercise the full loop, write a note and check **Post publicly so anyone can see it**. Follow **See your post**, then open the same Basket URL in a second browser to vote and comment. Sign in as a host and set the status to Archived to take the post and discussion down.
 
-Notes survive server restarts in `.sundays-basket/basket.sqlite`. Set `SUGGESTIONS_BASKET_DB_PATH` to use another local file. The Basket collects no account, name, email, or IP address in its database. Hosts can see the note itself, so the form asks writers to omit identifying details. Only the authored recap fields can appear in the showcase. The local limits allow 30 new notes and eight host key attempts per five-minute window. The host key issues a two-hour, same-site, HTTP-only session.
+Notes, comments, and votes survive server restarts in `.sundays-basket/basket.sqlite`. Set `SUGGESTIONS_BASKET_DB_PATH` to use another local file. The Basket stores the text people submit and asks writers to omit identifying details. The local limits allow 30 new notes, 60 comments, 240 vote changes, and eight host key attempts per five-minute window. The host key issues a two-hour, same-site, HTTP-only session.
 
 `npm test` exercises the actual SQLite store and request handler. Run `./node_modules/.bin/tsc --noEmit --incremental false` separately because the existing Next.js build skips type checks.
 
@@ -53,4 +53,4 @@ The preview requires a loopback server and is disabled on Vercel. A hosted relea
 
 ## Browser verification
 
-Playwright exercised the member view at 1440 px, 390 px, and 320 px. The walkthrough covered keyboard selection and submission, reduced motion, receipt focus, and a deliberately lost response after SQLite committed. Retrying produced one inbox note. It also covered a locked and empty inbox, sign-in, category filtering, recap publication, archiving, and sign-out. The showcase exposed the recap only, and the Basket loaded neither of the homepage's 3D assets. Screenshots used a disposable SQLite database and fictional notes.
+The original Playwright walkthrough covered keyboard submission, reduced motion, receipt focus, legacy recap publication, and host sign-in. The discussion walkthrough uses two isolated browser contexts to check visibility, reversible votes, comment preview and pagination, and archiving. It also simulates a lost reply response after SQLite commits to check that retrying adds one comment. Test notes and screenshots use a disposable database.

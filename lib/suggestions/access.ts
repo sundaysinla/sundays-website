@@ -1,4 +1,5 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { VOTER_TOKEN_PATTERN } from './model.ts';
 
 export const HOST_COOKIE = 'sundays_basket_host';
 const sessionLifetime = 2 * 60 * 60_000;
@@ -35,11 +36,9 @@ export function validHostSession(value: string | undefined, key: string, now = D
   return Number(expires) > now && sameSecret(signature, sign(key, expires));
 }
 
-export function requestHostSession(request: Request) {
-  const prefix = HOST_COOKIE + '=';
-  const entries = (request.headers.get('cookie') ?? '').split(';').map(cookie => cookie.trim());
-  const matches = entries.filter(cookie => cookie.startsWith(prefix));
-  return matches.length === 1 ? matches[0].slice(prefix.length) : undefined;
+export function voterHash(token: string | undefined) {
+  if (!token || !VOTER_TOKEN_PATTERN.test(token)) return null;
+  return createHash('sha256').update('sundays-basket-voter\0' + token.toLowerCase()).digest('hex');
 }
 
 export function hostSessionCookie(key: string | null, now: number, secure: boolean) {
