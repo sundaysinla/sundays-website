@@ -23,7 +23,7 @@
   width: 100%;
   min-height: 44px;
   padding: 8px 11px;
-  border: 1px solid #bfb39d;
+  border: 1px solid var(--basket-control-line);
   border-radius: 4px;
   color: var(--basket-ink);
   background: var(--basket-paper);
@@ -63,7 +63,7 @@
 .basket-review .basket-button { margin-top: 10px; }
 .basket-review-details { margin-top: 9px; border-block: 1px dashed var(--basket-rule); }
 .basket-review-details summary { min-height: 44px; padding: 10px 0; cursor: pointer; }
-.basket-review-details summary span { float: right; margin-left: 8px; color: #4f6028; font-size: .83rem; }
+.basket-review-details summary span { float: right; margin-left: 8px; color: var(--basket-accent-ink); font-size: .83rem; }
 .basket-review-fields { display: grid; gap: 9px; padding-bottom: 12px; }
 .basket-review textarea { margin-top: 4px; resize: vertical; }
 .basket-review .basket-message:empty { margin: 0; }

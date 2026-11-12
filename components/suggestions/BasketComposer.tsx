@@ -102,7 +102,10 @@ export default function BasketComposer() {
                   <label key={value}>
                     <input type="radio" name="category" value={value} checked={category === value}
                       onChange={() => { requestId.current = null; setCategory(value); }} />
-                    <span>{categoryCopy[value].label}</span>
+                    <span>
+                      {categoryCopy[value].label}
+                      {category === value && <Check className="basket-category-check" size={11} strokeWidth={2} aria-hidden="true" />}
+                    </span>
                   </label>
                 ))}
               </fieldset>

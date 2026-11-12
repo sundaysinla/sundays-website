@@ -66,9 +66,9 @@ export default function BasketIllustration({ delivery }: { delivery: 'still' | '
             <path d="M1 2 120 0 123 93 4 99Z" fill={`url(#${grain})`} opacity=".25" />
           </g>
           <g transform="translate(238 155) rotate(7)">
-            <path d="M0 2 105 0 108 110 3 112Z" fill="#e1efad" stroke="#55472d" strokeWidth="1.5" />
-            <path d="M0 2 105 0 106 14 1 16Z" fill="#c3eb61" />
-            <path d="M18 36h67m-65 13h57m-57 13h36" fill="none" stroke="#74874a" strokeWidth=".9" />
+            <path d="M0 2 105 0 108 110 3 112Z" fill="var(--basket-accent-paper)" stroke="#55472d" strokeWidth="1.5" />
+            <path d="M0 2 105 0 106 14 1 16Z" fill="var(--basket-accent-band)" />
+            <path d="M18 36h67m-65 13h57m-57 13h36" fill="none" stroke="var(--basket-accent-edge)" strokeWidth=".9" />
             <path d="M0 2 105 0 108 110 3 112Z" fill={`url(#${grain})`} opacity=".23" />
           </g>
           <g transform="translate(364 174) rotate(13)">
@@ -82,9 +82,9 @@ export default function BasketIllustration({ delivery }: { delivery: 'still' | '
           {delivery && (
             <g className="basket-settled-slip">
               <g transform="translate(299 190) rotate(-9)">
-                <path d="M0 0h67l3 75H2Z" fill="#bdff00" stroke="#5c522d" strokeWidth="1.5" />
-                <path d="M0 0h67l1 18-67 1Z" fill="#d9fa89" />
-                <path d="M2 19l65-1" stroke="#8aa444" strokeWidth="1" />
+                <path d="M0 0h67l3 75H2Z" fill="var(--basket-accent-paper)" stroke="#5c522d" strokeWidth="1.5" />
+                <path d="M0 0h67l1 18-67 1Z" fill="var(--basket-accent-wash)" />
+                <path d="M2 19l65-1" stroke="var(--basket-accent-edge)" strokeWidth="1" />
               </g>
             </g>
           )}
@@ -92,9 +92,9 @@ export default function BasketIllustration({ delivery }: { delivery: 'still' | '
           {delivery === 'animated' && (
             <g className="basket-flight">
               <g transform="translate(290 112)">
-                <path d="M0 1 73 0 75 65 2 67Z" fill="#bdff00" stroke="#51482b" strokeWidth="1.4" />
-                <path d="M12 31h50m-49 9h37m-37 9h42" stroke="#77903e" strokeWidth="1.15" />
-                <path className="basket-fold" d="M0 1 73 0 74 23 1 24Z" fill="#eaf9bd" stroke="#77903e" strokeWidth="1" />
+                <path d="M0 1 73 0 75 65 2 67Z" fill="var(--basket-accent-paper)" stroke="#51482b" strokeWidth="1.4" />
+                <path d="M12 31h50m-49 9h37m-37 9h42" stroke="var(--basket-accent-edge)" strokeWidth="1.15" />
+                <path className="basket-fold" d="M0 1 73 0 74 23 1 24Z" fill="var(--basket-accent-wash)" stroke="var(--basket-accent-edge)" strokeWidth="1" />
               </g>
             </g>
           )}
