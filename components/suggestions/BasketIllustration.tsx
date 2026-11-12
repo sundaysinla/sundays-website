@@ -4,8 +4,8 @@ const front = 'M77 238 C88 309 107 369 150 399 C202 432 391 433 449 401 C494 375
 const rimBack = 'M77 240 C74 212 164 184 299 183 C429 182 525 205 525 238';
 const rimFront = 'M77 238 C96 268 186 284 299 282 C415 281 510 261 525 238';
 const handle = 'M124 215 C126 129 180 56 271 43 C388 26 477 98 477 212';
-const ruledSlip = 'M1 2 120 0 123 93 4 99Z';
-const oliveSlip = 'M0 2 105 0 108 110 3 112Z';
+const paintTin = 'M10 23H105Q111 23 112 29L116 51Q117 57 111 58H7Q1 58 2 52L5 30Q6 23 10 23Z';
+const paintColors = ['#cfab6b', '#bf8a77', '#92a278', '#9a8fae'];
 const stampedSlip = 'M1 1 102 0 105 107 1 110Z';
 
 const courses = [
@@ -92,20 +92,23 @@ export default function BasketIllustration({ delivery }: { delivery: 'still' | '
           <path d={rimBack} fill="none" stroke={`url(#${cane})`} strokeWidth="13" />
           <path d={rimBack} fill="none" stroke="#8b6746" strokeWidth="13" strokeDasharray="1 5" strokeLinecap="butt" />
 
-          <g transform="translate(142 189) rotate(-16)">
-            <path d={ruledSlip} fill="#f3e9d4" stroke="#715d46" strokeWidth="1.4" />
-            <path d="M15 22 96 20 M15 33 104 31 M16 44 75 42 M18 55 97 53" fill="none" stroke="#a08c6c" strokeWidth=".9" opacity=".76" />
-            <path d="M4 91 122 86 123 93 4 99Z" fill="#dfcbaa" />
-            <path d="m4 91 118-5" fill="none" stroke="#fff5df" strokeWidth=".9" />
-            <path d={ruledSlip} fill={`url(#${grain})`} opacity=".25" />
+          <g transform="translate(245 247) rotate(-18)">
+            <image href="/maker-paintbrush.png" x="-36" y="-136" width="180" height="180" />
           </g>
-          <g transform="translate(238 155) rotate(7)">
-            <path d={oliveSlip} transform="translate(2 2)" fill="#523d29" opacity=".18" />
-            <path d={oliveSlip} fill={`url(#${slipPaper})`} stroke="#645940" strokeWidth="1.4" />
-            <path d="M0 2 105 0 106 14 1 16Z" fill="var(--basket-accent-band)" opacity=".75" />
-            <path d="m1 16 105-2" fill="none" stroke="#f2f4e7" strokeWidth=".8" />
-            <path d="M18 36h67m-65 13h57m-57 13h36" fill="none" stroke="var(--basket-accent-edge)" strokeWidth=".9" />
-            <path d={oliveSlip} fill={`url(#${grain})`} opacity=".23" />
+          <image href="/polaroid4.png" width="110" height="163" transform="translate(144 160) rotate(-14)" />
+          <g transform="translate(235 192) rotate(7)">
+            <path d={paintTin} transform="translate(2 3)" fill="#523d29" opacity=".26" />
+            <path d="M8 24 15 6Q16 2 21 2H96Q102 2 103 8L108 24Z" fill="#e5e8db" stroke="#68735c" strokeWidth="1.4" />
+            <path d="M22 8H96L99 20H18Z" fill="#f6f3e8" stroke="#aab19a" strokeWidth=".9" />
+            <path d="m45 8-2 12m27-12 1 12" fill="none" stroke="#c9cbbb" strokeWidth=".9" />
+            <path d={paintTin} fill="#bbc5ab" stroke="#68735c" strokeWidth="1.4" />
+            <path d="M12 28H104L109 49H8Z" fill="#f5f1e4" stroke="#929b83" strokeWidth="1" />
+            {paintColors.map((color, index) => (
+              <rect key={color} x={14 + index * 23} y="32" width="18" height="13" rx="2.6"
+                fill={color} stroke="#6b6452" strokeOpacity=".4" strokeWidth=".8" />
+            ))}
+            <path d="M7 53H111M17 34h10m13 0h10m13 0h10m13 0h10" fill="none" stroke="#fff9e8" strokeWidth="1" opacity=".68" />
+            <path d={paintTin} fill={`url(#${grain})`} opacity=".16" />
           </g>
           <g transform="translate(364 174) rotate(13)">
             <path d={stampedSlip} transform="translate(2 2)" fill="#523d29" opacity=".18" />
