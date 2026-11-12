@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { motion } from 'framer-motion';
+import { useEffect, useRef, useState, type FormEvent, type MouseEvent, type ReactNode } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { COMMENT_LIMIT, COMMENT_PREVIEW, type DiscussionPage } from '@/lib/suggestions/model';
 import { BasketRequestError, postBasket } from './client';
@@ -11,10 +12,12 @@ export default function BasketDiscussion({ id, preview, ready, children }: {
   id: string; preview: DiscussionPage; ready: boolean; children: ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [pointerToggle, setPointerToggle] = useState(false);
   const [loaded, setLoaded] = useState<DiscussionPage | null>(null);
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState<'read' | 'send' | null>(null);
   const [uncertain, setUncertain] = useState(false);
+  const [missingComment, setMissingComment] = useState(false);
   const [error, setError] = useState<DiscussionError | null>(null);
   const [announcement, setAnnouncement] = useState('');
   const inFlight = useRef(false);
@@ -22,9 +25,14 @@ export default function BasketDiscussion({ id, preview, ready, children }: {
   const commentList = useRef<HTMLUListElement>(null);
   const toggleButton = useRef<HTMLButtonElement>(null);
   const olderButton = useRef<HTMLButtonElement>(null);
+  const commentInput = useRef<HTMLTextAreaElement>(null);
   const discussion = loaded && loaded.count >= preview.count ? loaded : preview;
   const items = expanded ? discussion.comments : discussion.comments.slice(0, COMMENT_PREVIEW);
+  const layoutDependency = expanded
+    ? ['open', items.length, discussion.before, pending === 'read', error?.message, missingComment].join(':')
+    : `preview:${discussion.count}`;
   const panelId = 'basket-discussion-' + id;
+  const missingCommentId = panelId + '-required';
   const countLabel = discussion.count === 1 ? '1 comment' : `${discussion.count} comments`;
   const toggleLabel = expanded ? 'Hide comments'
     : discussion.count > COMMENT_PREVIEW ? `View all ${countLabel}`
@@ -64,7 +72,8 @@ export default function BasketDiscussion({ id, preview, ready, children }: {
     if (inFlight.current) return;
     const body = draft.trim();
     if (!body) {
-      setError({ message: 'Write a comment first.', reading: false });
+      setMissingComment(true);
+      commentInput.current?.focus();
       return;
     }
     const website = String(new FormData(event.currentTarget).get('website') ?? '');
@@ -95,22 +104,25 @@ export default function BasketDiscussion({ id, preview, ready, children }: {
     }
   }
 
-  function toggle() {
+  function toggle(event: MouseEvent<HTMLButtonElement>) {
+    setPointerToggle(event.detail > 0);
     setExpanded(!expanded);
+    setMissingComment(false);
     if (!expanded) void load();
   }
 
   return (
-    <div className="basket-discussion">
+    <motion.div className="basket-discussion" layout="position" layoutDependency={layoutDependency}>
       <div className="basket-post-actions">
         {children}
         <button ref={toggleButton} className="basket-discussion-toggle" type="button" aria-expanded={expanded}
           aria-controls={panelId} aria-label={toggleLabel} title={toggleLabel} disabled={!ready} onClick={toggle}>
-          <MessageCircle size={15} strokeWidth={1.7} aria-hidden="true" />
+          <MessageCircle key={`${expanded}:${pointerToggle}`} className={pointerToggle ? 'basket-bubble-pop' : undefined}
+            size={15} strokeWidth={1.7} aria-hidden="true" />
           <span>{discussion.count}</span>
         </button>
       </div>
-      <div id={panelId}>
+      <div id={panelId} className={expanded ? 'basket-thread' : undefined} data-pointer-reveal={expanded && pointerToggle ? true : undefined}>
         {items.length > 0 && (
           <ul ref={commentList} tabIndex={expanded ? -1 : undefined}
             className={expanded ? 'basket-comments' : 'basket-comments basket-comments-preview'}
@@ -137,11 +149,18 @@ export default function BasketDiscussion({ id, preview, ready, children }: {
                 )}
               </div>
             )}
-            <form className="basket-comment-form" action="/api/suggestions" method="post" onSubmit={send} aria-busy={pending === 'send'}>
+            <form className="basket-comment-form" action="/api/suggestions" method="post" noValidate onSubmit={send} aria-busy={pending === 'send'}>
               <label htmlFor={panelId + '-comment'}>Public comment</label>
-              <textarea id={panelId + '-comment'} name="body" rows={2} maxLength={COMMENT_LIMIT} required
+              <textarea ref={commentInput} id={panelId + '-comment'} name="body" rows={2} maxLength={COMMENT_LIMIT} required
                 readOnly={pending === 'send' || uncertain} value={draft}
-                onChange={event => { requestId.current = null; setDraft(event.target.value); }} />
+                aria-invalid={missingComment || undefined} aria-describedby={missingComment ? missingCommentId : undefined}
+                onChange={event => {
+                  const text = event.target.value;
+                  requestId.current = null;
+                  setDraft(text);
+                  if (missingComment && text.trim()) setMissingComment(false);
+                }} />
+              {missingComment && <p id={missingCommentId} className="basket-error" role="alert">Write a comment first.</p>}
               <div className="basket-trap" aria-hidden="true">
                 <label htmlFor={panelId + '-website'}>Leave this empty</label>
                 <input id={panelId + '-website'} type="text" name="website" tabIndex={-1} autoComplete="off" />
@@ -154,6 +173,6 @@ export default function BasketDiscussion({ id, preview, ready, children }: {
         )}
         <span className="sr-only" aria-live="polite">{announcement}</span>
       </div>
-    </div>
+    </motion.div>
   );
 }
