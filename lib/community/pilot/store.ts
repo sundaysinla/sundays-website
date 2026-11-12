@@ -2,12 +2,11 @@ import { createHash, randomBytes } from "node:crypto";
 import { chmodSync, closeSync, mkdirSync, openSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { discover } from "../discovery.ts";
-import { concepts } from "../search.ts";
 import { CommunityError } from "../http.ts";
-import type { DiscoveryResult, Member } from "../types.ts";
 import { memberContext } from "./access.ts";
-import { cardSchema, comparableName, type Card, type IntakeEvent, type IntakeGuest, type IntakeSnapshot } from "./intake.ts";
+import { comparableName, ProjectQuestionMissing, type IntakeEvent, type IntakeGuest, type IntakeSnapshot } from "./intake.ts";
+import { matchPeople, type Card, type Person, type PilotMatch } from "./matching.ts";
+import type { Portfolio } from "./portfolio.ts";
 
 export const CLAIM_TTL_MS = 20 * 60_000;
 export const MEMBER_TTL_MS = 12 * 60 * 60_000;
@@ -15,14 +14,25 @@ const liveFreshnessMs = 15 * 60_000;
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const token = () => randomBytes(32).toString("base64url");
 
-type Reviewed = { card: Card; date: string; shared: boolean };
-type Guest = IntakeGuest & { reviewed: Reviewed | null };
+type Prepared = { id: string; project: string; portfolio: Portfolio | null; portfolioUnavailable: boolean };
+type Guest = IntakeGuest & { prepared: Prepared | null; shared: { includePortfolio: boolean; hidden?: boolean } | null; claimBlocked?: boolean };
+type Preparation = { event: IntakeEvent; guest: IntakeGuest; prepared: boolean; startedAt: number };
 type Event = Omit<IntakeSnapshot, "guests"> & { guests: Guest[]; blocked: boolean };
 type Access = { hash: string; eventId: string; guestId: string; expiresAt: number };
-type State = { events: Event[]; claims: Access[]; sessions: Access[]; withdrawn: string[]; blockWatermarks?: { eventId: string; at: number }[] };
+type State = { version: 2; events: Event[]; claims: Access[]; sessions: Access[]; withdrawn: string[]; blockWatermarks: { eventId: string; at: number }[] };
 
-export type MemberView = { context: string; event: { name: string }; card: Card; shared: boolean; attendance: IntakeGuest["attendance"]; discoveryMessage: string | null };
-export type PilotDiscovery = DiscoveryResult & { expiresAt: number };
+export type MemberView = {
+  context: string;
+  event: { name: string };
+  name: string;
+  card: Card | null;
+  revision: string | null;
+  shared: boolean;
+  includePortfolio: boolean;
+  portfolioUnavailable: boolean;
+  discoveryMessage: string | null;
+};
+export type PilotDiscovery = { people: Person[]; matches: PilotMatch[]; query: string; expiresAt: number };
 export type HostEvent = {
   event: IntakeEvent;
   syncedAt: number;
@@ -39,9 +49,25 @@ function validAccess(state: State, session: string, now: number) {
 }
 
 function ambiguousClaim(event: Event, guest: Guest): boolean {
-  return !!guest.claimBlocked || event.guests.some(other =>
-    other.id !== guest.id && comparableName(other.draft.name) === comparableName(guest.draft.name)
+  return guest.claimBlocked ?? event.guests.some(other =>
+    other.id !== guest.id && comparableName(other.name) === comparableName(guest.name)
   );
+}
+
+const isShared = (guest: Guest) => !!guest.shared && !guest.shared.hidden;
+
+function preparationAccess(state: State, session: string, now: number, target?: Preparation) {
+  const current = validAccess(state, session, now);
+  const { event, guest } = current;
+  if (event.blocked) throw new CommunityError("Ask a host to review this event’s registration settings.", 409);
+  if (target) {
+    const blockedAt = state.blockWatermarks.find(record => record.eventId === event.event.id)?.at ?? -1;
+    if (blockedAt >= target.startedAt || guest.revision !== target.guest.revision ||
+        event.event.id !== target.event.id || guest.id !== target.guest.id) {
+      throw new CommunityError("Your RSVP changed. Preview your card again.", 409);
+    }
+  }
+  return current;
 }
 
 function discoveryMessage(event: Event, guest: Guest, now: number): string | null {
@@ -54,19 +80,9 @@ function discoveryMessage(event: Event, guest: Guest, now: number): string | nul
   return null;
 }
 
-function member(event: Event, guest: Guest): Member {
-  const profile = guest.reviewed?.card ?? guest.draft;
-  const note = profile.project || "Exploring ideas at Sundays";
-  const title = note.length <= 80 ? note : note.slice(0, 78).trimEnd() + "…";
-  const shared = guest.reviewed?.shared === true;
-  return {
-    id: guest.id, name: profile.name, practice: "Sundays member", discipline: "general", bio: "",
-    interests: [], offers: profile.offer ? [profile.offer] : [], asks: profile.ask ? [profile.ask] : [],
-    project: { id: "project-" + guest.id, title, summary: note, topics: concepts(profile.project).slice(0, 12), period: "current", origin: event.event.source === "luma" ? "luma-rsvp" : "demo" },
-    review: guest.reviewed ? "approved" : "draft", reviewedAt: guest.reviewed?.date ?? "",
-    visibility: shared ? "session" : "private", openToMeet: shared, sourceLabel: "their approved Sundays card",
-    attendance: [{ sessionId: event.event.id, status: guest.attendance }],
-    ...(shared && profile.shareLink && profile.link ? { link: profile.link } : {}),
+function cardFor(guest: Guest, includePortfolio: boolean): Card | null {
+  return guest.prepared && {
+    name: guest.name, project: guest.prepared.project, portfolio: includePortfolio ? guest.prepared.portfolio : null,
   };
 }
 
@@ -84,7 +100,11 @@ export class PilotStore {
       db.exec("PRAGMA busy_timeout=3000; PRAGMA secure_delete=ON; CREATE TABLE IF NOT EXISTS pilot_v1 (id INTEGER PRIMARY KEY CHECK (id = 1), data TEXT NOT NULL)");
       if (write) db.exec("BEGIN IMMEDIATE");
       const row = db.prepare("SELECT data FROM pilot_v1 WHERE id = 1").get();
-      const state: State = row ? JSON.parse(String(row.data)) : { events: [], claims: [], sessions: [], withdrawn: [] };
+      const previous = row ? JSON.parse(String(row.data)) : null;
+      // Older cards contained editable fields and a different approval. Keep removal requests.
+      const state: State = previous?.version === 2 ? previous : {
+        version: 2, events: [], claims: [], sessions: [], withdrawn: previous?.withdrawn ?? [], blockWatermarks: [],
+      };
       const result = operation(state);
       if (write) {
         db.prepare("INSERT INTO pilot_v1 (id, data) VALUES (1, ?) ON CONFLICT (id) DO UPDATE SET data = excluded.data").run(JSON.stringify(state));
@@ -95,23 +115,37 @@ export class PilotStore {
   }
 
   sync(snapshot: IntakeSnapshot): void {
-    if (snapshot.event.source === "luma" && !snapshot.event.consentQuestion) throw new CommunityError("This event has no intro-card opt-in.", 409);
+    if (snapshot.event.source === "luma" && !snapshot.event.projectQuestion) throw new ProjectQuestionMissing();
     this.access(state => {
       const eventId = snapshot.event.id;
       const previous = state.events.find(e => e.event.id === eventId);
-      const blockedAt = state.blockWatermarks?.find(record => record.eventId === eventId)?.at;
-      if (blockedAt !== undefined && snapshot.startedAt <= blockedAt) throw new CommunityError("A newer consent check blocked this sync.", 409);
+      const blockedAt = state.blockWatermarks.find(record => record.eventId === eventId)?.at;
+      if (blockedAt !== undefined && snapshot.startedAt <= blockedAt) throw new CommunityError("A newer event check blocked this sync.", 409);
       if (previous && previous.startedAt > snapshot.startedAt) throw new CommunityError("A newer sync has already finished.", 409);
       if (previous && previous.event.source !== snapshot.event.source) throw new CommunityError("This event belongs to a different source.", 409);
-      const sameConsent = previous?.event.consentQuestion?.id === snapshot.event.consentQuestion?.id;
-      const saved = new Map(sameConsent ? previous?.guests.map(guest => [guest.id, guest.reviewed] as const) : []);
+      const saved = new Map(previous?.guests.map(guest => [guest.id, guest]));
       const withdrawn = new Set(state.withdrawn);
+      const keep = new Set<string>();
+      const nameCounts = new Map<string, number>();
+      for (const guest of snapshot.guests) {
+        const name = comparableName(guest.name);
+        nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1);
+      }
       const guests: Guest[] = snapshot.guests
         .filter(guest => !withdrawn.has(digest(eventId + "\0" + guest.id)))
-        .map(guest => ({ ...guest, reviewed: saved.get(guest.id) ?? null }));
-      const keep = new Set(guests.map(g => g.id));
+        .map(guest => {
+          const old = saved.get(guest.id);
+          const name = comparableName(guest.name);
+          const samePerson = old && comparableName(old.name) === name;
+          const claimBlocked = (nameCounts.get(name) ?? 0) > 1;
+          if (samePerson) keep.add(guest.id);
+          if (samePerson && !previous?.blocked && old.revision === guest.revision) {
+            return { ...guest, claimBlocked, prepared: old.prepared, shared: old.shared };
+          }
+          return { ...guest, claimBlocked, prepared: null, shared: null };
+        });
       const valid = (record: Access) => record.expiresAt > snapshot.syncedAt &&
-        (record.eventId !== eventId || (sameConsent && keep.has(record.guestId)));
+        (record.eventId !== eventId || keep.has(record.guestId));
       state.claims = state.claims.filter(valid);
       state.sessions = state.sessions.filter(valid);
       state.events = [...state.events.filter(e => e.event.id !== eventId), { ...snapshot, guests, blocked: false }];
@@ -120,20 +154,23 @@ export class PilotStore {
 
   block(eventId: string, inspectedAt: number): void {
     this.access(state => {
-      const previous = state.blockWatermarks?.find(record => record.eventId === eventId);
+      const previous = state.blockWatermarks.find(record => record.eventId === eventId);
       if (!previous || previous.at <= inspectedAt) {
-        state.blockWatermarks = [...(state.blockWatermarks ?? []).filter(record => record.eventId !== eventId), { eventId, at: inspectedAt }];
+        state.blockWatermarks = [...state.blockWatermarks.filter(record => record.eventId !== eventId), { eventId, at: inspectedAt }];
       }
       const event = state.events.find(e => e.event.id === eventId);
-      if (event && event.startedAt <= inspectedAt) event.blocked = true;
+      if (event && event.startedAt <= inspectedAt) {
+        event.blocked = true;
+        for (const guest of event.guests) { guest.prepared = null; guest.shared = null; }
+      }
     }, true);
   }
 
   hostEvents(): HostEvent[] {
     return this.access(state => state.events.map(record => ({
       event: record.event, syncedAt: record.syncedAt, blocked: record.blocked, guests: record.guests.map(g => ({
-        id: g.id, name: g.draft.name, claimBlocked: ambiguousClaim(record, g),
-        attendance: g.attendance, shared: g.reviewed?.shared ?? false,
+        id: g.id, name: g.name, claimBlocked: ambiguousClaim(record, g),
+        attendance: g.attendance, shared: isShared(g),
       })),
     })));
   }
@@ -171,27 +208,48 @@ export class PilotStore {
     return this.access(state => {
       const { event, guest } = validAccess(state, session, now);
       return {
-        context: memberContext(session), event: { name: event.event.name }, card: guest.reviewed?.card ?? guest.draft,
-        shared: guest.reviewed?.shared ?? false, attendance: guest.attendance,
+        context: memberContext(session), event: { name: event.event.name }, name: guest.name, card: cardFor(guest, true),
+        revision: guest.prepared?.id ?? null, shared: isShared(guest),
+        includePortfolio: guest.shared?.includePortfolio ?? !!guest.prepared?.portfolio,
+        portfolioUnavailable: guest.prepared?.portfolioUnavailable ?? false,
         discoveryMessage: discoveryMessage(event, guest, now),
       };
     });
   }
 
-  share(session: string, card: Card, now: number): void {
+  preparation(session: string, now: number): Preparation {
+    return this.access(state => {
+      const { event, guest } = preparationAccess(state, session, now);
+      return { event: event.event, guest, prepared: !!guest.prepared, startedAt: now };
+    });
+  }
+
+  assertPreparation(session: string, target: Preparation, now: number): void {
+    this.access(state => { preparationAccess(state, session, now, target); });
+  }
+
+  savePreparation(session: string, target: Preparation, prepared: Omit<Prepared, "id">, now: number): void {
+    this.access(state => {
+      const { guest } = preparationAccess(state, session, now, target);
+      guest.prepared ??= { ...prepared, id: token() };
+    }, true);
+  }
+
+  share(session: string, revision: string, includePortfolio: boolean, now: number): void {
     this.access(state => {
       const { event, guest } = validAccess(state, session, now);
       if (event.blocked) throw new CommunityError("The host needs to review this event’s registration settings.", 409);
-      const input = cardSchema.safeParse(card);
-      if (!input.success) throw new CommunityError("Add your name and a short project note.");
-      guest.reviewed = { card: input.data, date: new Date(now).toISOString().slice(0, 10), shared: true };
+      if (guest.prepared?.id !== revision) throw new CommunityError("Preview the current card before sharing.", 409);
+      guest.shared = { includePortfolio: includePortfolio && !!guest.prepared.portfolio };
+      guest.prepared.id = token();
     }, true);
   }
 
   hide(session: string, now: number): void {
     this.access(state => {
       const { guest } = validAccess(state, session, now);
-      if (guest.reviewed) guest.reviewed.shared = false;
+      if (guest.shared) guest.shared.hidden = true;
+      if (guest.prepared) guest.prepared.id = token();
     }, true);
   }
 
@@ -211,11 +269,15 @@ export class PilotStore {
       const { event, guest, access } = validAccess(state, session, now);
       const problem = discoveryMessage(event, guest, now);
       if (problem) throw new CommunityError(problem, 409);
-      const candidates = event.guests.filter(g => g.reviewed?.shared && g.attendance === "checked-in").map(g => member(event, g));
-      const result = discover(candidates, member(event, guest), { scope: "today", sessionId: event.event.id, query });
+      const candidates = event.guests.flatMap(candidate => {
+        if (candidate.id === guest.id || !candidate.shared || candidate.shared.hidden || candidate.attendance !== "checked-in") return [];
+        const card = cardFor(candidate, candidate.shared.includePortfolio);
+        return card ? [{ id: candidate.id, card }] : [];
+      });
+      const result = matchPeople(candidates, cardFor(guest, guest.shared?.includePortfolio ?? true), query);
       const expiresAt = Math.min(now + 60_000, access.expiresAt,
         ...(event.event.source === "luma" ? [event.syncedAt + liveFreshnessMs, Date.parse(event.event.endAt)] : []));
-      return { ...result, expiresAt, matches: result.matches.slice(0, query ? 20 : 3) };
+      return { ...result, query, expiresAt };
     });
   }
 }

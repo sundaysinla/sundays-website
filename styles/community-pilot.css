@@ -22,11 +22,6 @@
 .pilot-editor > .pilot-meta { margin: 0 0 24px; }
 .pilot-checklist, .pilot-guests { padding: 0; list-style: none; }
 .pilot-checklist li { border-top: 1px dashed var(--meet-line); padding: 9px 0; font: 12px "Monument-Grotesk", sans-serif; }
-.pilot-details { padding: 12px 0; border-block: 1px dashed var(--meet-line); margin: 16px 0; }
-.pilot-details summary { cursor: pointer; font-size: 15px; }
-.pilot-details[open] summary { margin-bottom: 12px; }
-.pilot-details p, .pilot-details label { margin: 0 0 12px; }
-.pilot-details > label { display: grid; gap: 5px; font: 11px "Monument-Grotesk", sans-serif; }
 .pilot-claim, .pilot-roster { margin-top: 16px; }
 .pilot-claim { background: #f2efe4; }
 .pilot-actions { justify-content: flex-start; flex-wrap: wrap; }
@@ -35,7 +30,38 @@
 .pilot-guests { margin: 16px 0 0; }
 .pilot-remove { margin-top: 28px; border-top: 1px dashed var(--meet-line); padding-top: 12px; }
 .pilot-search { margin: 12px 0 22px; }
-.pilot-heading h1, .pilot-panel p { overflow-wrap: anywhere; }
+.pilot-heading h1, .pilot-panel p, .pilot-panel h2, .pilot-match-card p, .pilot-evidence p { overflow-wrap: anywhere; }
+.pilot-project { font-size: clamp(19px, 3vw, 24px); margin: 12px 0 22px; }
+.pilot-portfolio { border-top: 1px dashed var(--meet-line); margin-top: 16px; padding-top: 14px; }
+.pilot-portfolio blockquote { margin: 12px 0; padding-left: 12px; border-left: 2px solid var(--meet-line); }
+.pilot-portfolio blockquote p { margin: 0; }
+.pilot-portfolio-toggle { margin: 12px 0 18px; }
+.pilot-suggestions { margin-bottom: 26px; }
+.pilot-suggestions h2 { font-size: clamp(27px, 4vw, 40px); font-weight: 400; margin: 0 0 14px; }
+.pilot-match-card { min-height: 190px; }
+.pilot-match-card .meet-connection { align-self: flex-start; max-width: 100%; overflow-wrap: anywhere; }
+.pilot-match-card h3 { margin: 13px 0 5px; font-size: 29px; font-weight: 400; line-height: 1.08; }
+.pilot-match-card p { margin: 0 0 16px; color: var(--meet-muted); font-size: 16px; line-height: 1.45; }
+.pilot-match-card .meet-card-link { margin-top: auto; border-top: 1px dashed var(--meet-line); }
+.pilot-person {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 0;
+  gap: 12px;
+  border-top: 1px dashed var(--meet-line);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.pilot-person:hover strong { text-decoration: underline; }
+.pilot-person strong { display: block; font-size: 19px; font-weight: 400; }
+.pilot-person span span { color: var(--meet-muted); font-size: 15px; }
+.pilot-person svg { flex: none; }
+.pilot-more { margin-top: 12px; }
+.pilot-evidence { padding: 0; list-style: none; }
+.pilot-evidence li { margin-top: 12px; }
+.pilot-evidence p { margin: 4px 0; }
 @media (max-width: 740px) {
   .pilot-sources { grid-template-columns: minmax(0, 1fr); }
   .pilot-guest { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; }

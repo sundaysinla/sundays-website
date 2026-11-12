@@ -6,7 +6,7 @@ import type { IntakeEvent } from "@/lib/community/pilot/intake";
 import type { HostEvent } from "@/lib/community/pilot/store";
 import { PilotRequestError, pilotRequest } from "./client";
 
-type Dashboard = { events: HostEvent[]; liveConfigured: boolean; form: { consent: string; link: string } };
+type Dashboard = { events: HostEvent[]; liveConfigured: boolean; form: { link: string } };
 type Claim = { name: string; path: string };
 
 function formatTime(value: string | number, timezone?: string) {
@@ -94,20 +94,14 @@ export default function HostPanel() {
               <h3>{event.name}</h3><p className="pilot-meta">{formatTime(event.startAt, event.timezone)}</p>
               <ul className="pilot-checklist">
                 <li>{event.projectQuestion ? "Project question found" : "Project question not found"}</li>
-                <li>{event.consentQuestion ? "Optional intro-card opt-in found" : "Optional intro-card opt-in missing"}</li>
-                <li>{event.linkQuestion ? "Optional project link found" : "Optional project link not set"}</li>
+                <li>{event.linkQuestion ? "Optional portfolio field found" : "Portfolio field not set (optional)"}</li>
               </ul>
-              {!event.consentQuestion && <details className="pilot-details" open>
-                <summary>Questions to add in Luma</summary>
-                <p><b>Optional checkbox:</b> {dashboard.form.consent}</p>
-                <p><b>Optional website:</b> {dashboard.form.link}</p>
-              </details>}
-              <button className="meet-button is-dark" disabled={busy || !event.consentQuestion} onClick={() => void sync("luma")}>Sync guests</button>
+              {!event.linkQuestion && <p className="pilot-meta">In Luma, add an optional Website field named <b>{dashboard.form.link}</b>.</p>}
+              <button className="meet-button is-dark" disabled={busy || !event.projectQuestion} onClick={() => void sync("luma")}>Sync guests</button>
             </>}
           </section>
           <section className="pilot-panel" aria-label="Sample RSVPs">
             <div className="pilot-section-heading"><h2>Sample RSVPs</h2></div>
-            <p>Try importing and sharing a card before opening it up to guests.</p>
             <button className="meet-button" disabled={busy} onClick={() => void sync("sample")}>Import sample RSVPs</button>
           </section>
         </div>
@@ -126,14 +120,14 @@ export default function HostPanel() {
         {dashboard.events.map(({ event, guests, syncedAt, blocked }) => (
           <section key={event.id} className="pilot-panel pilot-roster" aria-label={event.name}>
             <div className="pilot-section-heading"><h2>{event.name}</h2><p className="pilot-meta">Synced {formatTime(syncedAt)}</p></div>
-            {blocked && <p role="status">Sharing paused until the opt-in is restored.</p>}
+            {blocked && <p role="status">Check the project question in Luma, then sync again.</p>}
             {guests.length ? <ul className="pilot-guests">{guests.map(guest => (
               <li key={guest.id} className="pilot-guest">
                 <strong>{guest.name}</strong>
                 <span className="pilot-meta">{guest.attendance === "checked-in" ? "Checked in" : "RSVP"} · {guest.shared ? "Shared" : "Private"}</span>
                 <button className="meet-button" disabled={busy || blocked || guest.claimBlocked} aria-label={"Create claim link for " + guest.name} onClick={() => void issue(event.id, guest.id, guest.name)}>{guest.claimBlocked ? "Duplicate RSVP name" : "Create claim link"}</button>
               </li>
-            ))}</ul> : <p>No opted-in guests yet.</p>}
+            ))}</ul> : <p>No approved RSVPs yet.</p>}
           </section>
         ))}
       </>}

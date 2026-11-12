@@ -1,4 +1,18 @@
-import { CONSENT_QUESTION, LINK_QUESTION, type IntakeSnapshot } from "./intake.ts";
+import { createHash } from "node:crypto";
+import { LINK_QUESTION, type IntakeGuest, type IntakeSnapshot } from "./intake.ts";
+import type { Portfolio } from "./portfolio.ts";
+
+const sampleLink = "https://example.com/jamie";
+const people = [
+  { id: "sample-alex", name: "Alex Rivera", project: "Editing a short documentary about voice memos people keep.", link: "", here: true },
+  { id: "sample-jamie", name: "Jamie Okafor", project: "Making music from field recordings around Los Angeles.", link: sampleLink, here: true },
+  { id: "sample-casey", name: "Casey Lin", project: "Building tiny sets in Blender for a short film.", link: "", here: true },
+  { id: "sample-sam", name: "Sam Adeyemi", project: "An iOS app for saving ideas on long walks.", link: "", here: false },
+];
+
+export function samplePortfolio(link: string): Portfolio | null {
+  return link === sampleLink ? { url: link, excerpts: [{ url: link, text: "I composed scores for two short films, blending acoustic instruments with city recordings." }] } : null;
+}
 
 export function sampleSnapshot(now: number): IntakeSnapshot {
   return {
@@ -6,26 +20,13 @@ export function sampleSnapshot(now: number): IntakeSnapshot {
       id: "evt-SundaysSample", source: "sample", name: "Sundays at the studio",
       startAt: new Date(now - 10 * 60_000).toISOString(), endAt: new Date(now + 2 * 60 * 60_000).toISOString(),
       timezone: "America/Los_Angeles", projectQuestion: { id: "project", label: "what are you working on?" },
-      consentQuestion: { id: "consent", label: CONSENT_QUESTION }, linkQuestion: { id: "link", label: LINK_QUESTION },
+      linkQuestion: { id: "link", label: LINK_QUESTION },
     },
     startedAt: now, syncedAt: now,
-    guests: [
-      { id: "sample-alex", attendance: "checked-in", draft: {
-        name: "Alex Rivera", project: "A short film made from voice memos. I could use help with sound design.",
-        ask: "sound design", offer: "", link: "", shareLink: false,
-      } },
-      { id: "sample-jamie", attendance: "checked-in", draft: {
-        name: "Jamie Okafor", project: "A music project made of field recordings from the city.",
-        ask: "", offer: "", link: "https://example.com/jamie", shareLink: false,
-      } },
-      { id: "sample-casey", attendance: "checked-in", draft: {
-        name: "Casey Lin", project: "Building tiny 3D environments in Blender for a short film.",
-        ask: "", offer: "", link: "", shareLink: false,
-      } },
-      { id: "sample-sam", attendance: "rsvp", draft: {
-        name: "Sam Adeyemi", project: "An iOS app for saving ideas on long walks.",
-        ask: "", offer: "", link: "", shareLink: false,
-      } },
-    ],
+    guests: people.map(({ id, name, project, link, here }): IntakeGuest => ({
+      id, name, attendance: here ? "checked-in" : "rsvp",
+      revision: createHash("sha256").update(JSON.stringify([project, link])).digest("hex"),
+      source: { kind: "sample", card: { project, link, portfolioSubmitted: !!link } },
+    })),
   };
 }
