@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useInView } from "react-intersection-observer";
+import AssetPreloader from "@/components/AssetPreloader";
 import LoadingScreen from "@/components/LoadingScreen";
 import NavBar from "@/components/NavBar";
 import Eyebrow from "@/components/Eyebrow";
@@ -84,6 +85,7 @@ export default function SundaysPage() {
 
   return (
     <>
+      <AssetPreloader />
       <LoadingScreen isLoading={isLoading} onTypingDone={() => setCanHide(true)} />
       {shouldRenderPage && (<>
         <NavBar></NavBar>
@@ -292,6 +294,16 @@ export default function SundaysPage() {
                   </p>
                 </div>
               </div>
+
+              {process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SUGGESTIONS_BASKET === 'true' &&
+                typeof window !== 'undefined' && ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname) && (
+                <div className="grid grid-cols-2 mb-8">
+                  <h3 className="text-sm md:text-base font-['Monument-Grotesk'] text-[#C0B9A5]">Share an idea</h3>
+                  <Link href="/basket" prefetch={false} className="text-sm md:text-base font-['Office-Times-Sharp-Regular'] underline decoration-dashed underline-offset-4">
+                    The Suggestions Basket
+                  </Link>
+                </div>
+              )}
 
               <div>
                 <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4 sm:gap-0 mb-24">

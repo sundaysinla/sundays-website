@@ -11,13 +11,7 @@ const ASSETS = [
 
 /**
  * Runs right after hydration and pre-fills THREE.Cache with the raw bytes of
- * the 3D logo assets. The HTML <link rel="preload"> tags in app/layout.tsx
- * have already kicked the bytes into the browser's HTTP cache, so this fetch()
- * resolves almost instantly. Putting the ArrayBuffer into THREE.Cache means
- * when Logo3D's GLTFLoader / RGBELoader run later (after their dynamic chunk
- * mounts), they short-circuit cache.get(url) and skip any fetch entirely —
- * killing the "preloaded but not used" double-fetch warning and shaving off
- * the network round-trip Three.js would otherwise re-issue.
+ * the homepage's 3D logo assets while the loading screen is visible.
  */
 export default function AssetPreloader() {
   useEffect(() => {
@@ -48,5 +42,10 @@ export default function AssetPreloader() {
     }
   }, [])
 
-  return null
+  return (
+    <>
+      <link rel="preconnect" href="https://www.gstatic.com" crossOrigin="anonymous" />
+      {ASSETS.map(url => <link key={url} rel="preload" href={url} as="fetch" crossOrigin="anonymous" />)}
+    </>
+  )
 }

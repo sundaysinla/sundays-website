@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 4000",
+    "basket:dev": "NEXT_PUBLIC_SUGGESTIONS_BASKET=true next dev --hostname 127.0.0.1 -p 4010",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/*.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
