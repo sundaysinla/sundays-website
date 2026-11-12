@@ -8,6 +8,19 @@ import BigQuote from './BigQuote'
 
 export default function NavBar() {
     const [open, setOpen] = useState(false)
+    const showSuggestions = process.env.NODE_ENV === 'development' &&
+        process.env.NEXT_PUBLIC_SUGGESTIONS_BASKET === 'true' &&
+        typeof window !== 'undefined' &&
+        ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
+    const suggestionsLink = showSuggestions && (
+        <Link
+            href="/basket"
+            prefetch={false}
+            className="inline-flex h-8 items-center text-[12px] md:text-[14px] font-['Monument-Grotesk'] uppercase text-[#010101] hover:opacity-70 transition-opacity"
+        >
+            Suggestions
+        </Link>
+    )
 
     return (
         <>
@@ -27,31 +40,34 @@ export default function NavBar() {
                     <Link href="#about" className="hover:opacity-70 transition-opacity">ABOUT</Link>
                     <Link href="#projects" className="hover:opacity-70 transition-opacity">PROJECTS</Link>
                     <Link href="#team" className="hover:opacity-70 transition-opacity">TEAM</Link>
+                    {suggestionsLink}
                     <span className="flex items-center gap-5">
                         <Button href="/timer" size="sm" className="text-[12px] md:text-[14px] bg-stone-50 border-stone-200 hover:bg-stone-100" external>LIVE TIMER</Button>
                         <Button href="https://luma.com/sundaysinla" variant="dark" size="sm" className="text-[12px] md:text-[14px]" external>JOIN US</Button>
                     </span>
                 </div>
 
-                {/* Hamburger / X button */}
-                <button
-                    onClick={() => setOpen(!open)}
-                    className="lg:hidden relative w-8 h-8 flex items-center justify-center"
-                    aria-label={open ? "Close menu" : "Open menu"}
-                >
-                    <span
-                        className="absolute block w-5 h-[1.5px] bg-[#010101] transition-all duration-300 ease-in-out"
-                        style={{
-                            transform: open ? 'rotate(45deg)' : 'translateY(-3px)',
-                        }}
-                    />
-                    <span
-                        className="absolute block w-5 h-[1.5px] bg-[#010101] transition-all duration-300 ease-in-out"
-                        style={{
-                            transform: open ? 'rotate(-45deg)' : 'translateY(3px)',
-                        }}
-                    />
-                </button>
+                <div className="flex items-center gap-4 lg:hidden">
+                    {suggestionsLink}
+                    <button
+                        onClick={() => setOpen(!open)}
+                        className="relative w-8 h-8 flex items-center justify-center"
+                        aria-label={open ? "Close menu" : "Open menu"}
+                    >
+                        <span
+                            className="absolute block w-5 h-[1.5px] bg-[#010101] transition-all duration-300 ease-in-out"
+                            style={{
+                                transform: open ? 'rotate(45deg)' : 'translateY(-3px)',
+                            }}
+                        />
+                        <span
+                            className="absolute block w-5 h-[1.5px] bg-[#010101] transition-all duration-300 ease-in-out"
+                            style={{
+                                transform: open ? 'rotate(-45deg)' : 'translateY(3px)',
+                            }}
+                        />
+                    </button>
+                </div>
             </nav>
 
             {/* Mobile menu overlay */}

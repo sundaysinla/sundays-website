@@ -74,8 +74,7 @@ export default function BasketIllustration({ delivery }: { delivery: 'still' | '
           <g transform="translate(364 174) rotate(13)">
             <path d="M1 1 102 0 105 107 1 110Z" fill="#fff8e7" stroke="#60452d" strokeWidth="1.5" />
             <path d="m80 .5 22-.5.7 21Z" fill="#e7d7b7" stroke="#a38761" strokeWidth=".8" />
-            <circle cx="43" cy="43" r="16" fill="none" stroke="#816642" strokeWidth="1.4" />
-            <path d="M36 45c3.7 7 10.1 7 13.8 0M38 39h.2m9.5 0h.2" fill="none" stroke="#816642" strokeWidth="1.8" />
+            <image href="/smiley.png" x="27" y="27" width="32" height="32" />
             <path d="M1 1 102 0 105 107 1 110Z" fill={`url(#${grain})`} opacity=".18" />
           </g>
 

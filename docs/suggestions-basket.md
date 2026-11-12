@@ -2,7 +2,7 @@
 
 ## Site and references
 
-The live site leads with a chrome wordmark, then gets its warmth from physical things like tilted Polaroids, paper captions, and the stamped lime accent in Projects. At 390 px the wordmark becomes a still image and the Polaroids stack. The footer already gathers links people use after reading about Sundays. The Basket fits there and has a direct `/basket` URL that a host could share at a session. A new main-nav item would give occasional feedback the same weight as joining an event. A session link could be especially timely once there's a hosted version.
+The live site leads with a chrome wordmark, then gets its warmth from physical things like tilted Polaroids, paper captions, and the stamped lime accent in Projects. At 390 px the wordmark becomes a still image and the Polaroids stack. The Basket has a plain Suggestions link in the desktop navigation and beside the mobile menu. The Join Us and Attend a Session buttons carry the strongest visual weight. A direct `/basket` URL is available to share at a session once there's a hosted version.
 
 The public site runs on Next.js and reads project content from Notion. Its timer stores state in the browser. Luma handles RSVPs. There is no production member portal, host authentication, or writable feedback database in `main`. The separate discovery pilot provided a precedent for a loopback-only host key and a local SQLite file.
 
@@ -17,6 +17,8 @@ Kelli Anderson's paper engineering informed the visible crease and the moment th
 | **Seed packet** | A printed seed envelope uses the editorial type and suggests ideas can grow over time. It ties to the garden metaphor and feels more whimsical. | A paper seed could slip into the envelope or sprout. A small packet scales down well, but growth at submission would imply a host has already acted. | Simple SVG in the composer. Meaningful growth stages would introduce extra state and graphics in the host and recap experience. |
 
 The woven basket best expresses a quiet handoff, and the paper treatment keeps it recognizable as Sundays. The left column is for writing and the right column is the illustrated object. On a phone, the illustration sits between the short intro and the form. Warm paper and near-black ink carry the page. Muted olive ties the selected category, receipt stamp, and illustrated slips together. A checkmark identifies the selected category. Office Times and Editorial set the headlines. Monument Grotesk labels the controls.
+
+The masthead uses the homepage's original chrome smiley and still wordmark, arranged like the timer's header. The main actions use the homepage's rounded black button treatment.
 
 Playwright screenshots and the existing CSS and font files grounded the design. Agent Reach's Exa backend found paper references. The frontend-design and Emil design engineering skills informed the composition and feedback timing. Figma, Paper, and image generation were available for standalone art studies. The final illustration needed separately addressable slips, rim, and basket body, so it lives in editable SVG in the component. Existing Framer Motion would be useful for interruptible gestures. Here the movement is a short, fixed sequence. Canvas and the site's Three.js stack would add a rendering surface without improving the fold or the handoff.
 
@@ -39,7 +41,7 @@ npm ci
 npm run basket:dev
 ```
 
-Open [The Suggestions Basket](http://localhost:4010/basket) and [the host inbox](http://localhost:4010/basket/host) on the same hostname. To read the local host key in your terminal, run `node --env-file=.env.local -p 'process.env.SUGGESTIONS_BASKET_HOST_KEY'`. The local homepage also links to the Basket from its footer when started with `basket:dev`.
+Open [The Suggestions Basket](http://localhost:4010/basket) and [the host inbox](http://localhost:4010/basket/host) on the same hostname. To read the local host key in your terminal, run `node --env-file=.env.local -p 'process.env.SUGGESTIONS_BASKET_HOST_KEY'`. The local homepage shows Suggestions in its top navigation when started with `basket:dev`.
 
 To exercise the full loop, leave a note and allow a recap. Sign in as a host, set its status to Tried, write an idea summary and outcome, check Publish, and save. Reload the member page to see the recap. Archive the note or clear Publish to take it down.
 
