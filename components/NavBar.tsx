@@ -16,9 +16,19 @@ export default function NavBar() {
         <Link
             href="/basket"
             prefetch={false}
-            className="inline-flex h-8 items-center text-[12px] md:text-[14px] font-['Monument-Grotesk'] uppercase text-[#010101] hover:opacity-70 transition-opacity"
+            aria-label="Suggestions, new"
+            className="group inline-flex h-8 items-center gap-1 text-[12px] md:text-[14px] font-['Monument-Grotesk'] uppercase text-[#010101]"
         >
-            Suggestions
+            <span className="transition-opacity group-hover:opacity-70">Suggestions</span>
+            <sup className="-top-1.5 inline-flex items-center gap-px font-['Office-Times-Round'] text-[11px] font-normal italic normal-case leading-none text-[#5f6b50]">
+                <svg width="6" height="9" viewBox="0 0 6 9" fill="none" stroke="currentColor" strokeWidth=".8" strokeLinecap="round" aria-hidden="true">
+                    <path d="M4.5 3 2 1.5M4 6l-3 .8" />
+                </svg>
+                new!
+                <svg width="6" height="9" viewBox="0 0 6 9" fill="none" stroke="currentColor" strokeWidth=".8" strokeLinecap="round" aria-hidden="true">
+                    <path d="m1.5 3 2.8-2M2 6l3 .9" />
+                </svg>
+            </sup>
         </Link>
     )
 
