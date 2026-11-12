@@ -1,13 +1,15 @@
 'use client';
 
-import { useRef, useState, type FormEvent } from 'react';
-import { ChevronDown, MessageCircle } from 'lucide-react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { MessageCircle } from 'lucide-react';
 import { COMMENT_LIMIT, COMMENT_PREVIEW, type DiscussionPage } from '@/lib/suggestions/model';
 import { BasketRequestError, postBasket } from './client';
 
 type DiscussionError = { message: string; reading: boolean; before?: number };
 
-export default function BasketDiscussion({ id, preview, ready }: { id: string; preview: DiscussionPage; ready: boolean }) {
+export default function BasketDiscussion({ id, preview, ready, children }: {
+  id: string; preview: DiscussionPage; ready: boolean; children: ReactNode;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [loaded, setLoaded] = useState<DiscussionPage | null>(null);
   const [draft, setDraft] = useState('');
@@ -27,6 +29,12 @@ export default function BasketDiscussion({ id, preview, ready }: { id: string; p
   const toggleLabel = expanded ? 'Hide comments'
     : discussion.count > COMMENT_PREVIEW ? `View all ${countLabel}`
     : discussion.count > 0 ? countLabel : 'Comment';
+
+  useEffect(() => {
+    if (document.activeElement === toggleButton.current) {
+      toggleButton.current?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    }
+  }, [expanded]);
 
   async function load(before?: number) {
     if (inFlight.current) return;
@@ -94,12 +102,14 @@ export default function BasketDiscussion({ id, preview, ready }: { id: string; p
 
   return (
     <div className="basket-discussion">
-      <button ref={toggleButton} className="basket-discussion-toggle" type="button" aria-expanded={expanded}
-        aria-controls={panelId} disabled={!ready} onClick={toggle}>
-        <MessageCircle size={15} strokeWidth={1.7} aria-hidden="true" />
-        {toggleLabel}
-        <ChevronDown size={14} aria-hidden="true" />
-      </button>
+      <div className="basket-post-actions">
+        {children}
+        <button ref={toggleButton} className="basket-discussion-toggle" type="button" aria-expanded={expanded}
+          aria-controls={panelId} aria-label={toggleLabel} title={toggleLabel} disabled={!ready} onClick={toggle}>
+          <MessageCircle size={15} strokeWidth={1.7} aria-hidden="true" />
+          <span>{discussion.count}</span>
+        </button>
+      </div>
       <div id={panelId}>
         {items.length > 0 && (
           <ul ref={commentList} tabIndex={expanded ? -1 : undefined}

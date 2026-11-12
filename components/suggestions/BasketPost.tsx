@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { canShowRecap, statusLabels, type PublicPost, type Vote, type VoteState } from '@/lib/suggestions/model';
 import BasketDiscussion from './BasketDiscussion';
+import BasketNoteText from './BasketNoteText';
 import { BasketRequestError, ensureVoteCookie, postBasket } from './client';
 
 const shortDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' });
@@ -38,27 +39,26 @@ export default function BasketPost({ post }: { post: PublicPost }) {
   }
 
   return (
-    <article className="basket-post" id={`basket-post-${post.id}`}>
-      <div className="basket-votes" role="group" aria-label="Vote on this suggestion">
-        <button className="basket-vote" type="button" aria-label="Upvote" aria-pressed={votes.vote === 1}
-          disabled={!ready} aria-disabled={voting} onClick={() => void vote(1)}>
-          <ArrowUp size={17} strokeWidth={1.8} aria-hidden="true" />
-        </button>
-        <output aria-label="Vote score">{votes.score}</output>
-        <button className="basket-vote" type="button" aria-label="Downvote" aria-pressed={votes.vote === -1}
-          disabled={!ready} aria-disabled={voting} onClick={() => void vote(-1)}>
-          <ArrowDown size={17} strokeWidth={1.8} aria-hidden="true" />
-        </button>
+    <article className="basket-tile basket-post" id={`basket-post-${post.id}`}>
+      <div className="basket-post-meta">
+        <time dateTime={new Date(post.createdAt).toISOString()}>{shortDate.format(post.createdAt)}</time>
+        {canShowRecap(post.status) && <span className="basket-recap-status">{statusLabels[post.status]}</span>}
       </div>
-      <div className="basket-post-content">
-        <div className="basket-post-meta">
-          <time dateTime={new Date(post.createdAt).toISOString()}>{shortDate.format(post.createdAt)}</time>
-          {canShowRecap(post.status) && <span className="basket-recap-status">{statusLabels[post.status]}</span>}
+      <BasketNoteText text={post.note} />
+      {error && <p className="basket-message basket-error" role="alert">{error}</p>}
+      <BasketDiscussion id={post.id} preview={post.discussion} ready={ready}>
+        <div className="basket-votes" role="group" aria-label="Vote on this suggestion">
+          <button className="basket-vote" type="button" aria-label="Upvote" aria-pressed={votes.vote === 1}
+            disabled={!ready} aria-disabled={voting} onClick={() => void vote(1)}>
+            <ArrowUp size={15} strokeWidth={1.8} aria-hidden="true" />
+          </button>
+          <output aria-label="Vote score">{votes.score}</output>
+          <button className="basket-vote" type="button" aria-label="Downvote" aria-pressed={votes.vote === -1}
+            disabled={!ready} aria-disabled={voting} onClick={() => void vote(-1)}>
+            <ArrowDown size={15} strokeWidth={1.8} aria-hidden="true" />
+          </button>
         </div>
-        <p className="basket-post-note">{post.note}</p>
-        {error && <p className="basket-message basket-error" role="alert">{error}</p>}
-        <BasketDiscussion id={post.id} preview={post.discussion} ready={ready} />
-      </div>
+      </BasketDiscussion>
     </article>
   );
 }

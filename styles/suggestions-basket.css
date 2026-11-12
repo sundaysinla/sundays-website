@@ -251,22 +251,6 @@
 .basket-receipt p { color: var(--basket-muted); }
 .basket-receipt-actions { display: flex; flex-wrap: wrap; column-gap: 18px; }
 
-.basket-recaps { border-top: 1px dashed var(--basket-rule); padding-block: 30px 76px; }
-.basket-recaps h2 { margin-bottom: 10px; font: 400 clamp(1.95rem, 4vw, 3.15rem)/1.1 var(--basket-serif); letter-spacing: -.055em; }
-.basket-recap-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 22px; }
-
-.basket-recap {
-  padding: 18px 22px 21px;
-  border: 1px solid var(--basket-rule);
-  border-top: 3px solid var(--basket-accent-edge);
-  background: var(--basket-paper);
-  overflow-wrap: anywhere;
-}
-
-.basket-recap-status { color: var(--basket-accent-ink); font-size: .78rem; }
-.basket-recap h3 { margin: 4px 0 6px; font: 400 1.55rem/1.18 var(--basket-serif); }
-.basket-recap p { color: var(--basket-muted); white-space: pre-wrap; }
-
 .basket-error-page { padding-block: 45px 95px; }
 .basket-error-page h1 { font: 400 clamp(2.75rem, 6vw, 4.75rem)/1 var(--basket-serif); letter-spacing: -.06em; }
 .basket-error-page p { margin: 10px 0 16px; }
@@ -347,8 +331,6 @@
   .basket-art { width: min(69%, 280px); justify-self: center; margin-block: -8px -6px; }
   .basket-composer { max-width: none; }
   .basket-drop { width: 100%; }
-  .basket-recaps { padding-block: 24px 45px; }
-  .basket-recap-list { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {
