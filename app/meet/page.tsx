@@ -25,8 +25,8 @@ export default function MeetPage() {
     const host = headers().get("host");
     if (!host || !loopbackHostOrigin(host)) notFound();
     const live = process.env.COMMUNITY_PILOT_LIVE === "true";
-    return <main className="meet-surface meet-page">
-      <header className="meet-header">
+    return <main className="meet-surface meet-page room-page">
+      <header className="meet-header room-header">
         <Link className="meet-brand" href="/" aria-label="Sundays home">
           <img src="/smiley.png" width={32} height={32} alt="" />
           <span>SUNDAYS IN LA</span>
