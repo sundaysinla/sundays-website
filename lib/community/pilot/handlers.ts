@@ -39,7 +39,7 @@ async function refreshRoster(store: PilotStore, eventId: string, adapter: LumaIn
   if (existing && now < existing.retryAt) return;
   const refresh: { retryAt: number; pending?: Promise<void> } = { retryAt: now + rosterRefreshMs };
   refresh.pending = adapter.snapshot(eventId, now).then(snapshot => store.sync(snapshot)).catch(error => {
-    if (error instanceof ProjectQuestionMissing) store.block(eventId, now);
+    if (error instanceof ProjectQuestionMissing || (error instanceof CommunityError && error.status === 404)) store.block(eventId, now);
     if (error instanceof DiscoveryWindowClosed) store.updateClosedWindow(error.event, now);
     // The directory has its own expiry and can use a recent complete snapshot.
   }).finally(() => { delete refresh.pending; });

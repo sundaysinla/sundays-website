@@ -102,6 +102,40 @@ test("a real room uses event-scoped Luma tickets for personal pairing and an exp
   assert.deepEqual((await directory()).people, []);
 });
 
+test("an event removed in Luma closes a previously shared room", async t => {
+  const id = "evt-RemovedRoom";
+  const now = Date.now();
+  let removed = false;
+  const guest = {
+    id: "gst-RemovedJamie", user_name: "Jamie Okafor", approval_status: "approved",
+    registration_answers: [{ question_id: "project", question_type: "text", value: "Scoring short films." }],
+    event_tickets: [{ checked_in_at: new Date(now - 120_000).toISOString() }],
+  };
+  const request = harness(t, { COMMUNITY_PILOT_LIVE: "true", LUMA_API_KEY: "test-key", COMMUNITY_PILOT_LUMA_EVENT_ID: id }, async input => {
+    const path = new URL(String(input)).pathname;
+    if (path === "/v1/events/get") return removed ? Response.json({}, { status: 404 }) : Response.json({
+      id, name: "Removed room", timezone: "America/Los_Angeles", start_at: new Date(now - 120_000).toISOString(),
+      end_at: new Date(now + 60 * 60_000).toISOString(),
+      registration_questions: [{ id: "project", label: "What are you working on?", question_type: "text", required: true }],
+    });
+    if (path === "/v1/events/guests/list") return Response.json({ entries: [guest], has_more: false });
+    return Response.json(guest);
+  });
+  const joined = await request({ action: "join", ticket: "https://luma.com/check-in/" + id + "?pk=g-removedguest" });
+  const member = cookie(joined);
+  const { context } = await joined.json();
+  const card = await request({ action: "prepare", context }, member).then(res => res.json());
+  assert.equal((await request({ action: "share", context, revision: card.revision, includePortfolio: false, directory: true }, member)).status, 200);
+  assert.equal((await request({ action: "directory" }).then(res => res.json())).people.length, 1);
+  removed = true;
+  const advanced = Date.now;
+  Date.now = () => now + 61_000;
+  try {
+    assert.deepEqual((await request({ action: "directory" }).then(res => res.json())).people, []);
+    assert.equal((await request({ action: "join", ticket: "https://luma.com/check-in/" + id + "?pk=g-removedguest" })).status, 409);
+  } finally { Date.now = advanced; }
+});
+
 test("opening search before the event does not fetch the roster or resolve a ticket", async t => {
   const id = "evt-FutureRoom";
   const paths: string[] = [];
