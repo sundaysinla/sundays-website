@@ -41,7 +41,8 @@ function Evidence({ label, item }: { label: string; item: CardEvidence }) {
 
 function PersonDetail({ person, match, onClose }: { person: Person; match?: PilotMatch; onClose: () => void }) {
   const { card } = person;
-  return <MeetDialog title={card.name} description={match ? `Shared topic · ${match.topic}` : card.project || "Checked in today"} onClose={onClose} className="room-dialog room-person-dialog">
+  const description = match ? (match.topic ? `Shared topic · ${match.topic}` : "Related projects") : card.project || "Checked in today";
+  return <MeetDialog title={card.name} description={description} onClose={onClose} className="room-dialog room-person-dialog">
     {match && card.project && card.project !== match.theirs.text && <p className="room-person-project">{card.project}</p>}
     {card.portfolio && card.portfolio.url !== match?.theirs.url && <a className="meet-text-button room-portfolio-link" href={card.portfolio.url} target="_blank" rel="noreferrer">
       Portfolio <ArrowUpRight size={14} aria-hidden="true" />
@@ -254,7 +255,7 @@ export default function MeetRoom({ initialResult, live }: { initialResult: Pilot
           <li key={person.id}>
             <button className="room-match" type="button" aria-haspopup="dialog" onClick={() => setSelected(person.id)}>
               <span className="room-match-name"><span className="sr-only">Meet </span>{person.card.name}</span>
-              <span className="room-match-topic">Shared topic <span aria-hidden="true">·</span> <strong>{topic}</strong></span>
+              <span className="room-match-topic">{topic ? <>Shared topic <span aria-hidden="true">·</span> <strong>{topic}</strong></> : "Related projects"}</span>
               <span className="room-match-arrow" aria-hidden="true"><ArrowUpRight size={16} /></span>
             </button>
           </li>
@@ -289,7 +290,7 @@ export default function MeetRoom({ initialResult, live }: { initialResult: Pilot
     </div>
     {selectedPerson && <PersonDetail person={selectedPerson} match={selectedMatch} onClose={() => setSelected("")} />}
     {dialog === "pairing" && <MeetDialog title="How pairings work" description="Up to three people with work that overlaps yours." onClose={closeDialog} className="room-dialog">
-      <p className="room-dialog-copy">We look for shared topics and phrases in your Luma project answer and optional portfolio, and in the work shared by people checked in today.</p>
+      <p className="room-dialog-copy">We compare your Luma project answer and optional portfolio with work shared by people checked in today. Tap a pairing to see what you each shared.</p>
       {!live && <p className="pilot-meta">These pairings are for Alex Rivera, a sample attendee.</p>}
     </MeetDialog>}
     {dialog === "ticket" && <MeetDialog title="Use your Luma ticket" description="Choose a screenshot of the QR code on your ticket." onClose={closeDialog} className="room-dialog">

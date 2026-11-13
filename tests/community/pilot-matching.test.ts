@@ -75,3 +75,23 @@ test("search handles natural questions and preserves meaningful words in names",
   assert.deepEqual(search("Anna Do"), ["do"]);
   assert.deepEqual(search("Who’s working on Blender?"), ["do"]);
 });
+
+test("a negated film mention never provides pairing evidence", () => {
+  const candidate: Person = { id: "candidate", card: {
+    name: "Ari", project: "I’m not working on short films. Making a pricing spreadsheet.", portfolio: null,
+  } };
+  assert.deepEqual(matchPeople([candidate], maya.card, "").matches, []);
+});
+
+test("a common tool does not pair unrelated projects", () => {
+  const viewer = { ...maya.card, project: "Using Blender to simulate cloth draping." };
+  const other = { ...eli, card: { name: "Eli", project: "Modeling a spaceship in Blender.", portfolio: null } };
+  assert.deepEqual(matchPeople([other], viewer, "").matches, []);
+});
+
+test("two requests for the same help are not an introduction to someone doing that work", () => {
+  const viewer = { ...maya.card, project: "I need help mixing dialogue for an animated film." };
+  const anotherRequest = { ...casey, card: { name: "Casey", project: "I also need help mixing dialogue for a short film.", portfolio: null } };
+  const offer = { ...eli, card: { name: "Eli", project: "I mix production sound for animation and edit dialogue.", portfolio: null } };
+  assert.deepEqual(matchPeople([anotherRequest, offer], viewer, "").matches.map(match => match.person.id), ["eli"]);
+});

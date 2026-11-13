@@ -3,6 +3,7 @@ import { z } from "zod";
 import { CommunityError, errorResponse, jsonResponse, requestJson } from "../http.ts";
 import { cookieValue, HOST_COOKIE, HOST_TTL_MS, memberContext, MEMBER_COOKIE, newHostSession, pilotEnabled, pilotOrigin, safeEqual, setCookie, validHostSession } from "./access.ts";
 import { DiscoveryWindowClosed, eventIdSchema, LINK_QUESTION, lumaGuestKey, LumaIntake, ProjectQuestionMissing } from "./intake.ts";
+import { matchLocally } from "./local-matching.ts";
 import { readPortfolio, type Portfolio } from "./portfolio.ts";
 import { sampleDirectory, samplePortfolio, sampleSnapshot } from "./sample.ts";
 import { MEMBER_TTL_MS, PilotStore } from "./store.ts";
@@ -90,10 +91,12 @@ export async function handlePilot(request: Request, options: PilotOptions = {}):
     }
     switch (data.action) {
       case "directory": {
-        if (!liveRoom) return jsonResponse(sampleDirectory(data.query, now));
+        if (!liveRoom) return jsonResponse(await matchLocally(matcher => sampleDirectory(data.query, Date.now(), matcher), env));
         const adapter = live();
         await refreshRoster(store, liveId!, adapter, now);
-        return jsonResponse(store.directory(liveId!, data.query, Date.now(), data.context ? session : ""));
+        return jsonResponse(await matchLocally(
+          matcher => store.directory(liveId!, data.query, Date.now(), data.context ? session : "", matcher), env,
+        ));
       }
       case "join": {
         if (!liveRoom) throw new CommunityError("Ticket sign-in is unavailable in this room.", 404);
@@ -184,7 +187,7 @@ export async function handlePilot(request: Request, options: PilotOptions = {}):
         store.withdraw(session, now);
         return setCookie(jsonResponse({ withdrawn: true }), request, MEMBER_COOKIE, "", 0);
       }
-      case "discover": return jsonResponse(store.introductions(session, data.query, now));
+      case "discover": return jsonResponse(await matchLocally(matcher => store.introductions(session, data.query, Date.now(), matcher), env));
     }
   } catch (error) { return errorResponse(error); }
 }

@@ -8,6 +8,7 @@ import { DEMO_MEMBERS, DEMO_SESSION, DEMO_VIEWER } from "@/lib/community/fixture
 import { discover } from "@/lib/community/discovery";
 import { toViewerProfile } from "@/lib/community/schemas";
 import { loopbackHostOrigin, pilotEnabled } from "@/lib/community/pilot/access";
+import { matchLocally } from "@/lib/community/pilot/local-matching";
 import { sampleDirectory } from "@/lib/community/pilot/sample";
 import MeetRoom from "@/components/community/pilot/MeetRoom";
 import "@/styles/community.css";
@@ -20,11 +21,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function MeetPage() {
+export default async function MeetPage() {
   if (pilotEnabled()) {
     const host = headers().get("host");
     if (!host || !loopbackHostOrigin(host)) notFound();
     const live = process.env.COMMUNITY_PILOT_LIVE === "true";
+    const initialResult = live ? null : await matchLocally(matcher => sampleDirectory("", Date.now(), matcher), process.env);
     return <main className="meet-surface meet-page room-page">
       <header className="meet-header room-header">
         <Link className="meet-brand" href="/" aria-label="Sundays home">
@@ -32,7 +34,7 @@ export default function MeetPage() {
           <span>SUNDAYS IN LA</span>
         </Link>
       </header>
-      <MeetRoom initialResult={live ? null : sampleDirectory("", Date.now())} live={live} />
+      <MeetRoom initialResult={initialResult} live={live} />
     </main>;
   }
   if (!demoEnabled()) notFound();

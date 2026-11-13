@@ -31,15 +31,17 @@ function MatchEvidence({ item, label }: { item: CardEvidence; label: string }) {
 function Intro({ person, match, viewer, onClose }: { person: Person; match?: PilotMatch; viewer: string; onClose: () => void }) {
   const { card } = person;
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "unavailable">("idle");
-  const note = `${viewer} would like to meet ${card.name}.${match ? ` A starting point is ${match.topic}.` : ""}`;
+  const note = `${viewer} would like to meet ${card.name}.${match?.topic ? ` A starting point is ${match.topic}.` : ""}`;
   return <MeetDialog title={card.name} description="Here today" onClose={onClose}>
     {card.project && <div className="meet-profile-project">
       <span className="meet-eyebrow">What they’re working on</span><p>{card.project}</p>
     </div>}
     {card.portfolio && <PortfolioLink url={card.portfolio.url} />}
     {match && <div className="meet-conversation-note">
-      <span className="meet-eyebrow">A place to start</span>
-      <p>Ask {card.name.split(" ")[0]} about {match.topic}.</p>
+      {match.topic && <>
+        <span className="meet-eyebrow">A place to start</span>
+        <p>Ask {card.name.split(" ")[0]} about {match.topic}.</p>
+      </>}
       <details className="meet-source-details">
         <summary>Why you two</summary>
         <ul className="pilot-evidence">
@@ -198,7 +200,7 @@ export default function MemberPanel() {
           {result.matches.length > 0 && <section className="pilot-suggestions" aria-labelledby="pilot-suggestions-title">
             <h2 id="pilot-suggestions-title">You should meet.</h2>
             <div className="meet-cards">{result.matches.map(({ person, topic }) => <article className="meet-card pilot-match-card" key={person.id}>
-              <span className="meet-connection">{topic}</span>
+              <span className="meet-connection">{topic ?? "Related projects"}</span>
               <h3>{person.card.name}</h3>
               {person.card.project && <p>{person.card.project}</p>}
               <button className="meet-card-link" disabled={busy} onClick={() => void run(() => introductions(result.query, person.id))}>

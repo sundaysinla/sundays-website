@@ -4,7 +4,9 @@ Luma keeps registration and check-in. Anyone can open `/meet` to search cards th
 
 ## Run the local pilot
 
-Use Node 22.18 or newer and install the repository dependencies. Run `npm run pilot:dev` and open [Meet](http://localhost:4000/meet). The sample room opens as Alex Rivera with example pairings. Search **Blender** or **risograph**, then open Jamie’s pairing and expand **Why you two**.
+Use Node 22.18 or newer and install the repository dependencies. Run `npm run pilot:model` once from the repository root to install the local CPU runtime and download the pinned 23 MB MiniLM model. Then run `npm run pilot:dev` and open [Meet](http://localhost:4000/meet).
+
+The sample room opens as Alex Rivera. Open **Zoe Chen** to see how digitizing family videos relates to restoring home movies. Open **Jamie Okafor** to see a portfolio-backed match. Searching **Blender** narrows the directory while your pairings stay visible.
 
 To run the live local room, set these server values in the ignored `.env.local`:
 
@@ -30,7 +32,11 @@ In **Manage Event → Registration → Registration Questions**, keep the projec
 
 Preview is the attendee’s approval to use their RSVP answer and read the submitted public portfolio. **Remove my card** erases the preview and blocks the RSVP from reappearing on a later sync for that event.
 
-The matcher compares project answers and approved excerpts for specific topics and phrases. It prefers a connection supported by project answers and shows the source text on each suggestion. Search filters the directory by names and words in shared project or portfolio text. Pairings still use the whole eligible room. The pilot makes zero model and search API calls.
+Pairing compares short passages from the current Luma answer and any included portfolio. TypeScript scores specific shared topics and the similarity of 384-dimensional vectors from MiniLM. It prefers evidence from current project answers, skips weak matches, and shows the original excerpts. Directory search still matches names and words in shared project or portfolio text. Pairings use the whole eligible room.
+
+The model runs on the Meet server’s CPU in a Node worker. The worker reads model files from `.sundays-pilot/models/minilm-l6-v2` and performs inference without network access. Unchanged passages reuse an in-memory vector for up to 15 minutes. Setup is the only step that downloads model files. The live room still uses Luma for RSVP and check-in, and can fetch a portfolio that an attendee supplied.
+
+Set `COMMUNITY_PILOT_EMBEDDINGS=off` to use the text rules only. The same fallback works if the model or local runtime is missing. To place the weights in a different directory, set `COMMUNITY_PILOT_MODEL_DIR` in the shell when running setup and in the server environment when running Meet.
 
 ## Data boundaries
 

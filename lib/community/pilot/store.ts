@@ -5,7 +5,7 @@ import { DatabaseSync } from "node:sqlite";
 import { CommunityError } from "../http.ts";
 import { memberContext } from "./access.ts";
 import { comparableName, eventIsOpen, ProjectQuestionMissing, type IntakeEvent, type IntakeGuest, type IntakeSnapshot } from "./intake.ts";
-import { matchPeople, type Card, type Person, type PilotMatch } from "./matching.ts";
+import { matchPeople, type Card, type Person, type PilotMatch, type PilotMatcher } from "./matching.ts";
 import type { Portfolio } from "./portfolio.ts";
 
 export const CLAIM_TTL_MS = 20 * 60_000;
@@ -103,9 +103,9 @@ function memberView(event: Event, guest: Guest, session: string, now: number): M
 }
 
 function discovery(event: Event, query: string, now: number, options: {
-  viewer?: Guest; sessionExpiry?: number; directoryOnly?: boolean;
-} = {}): PilotDiscovery {
-  const { viewer, sessionExpiry = Infinity, directoryOnly = false } = options;
+  viewer?: Guest; sessionExpiry?: number; directoryOnly?: boolean; matcher: PilotMatcher;
+}): PilotDiscovery {
+  const { viewer, sessionExpiry = Infinity, directoryOnly = false, matcher } = options;
   const people = event.guests.flatMap(candidate => {
     if (candidate.id === viewer?.id || !candidate.shared || candidate.shared.hidden || candidate.attendance !== "checked-in") return [];
     if (directoryOnly && !candidate.shared.directory) return [];
@@ -115,7 +115,7 @@ function discovery(event: Event, query: string, now: number, options: {
   const viewerCard = viewer ? cardFor(viewer, viewer.shared?.includePortfolio ?? true) : null;
   const expiresAt = Math.min(now + 60_000, sessionExpiry,
     ...(event.event.source === "luma" ? [event.syncedAt + liveFreshnessMs, Date.parse(event.event.endAt)] : []));
-  return { ...matchPeople(people, viewerCard, query), query, expiresAt, eventName: event.event.name };
+  return { ...matcher(people, viewerCard, query), query, expiresAt, eventName: event.event.name };
 }
 
 export class PilotStore {
@@ -335,16 +335,16 @@ export class PilotStore {
     }, true);
   }
 
-  introductions(session: string, query: string, now: number): PilotDiscovery {
+  introductions(session: string, query: string, now: number, matcher = matchPeople): PilotDiscovery {
     return this.access(state => {
       const { event, guest, access } = validAccess(state, session, now);
       const problem = discoveryMessage(event, guest, now);
       if (problem) throw new CommunityError(problem, 409);
-      return discovery(event, query, now, { viewer: guest, sessionExpiry: access.expiresAt });
+      return discovery(event, query, now, { viewer: guest, sessionExpiry: access.expiresAt, matcher });
     });
   }
 
-  directory(eventId: string, query: string, now: number, session = ""): PilotDiscovery {
+  directory(eventId: string, query: string, now: number, session = "", matcher = matchPeople): PilotDiscovery {
     return this.access(state => {
       const event = state.events.find(record => record.event.id === eventId && record.event.source === "luma");
       const access = session && state.sessions.find(record =>
@@ -355,7 +355,7 @@ export class PilotStore {
       const viewer = guest?.attendance === "checked-in" ? guest : undefined;
       const message = event ? roomMessage(event, now) : "Discovery opens during this Sunday’s session.";
       const result = event && !message
-        ? discovery(event, query, now, { viewer, sessionExpiry: access ? access.expiresAt : Infinity, directoryOnly: !viewer })
+        ? discovery(event, query, now, { viewer, sessionExpiry: access ? access.expiresAt : Infinity, directoryOnly: !viewer, matcher })
         : { people: [], matches: [], query, expiresAt: now + 60_000, eventName: event?.event.name, roomMessage: message ?? undefined };
       return event && guest ? { ...result, member: memberView(event, guest, session, now) } : result;
     });
