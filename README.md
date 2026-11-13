@@ -31,7 +31,7 @@ Production keeps discovery unavailable by default. The flag only exposes the fic
 
 See [product, research and architecture](docs/community-discovery.md), [evaluation evidence and limits](docs/community-evaluation.md), and the [implementation plan](docs/superpowers/plans/2026-11-04-you-should-meet.md).
 
-The [Luma pilot](docs/luma-pilot.md) adds a private host panel at `/meet/pilot` and one-time member card claims. Use `npm run pilot:dev` with the local settings in the guide. The pilot is off by default and the command binds to loopback.
+The [Luma pilot](docs/luma-pilot.md) opens today’s search and pairings at `/meet`. Run `npm run pilot:dev` for the sample room. The guide covers turning on live Luma check-ins and attendee sign-in.
 
 # Contributors:
 - Sarah Fan

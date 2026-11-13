@@ -53,5 +53,25 @@ test("an iOS match requires an explicit mention rather than an ambiguous technol
 test("people can browse without a profile and search by name or approved project evidence", () => {
   assert.deepEqual(matchPeople([eli, casey], null, "field recordings").people.map(person => person.id), ["eli"]);
   assert.deepEqual(matchPeople([eli, casey], null, "Casey").people.map(person => person.id), ["casey"]);
+  assert.deepEqual(matchPeople([eli, casey], null, "Who is working on field recordings?").people.map(person => person.id), ["eli"]);
   assert.deepEqual(matchPeople([eli, casey], null, "public libraries").people, []);
+});
+
+test("search filters the directory while keeping today's personal matches", () => {
+  const result = matchPeople([eli, casey], maya.card, "matcha");
+  assert.deepEqual(result.people.map(person => person.id), ["casey"]);
+  assert.deepEqual(result.matches.map(match => match.person.id), ["eli"]);
+  assert.deepEqual(matchPeople([eli, casey], maya.card, "religion").matches.map(match => match.person.id), ["eli"]);
+});
+
+test("search handles natural questions and preserves meaningful words in names", () => {
+  const profiles: Person[] = [
+    { id: "can", card: { name: "Can", project: "Sketching landscapes.", portfolio: null } },
+    { id: "do", card: { name: "Anna Do", project: "Building models in Blender.", portfolio: null } },
+    { id: "ali", card: { name: "Anna Ali", project: "Making a lamp.", portfolio: null } },
+  ];
+  const search = (query: string) => matchPeople(profiles, null, query).people.map(person => person.id);
+  assert.deepEqual(search("Can"), ["can"]);
+  assert.deepEqual(search("Anna Do"), ["do"]);
+  assert.deepEqual(search("Who’s working on Blender?"), ["do"]);
 });

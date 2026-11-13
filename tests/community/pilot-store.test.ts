@@ -68,7 +68,7 @@ test("claims are single use, expire, and only expose the claimed card", t => {
   assert.throws(() => store.claim(link, now), /invalid or expired/i);
   const expired = store.issue(event.id, "jamie", now);
   assert.throws(() => store.claim(expired, now + CLAIM_TTL_MS + 1), /invalid or expired/i);
-  assert.throws(() => store.view("bad-session", now), /claim/i);
+  assert.throws(() => store.view("bad-session", now), { status: 401 });
 });
 
 test("refresh preserves a shared preview while its RSVP is unchanged and removes cancelled guests", t => {
@@ -84,7 +84,7 @@ test("refresh preserves a shared preview while its RSVP is unchanged and removes
   removed.guests = removed.guests.filter(g => g.id !== "jamie");
   store.sync(removed);
   assert.deepEqual(store.introductions(alex, "", now + 40).people, []);
-  assert.throws(() => store.view(jamie, now + 40), /claim/i);
+  assert.throws(() => store.view(jamie, now + 40), { status: 401 });
   assert.throws(() => store.sync(sample(event, now + 30)), /newer/i);
 });
 
@@ -123,7 +123,7 @@ test("hiding keeps the private preview and withdrawal prevents a later sync rest
   store.withdraw(jamie, now);
   store.sync(sample(event, now + 1));
   assert.throws(() => store.issue(event.id, "jamie", now + 1), /guest/i);
-  assert.throws(() => store.view(jamie, now + 1), /claim/i);
+  assert.throws(() => store.view(jamie, now + 1), { status: 401 });
 });
 
 test("a live attendance snapshot expires and cannot be used outside the session", t => {
@@ -131,7 +131,56 @@ test("a live attendance snapshot expires and cannot be used outside the session"
   const alex = claim(store, "alex");
   assert.equal(store.introductions(alex, "", now).expiresAt, now + 60_000);
   assert.throws(() => store.introductions(alex, "", now - 3 * 60 * 60_000), /session/i);
-  assert.throws(() => store.introductions(alex, "", now + 16 * 60_000), /refresh/i);
+  assert.throws(() => store.introductions(alex, "", now + 16 * 60_000), { status: 409 });
+});
+
+test("the directory is readable without a session and keeps private, absent, and other-event cards out", t => {
+  const store = make(t);
+  const jamie = claim(store, "jamie");
+  const rowan = claim(store, "rowan");
+  const preview = prepare(store, jamie, "Making music.", portfolio);
+  store.share(jamie, preview, false, now);
+  assert.deepEqual(store.directory(event.id, "", now).people, [], "previous attendee-only sharing is kept private");
+  store.share(jamie, store.view(jamie, now).revision!, false, now, true);
+  const rowanPreview = prepare(store, rowan, "Making a music video.");
+  assert.throws(() => store.share(rowan, rowanPreview, false, now, true), { status: 409 });
+  store.share(rowan, rowanPreview, false, now);
+  const result = store.directory(event.id, "music", now);
+  assert.deepEqual(result.people.map(person => person.card.name), ["Jamie"]);
+  assert.deepEqual(result.matches, []);
+  assert.doesNotMatch(JSON.stringify(result), /example\.com|gst-|Rowan|Alex/);
+  assert.deepEqual(store.directory("evt-Other", "", now).people, []);
+  assert.deepEqual(store.directory(event.id, "", now + 16 * 60_000).people, []);
+  store.hide(jamie, now);
+  assert.deepEqual(store.directory(event.id, "", now).people, []);
+});
+
+test("a directory refresh updates the signed-in card's attendance and rejects a revoked session", t => {
+  const store = make(t);
+  const rowan = store.join(event.id, "rowan", now);
+  assert.throws(() => store.join(event.id, "alex", Date.parse(event.endAt)), { status: 403 });
+  prepare(store, rowan, "Building a film set.");
+  assert.match(store.directory(event.id, "", now, rowan).member?.discoveryMessage ?? "", /check in/i);
+  const checkedIn = sample(event, now + 20);
+  checkedIn.guests[2].attendance = "checked-in";
+  store.sync(checkedIn);
+  assert.equal(store.directory(event.id, "", now + 20, rowan).member?.discoveryMessage, null);
+  store.leave(rowan);
+  assert.throws(() => store.directory(event.id, "", now + 21, rowan), { status: 401 });
+});
+
+test("a newer event closure removes search results and survives an older snapshot", t => {
+  const store = make(t);
+  const jamie = store.join(event.id, "jamie", now);
+  store.share(jamie, prepare(store, jamie, "Making music."), false, now, true);
+  const rescheduled = { ...event, startAt: "2026-11-29T22:00:00Z", endAt: "2026-11-30T02:00:00Z" };
+  store.updateClosedWindow(rescheduled, now + 20);
+  assert.deepEqual(store.directory(event.id, "", now + 20).people, []);
+  assert.throws(() => store.join(event.id, "alex", now + 20), { status: 403 });
+  assert.throws(() => store.sync(sample(event, now + 10)), /newer/i);
+  const reopened = Date.parse("2026-11-29T23:00:00Z");
+  store.sync(sample(rescheduled, reopened));
+  assert.deepEqual(store.directory(event.id, "", reopened).people.map(person => person.card.name), ["Jamie"]);
 });
 
 test("a form block before first import wins over older or same-time snapshots", t => {

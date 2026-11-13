@@ -2,9 +2,9 @@ import { resolve } from "node:path";
 import { z } from "zod";
 import { CommunityError, errorResponse, jsonResponse, requestJson } from "../http.ts";
 import { cookieValue, HOST_COOKIE, HOST_TTL_MS, memberContext, MEMBER_COOKIE, newHostSession, pilotEnabled, pilotOrigin, safeEqual, setCookie, validHostSession } from "./access.ts";
-import { eventIdSchema, LINK_QUESTION, LumaIntake, ProjectQuestionMissing } from "./intake.ts";
+import { DiscoveryWindowClosed, eventIdSchema, LINK_QUESTION, lumaGuestKey, LumaIntake, ProjectQuestionMissing } from "./intake.ts";
 import { readPortfolio, type Portfolio } from "./portfolio.ts";
-import { samplePortfolio, sampleSnapshot } from "./sample.ts";
+import { sampleDirectory, samplePortfolio, sampleSnapshot } from "./sample.ts";
 import { MEMBER_TTL_MS, PilotStore } from "./store.ts";
 
 export type PilotOptions = {
@@ -12,6 +12,9 @@ export type PilotOptions = {
   portfolioReader?: (link: string) => Promise<Portfolio | null>;
 };
 const preparing = new Map<string, Promise<void>>();
+const rosterRefreshes = new Map<string, { retryAt: number; pending?: Promise<void> }>();
+const rosterRefreshMs = 60_000;
+let activeTicketLookups = 0;
 
 const action = <T extends string>(name: T) => z.object({ action: z.literal(name) }).strict();
 const context = z.string().regex(/^[a-f0-9]{24}$/);
@@ -22,9 +25,34 @@ const input = z.discriminatedUnion("action", [
   action("host-issue").extend({ eventId: eventIdSchema, guestId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/) }),
   action("claim").extend({ token: z.string().regex(/^[A-Za-z0-9_-]{43}$/) }),
   action("card"), action("prepare").extend({ context }), action("hide").extend({ context }), action("withdraw").extend({ context }),
-  action("share").extend({ context, revision: z.string().regex(/^[a-zA-Z0-9_-]{43}$/), includePortfolio: z.boolean() }),
+  action("share").extend({ context, revision: z.string().regex(/^[a-zA-Z0-9_-]{43}$/), includePortfolio: z.boolean(), directory: z.boolean().optional() }),
   action("discover").extend({ context, query: z.string().trim().max(240).default("") }),
+  action("directory").extend({ query: z.string().trim().max(240).default(""), context: context.optional() }),
+  action("join").extend({ ticket: z.string().trim().max(500) }),
+  action("leave").extend({ context }),
 ]);
+
+async function refreshRoster(store: PilotStore, eventId: string, adapter: LumaIntake, now: number) {
+  if (store.snapshotTime(eventId) > now - rosterRefreshMs) return;
+  const existing = rosterRefreshes.get(eventId);
+  if (existing?.pending) return existing.pending;
+  if (existing && now < existing.retryAt) return;
+  const refresh: { retryAt: number; pending?: Promise<void> } = { retryAt: now + rosterRefreshMs };
+  refresh.pending = adapter.snapshot(eventId, now).then(snapshot => store.sync(snapshot)).catch(error => {
+    if (error instanceof ProjectQuestionMissing) store.block(eventId, now);
+    if (error instanceof DiscoveryWindowClosed) store.updateClosedWindow(error.event, now);
+    // The directory has its own expiry and can use a recent complete snapshot.
+  }).finally(() => { delete refresh.pending; });
+  rosterRefreshes.set(eventId, refresh);
+  return refresh.pending;
+}
+
+async function verifyTicket(adapter: LumaIntake, eventId: string, key: string): Promise<string> {
+  if (activeTicketLookups >= 8) throw new CommunityError("Ticket check is busy. Try again in a moment.", 429);
+  activeTicketLookups++;
+  try { return await adapter.verifyGuest(eventId, key); }
+  finally { activeTicketLookups--; }
+}
 
 export async function handlePilot(request: Request, options: PilotOptions = {}): Promise<Response> {
   const env = options.env ?? process.env;
@@ -35,7 +63,8 @@ export async function handlePilot(request: Request, options: PilotOptions = {}):
     if (!parsed.success) throw new CommunityError("Check the form and try again.");
     const data = parsed.data;
     const now = Date.now();
-    const secret = env.COMMUNITY_PILOT_HOST_KEY!;
+    const secret = env.COMMUNITY_PILOT_HOST_KEY ?? "";
+    if (data.action.startsWith("host-") && secret.length < 32) throw new CommunityError("Organizer access is unavailable.", 404);
     if (data.action === "host-login") {
       if (!safeEqual(data.key, secret)) throw new CommunityError("That host key didn’t match.", 401);
       return setCookie(jsonResponse({ signedIn: true }), request, HOST_COOKIE, newHostSession(secret, now), HOST_TTL_MS);
@@ -55,10 +84,33 @@ export async function handlePilot(request: Request, options: PilotOptions = {}):
       return new LumaIntake(env.LUMA_API_KEY!, options.fetcher);
     };
     const session = cookieValue(request, MEMBER_COOKIE);
-    if ("context" in data && (!session || !safeEqual(data.context, memberContext(session)))) {
-      throw new CommunityError("This tab’s claim session changed. Open your own card again.", 401);
+    const liveRoom = env.COMMUNITY_PILOT_LIVE === "true";
+    if ("context" in data && data.context !== undefined && (!session || !safeEqual(data.context, memberContext(session)))) {
+      throw new CommunityError("Your session changed. Open your own card again.", 401);
     }
     switch (data.action) {
+      case "directory": {
+        if (!liveRoom) return jsonResponse(sampleDirectory(data.query, now));
+        const adapter = live();
+        await refreshRoster(store, liveId!, adapter, now);
+        return jsonResponse(store.directory(liveId!, data.query, Date.now(), data.context ? session : ""));
+      }
+      case "join": {
+        if (!liveRoom) throw new CommunityError("Ticket sign-in is unavailable in this room.", 404);
+        const adapter = live();
+        const key = lumaGuestKey(data.ticket, liveId!);
+        if (!key) throw new CommunityError("Choose a screenshot of your ticket QR for this Sunday.");
+        await refreshRoster(store, liveId!, adapter, now);
+        if (!store.roomOpen(liveId!, Date.now())) throw new CommunityError("Ticket sign-in opens during this Sunday’s session.", 409);
+        const id = await verifyTicket(adapter, liveId!, key);
+        const current = Date.now();
+        const value = store.join(liveId!, id, current);
+        return setCookie(jsonResponse(store.view(value, current)), request, MEMBER_COOKIE, value, MEMBER_TTL_MS);
+      }
+      case "leave": {
+        store.leave(session);
+        return setCookie(jsonResponse({ signedOut: true }), request, MEMBER_COOKIE, "", 0);
+      }
       case "host-view": return admin();
       case "host-logout": return setCookie(jsonResponse({ signedIn: false }), request, HOST_COOKIE, "", 0);
       case "host-inspect": {
@@ -86,7 +138,10 @@ export async function handlePilot(request: Request, options: PilotOptions = {}):
         const value = store.claim(data.token, now);
         return setCookie(jsonResponse(store.view(value, now)), request, MEMBER_COOKIE, value, MEMBER_TTL_MS);
       }
-      case "card": return jsonResponse(store.view(session, now));
+      case "card": {
+        if (liveRoom && session) await refreshRoster(store, liveId!, live(), now);
+        return jsonResponse(store.view(session, Date.now(), liveRoom ? liveId : undefined));
+      }
       case "prepare": {
         const target = store.preparation(session, now);
         if (!target.prepared) {
@@ -95,7 +150,7 @@ export async function handlePilot(request: Request, options: PilotOptions = {}):
             task = (async () => {
               const source = target.guest.source;
               if (target.event.source === "luma" && target.event.id !== liveId) {
-                throw new CommunityError("Ask a host to refresh this event.", 409);
+                throw new CommunityError("This RSVP is for a different Sunday.", 409);
               }
               const card = source.kind === "sample" ? source.card : await live().cardSource(target.event, target.guest);
               store.assertPreparation(session, target, Date.now());
@@ -112,8 +167,14 @@ export async function handlePilot(request: Request, options: PilotOptions = {}):
         return jsonResponse(store.view(session, Date.now()));
       }
       case "share": {
-        store.share(session, data.revision, data.includePortfolio, now);
-        return jsonResponse(store.view(session, now));
+        if (data.directory) {
+          if (!liveRoom) throw new CommunityError("Sharing is unavailable in this room.", 409);
+          store.view(session, now, liveId);
+          await refreshRoster(store, liveId!, live(), now);
+        }
+        const current = Date.now();
+        store.share(session, data.revision, data.includePortfolio, current, data.directory === true);
+        return jsonResponse(store.view(session, current));
       }
       case "hide": {
         store.hide(session, now);

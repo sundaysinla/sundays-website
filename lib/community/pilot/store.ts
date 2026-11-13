@@ -4,7 +4,7 @@ import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { CommunityError } from "../http.ts";
 import { memberContext } from "./access.ts";
-import { comparableName, ProjectQuestionMissing, type IntakeEvent, type IntakeGuest, type IntakeSnapshot } from "./intake.ts";
+import { comparableName, eventIsOpen, ProjectQuestionMissing, type IntakeEvent, type IntakeGuest, type IntakeSnapshot } from "./intake.ts";
 import { matchPeople, type Card, type Person, type PilotMatch } from "./matching.ts";
 import type { Portfolio } from "./portfolio.ts";
 
@@ -15,7 +15,7 @@ const digest = (value: string) => createHash("sha256").update(value).digest("hex
 const token = () => randomBytes(32).toString("base64url");
 
 type Prepared = { id: string; project: string; portfolio: Portfolio | null; portfolioUnavailable: boolean };
-type Guest = IntakeGuest & { prepared: Prepared | null; shared: { includePortfolio: boolean; hidden?: boolean } | null; claimBlocked?: boolean };
+type Guest = IntakeGuest & { prepared: Prepared | null; shared: { includePortfolio: boolean; hidden?: boolean; directory?: true } | null; claimBlocked?: boolean };
 type Preparation = { event: IntakeEvent; guest: IntakeGuest; prepared: boolean; startedAt: number };
 type Event = Omit<IntakeSnapshot, "guests"> & { guests: Guest[]; blocked: boolean };
 type Access = { hash: string; eventId: string; guestId: string; expiresAt: number };
@@ -32,7 +32,10 @@ export type MemberView = {
   portfolioUnavailable: boolean;
   discoveryMessage: string | null;
 };
-export type PilotDiscovery = { people: Person[]; matches: PilotMatch[]; query: string; expiresAt: number };
+export type PilotDiscovery = {
+  people: Person[]; matches: PilotMatch[]; query: string; expiresAt: number;
+  eventName?: string; roomMessage?: string; member?: MemberView;
+};
 export type HostEvent = {
   event: IntakeEvent;
   syncedAt: number;
@@ -44,7 +47,7 @@ function validAccess(state: State, session: string, now: number) {
   const access = session && state.sessions.find(record => record.hash === digest(session) && record.expiresAt > now);
   const event = access && state.events.find(record => record.event.id === access.eventId);
   const guest = event && access && event.guests.find(record => record.id === access.guestId);
-  if (!access || !event || !guest) throw new CommunityError("Claim your card using a link from a host.", 401);
+  if (!access || !event || !guest) throw new CommunityError("Open your Luma ticket again.", 401);
   return { access, event, guest };
 }
 
@@ -59,7 +62,7 @@ const isShared = (guest: Guest) => !!guest.shared && !guest.shared.hidden;
 function preparationAccess(state: State, session: string, now: number, target?: Preparation) {
   const current = validAccess(state, session, now);
   const { event, guest } = current;
-  if (event.blocked) throw new CommunityError("Ask a host to review this event’s registration settings.", 409);
+  if (event.blocked) throw new CommunityError("RSVP cards are unavailable for this event.", 409);
   if (target) {
     const blockedAt = state.blockWatermarks.find(record => record.eventId === event.event.id)?.at ?? -1;
     if (blockedAt >= target.startedAt || guest.revision !== target.guest.revision ||
@@ -70,20 +73,49 @@ function preparationAccess(state: State, session: string, now: number, target?: 
   return current;
 }
 
-function discoveryMessage(event: Event, guest: Guest, now: number): string | null {
+function roomMessage(event: Event, now: number): string | null {
   if (event.event.source === "luma") {
-    if (event.blocked) return "The host needs to review this event’s registration settings.";
-    if (now < Date.parse(event.event.startAt) - 60 * 60_000 || now >= Date.parse(event.event.endAt)) return "Introductions open during this session.";
-    if (event.syncedAt <= now - liveFreshnessMs) return "Ask a host to refresh check-ins.";
+    if (event.blocked) return "Discovery is unavailable for this event.";
+    if (!eventIsOpen(event.event, now)) return "Introductions open during this session.";
+    if (event.syncedAt <= now - liveFreshnessMs) return "Check-ins are updating. Try again shortly.";
   }
-  if (guest.attendance !== "checked-in") return "Check in with a host to see who’s here.";
   return null;
+}
+
+function discoveryMessage(event: Event, guest: Guest, now: number): string | null {
+  return roomMessage(event, now) ?? (guest.attendance === "checked-in" ? null : "Check in on Luma to get your pairing.");
 }
 
 function cardFor(guest: Guest, includePortfolio: boolean): Card | null {
   return guest.prepared && {
     name: guest.name, project: guest.prepared.project, portfolio: includePortfolio ? guest.prepared.portfolio : null,
   };
+}
+
+function memberView(event: Event, guest: Guest, session: string, now: number): MemberView {
+  return {
+    context: memberContext(session), event: { name: event.event.name }, name: guest.name, card: cardFor(guest, true),
+    revision: guest.prepared?.id ?? null, shared: isShared(guest),
+    includePortfolio: guest.shared?.includePortfolio ?? !!guest.prepared?.portfolio,
+    portfolioUnavailable: guest.prepared?.portfolioUnavailable ?? false,
+    discoveryMessage: discoveryMessage(event, guest, now),
+  };
+}
+
+function discovery(event: Event, query: string, now: number, options: {
+  viewer?: Guest; sessionExpiry?: number; directoryOnly?: boolean;
+} = {}): PilotDiscovery {
+  const { viewer, sessionExpiry = Infinity, directoryOnly = false } = options;
+  const people = event.guests.flatMap(candidate => {
+    if (candidate.id === viewer?.id || !candidate.shared || candidate.shared.hidden || candidate.attendance !== "checked-in") return [];
+    if (directoryOnly && !candidate.shared.directory) return [];
+    const card = cardFor(candidate, candidate.shared.includePortfolio);
+    return card ? [{ id: candidate.id, card }] : [];
+  });
+  const viewerCard = viewer ? cardFor(viewer, viewer.shared?.includePortfolio ?? true) : null;
+  const expiresAt = Math.min(now + 60_000, sessionExpiry,
+    ...(event.event.source === "luma" ? [event.syncedAt + liveFreshnessMs, Date.parse(event.event.endAt)] : []));
+  return { ...matchPeople(people, viewerCard, query), query, expiresAt, eventName: event.event.name };
 }
 
 export class PilotStore {
@@ -166,6 +198,16 @@ export class PilotStore {
     }, true);
   }
 
+  updateClosedWindow(metadata: IntakeEvent, inspectedAt: number): void {
+    this.access(state => {
+      const event = state.events.find(record => record.event.id === metadata.id && record.event.source === "luma");
+      if (!event || event.startedAt > inspectedAt) return;
+      event.event = metadata;
+      event.startedAt = inspectedAt;
+      event.syncedAt = 0;
+    }, true);
+  }
+
   hostEvents(): HostEvent[] {
     return this.access(state => state.events.map(record => ({
       event: record.event, syncedAt: record.syncedAt, blocked: record.blocked, guests: record.guests.map(g => ({
@@ -173,6 +215,35 @@ export class PilotStore {
         attendance: g.attendance, shared: isShared(g),
       })),
     })));
+  }
+
+  snapshotTime(eventId: string): number {
+    return this.access(state => state.events.find(event => event.event.id === eventId)?.syncedAt ?? 0);
+  }
+
+  roomOpen(eventId: string, now: number): boolean {
+    return this.access(state => {
+      const event = state.events.find(record => record.event.id === eventId && record.event.source === "luma");
+      return !!event && !roomMessage(event, now);
+    });
+  }
+
+  join(eventId: string, id: string, now: number): string {
+    return this.access(state => {
+      const event = state.events.find(record => record.event.id === eventId && record.event.source === "luma");
+      const guest = event?.guests.find(record => record.id === id);
+      if (!event || !guest || roomMessage(event, now)) throw new CommunityError("This Luma RSVP is unavailable.", 403);
+      const value = token();
+      state.sessions = state.sessions.filter(session => session.expiresAt > now &&
+        (session.eventId !== eventId || session.guestId !== id));
+      state.sessions.push({ hash: digest(value), eventId, guestId: id, expiresAt: now + MEMBER_TTL_MS });
+      return value;
+    }, true);
+  }
+
+  leave(session: string): void {
+    const hash = digest(session);
+    this.access(state => { state.sessions = state.sessions.filter(record => record.hash !== hash); }, true);
   }
 
   issue(eventId: string, id: string, now: number): string {
@@ -204,16 +275,11 @@ export class PilotStore {
     }, true);
   }
 
-  view(session: string, now: number): MemberView {
+  view(session: string, now: number, eventId?: string): MemberView {
     return this.access(state => {
       const { event, guest } = validAccess(state, session, now);
-      return {
-        context: memberContext(session), event: { name: event.event.name }, name: guest.name, card: cardFor(guest, true),
-        revision: guest.prepared?.id ?? null, shared: isShared(guest),
-        includePortfolio: guest.shared?.includePortfolio ?? !!guest.prepared?.portfolio,
-        portfolioUnavailable: guest.prepared?.portfolioUnavailable ?? false,
-        discoveryMessage: discoveryMessage(event, guest, now),
-      };
+      if (eventId && event.event.id !== eventId) throw new CommunityError("Open your Luma ticket for this Sunday.", 401);
+      return memberView(event, guest, session, now);
     });
   }
 
@@ -235,12 +301,17 @@ export class PilotStore {
     }, true);
   }
 
-  share(session: string, revision: string, includePortfolio: boolean, now: number): void {
+  share(session: string, revision: string, includePortfolio: boolean, now: number, inDirectory = false): void {
     this.access(state => {
       const { event, guest } = validAccess(state, session, now);
-      if (event.blocked) throw new CommunityError("The host needs to review this event’s registration settings.", 409);
+      if (event.blocked) throw new CommunityError("RSVP cards are unavailable for this event.", 409);
+      const problem = inDirectory ? discoveryMessage(event, guest, now) : null;
+      if (problem) throw new CommunityError(problem, 409);
       if (guest.prepared?.id !== revision) throw new CommunityError("Preview the current card before sharing.", 409);
-      guest.shared = { includePortfolio: includePortfolio && !!guest.prepared.portfolio };
+      guest.shared = {
+        includePortfolio: includePortfolio && !!guest.prepared.portfolio,
+        ...(inDirectory ? { directory: true } : {}),
+      };
       guest.prepared.id = token();
     }, true);
   }
@@ -269,15 +340,24 @@ export class PilotStore {
       const { event, guest, access } = validAccess(state, session, now);
       const problem = discoveryMessage(event, guest, now);
       if (problem) throw new CommunityError(problem, 409);
-      const candidates = event.guests.flatMap(candidate => {
-        if (candidate.id === guest.id || !candidate.shared || candidate.shared.hidden || candidate.attendance !== "checked-in") return [];
-        const card = cardFor(candidate, candidate.shared.includePortfolio);
-        return card ? [{ id: candidate.id, card }] : [];
-      });
-      const result = matchPeople(candidates, cardFor(guest, guest.shared?.includePortfolio ?? true), query);
-      const expiresAt = Math.min(now + 60_000, access.expiresAt,
-        ...(event.event.source === "luma" ? [event.syncedAt + liveFreshnessMs, Date.parse(event.event.endAt)] : []));
-      return { ...result, query, expiresAt };
+      return discovery(event, query, now, { viewer: guest, sessionExpiry: access.expiresAt });
+    });
+  }
+
+  directory(eventId: string, query: string, now: number, session = ""): PilotDiscovery {
+    return this.access(state => {
+      const event = state.events.find(record => record.event.id === eventId && record.event.source === "luma");
+      const access = session && state.sessions.find(record =>
+        record.eventId === eventId && record.hash === digest(session) && record.expiresAt > now,
+      );
+      const guest = access && event ? event.guests.find(guest => guest.id === access.guestId) : undefined;
+      if (session && !guest) throw new CommunityError("Open your Luma ticket again.", 401);
+      const viewer = guest?.attendance === "checked-in" ? guest : undefined;
+      const message = event ? roomMessage(event, now) : "Discovery opens during this Sunday’s session.";
+      const result = event && !message
+        ? discovery(event, query, now, { viewer, sessionExpiry: access ? access.expiresAt : Infinity, directoryOnly: !viewer })
+        : { people: [], matches: [], query, expiresAt: now + 60_000, eventName: event?.event.name, roomMessage: message ?? undefined };
+      return event && guest ? { ...result, member: memberView(event, guest, session, now) } : result;
     });
   }
 }

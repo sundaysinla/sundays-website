@@ -5,7 +5,7 @@ export const MEMBER_COOKIE = "sundays_pilot_member";
 export const HOST_TTL_MS = 2 * 60 * 60_000;
 
 export function pilotEnabled(env: Record<string, string | undefined> = process.env): boolean {
-  return env.COMMUNITY_PILOT_ENABLED === "true" && !env.VERCEL && (env.COMMUNITY_PILOT_HOST_KEY?.length ?? 0) >= 32;
+  return env.COMMUNITY_PILOT_ENABLED === "true" && !env.VERCEL;
 }
 
 export function isLoopback(url: URL): boolean {

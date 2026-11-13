@@ -12,6 +12,7 @@ const ignored = new Set(("about again also another been being build building bui
   "their them there these they thing think this those through time today trying using very want website week " +
   "what when where will with work working would your").split(" "));
 const specific = new Set(["Blender", "ceramics", "creative coding", "motion design", "printmaking", "robotics", "typography"]);
+const questionWords = new Set("who whose anyone anybody someone somebody people person here today is are was were has have does do know knows can could help me find looking for with works work working on making about interested in".split(" "));
 const words = (text: string): string[] => text.normalize("NFKD").toLowerCase().replace(/\p{M}/gu, "").match(/[\p{L}\p{N}]+/gu) ?? [];
 const singular = (word: string) => word.length >= 5 ? word.replace(/ies$/, "y").replace(/(?<![su])s$/, "") : word;
 
@@ -61,15 +62,20 @@ function scoreMatch(person: Person, viewer: Map<string, Signal>) {
 }
 
 export function matchPeople(people: Person[], viewer: Card | null, query: string): { people: Person[]; matches: PilotMatch[] } {
-  if (query && parseQuery(query).restricted) return { people: [], matches: [] };
-  const terms = words(query);
-  const visible = people.filter(person => {
+  const restricted = !!query && parseQuery(query).restricted;
+  const nameTerms = words(query);
+  const terms = words(query.replace(/\bwho['’]s\b/gi, "who")).filter(term => !questionWords.has(term));
+  const ordered = [...people].sort((a, b) => a.card.name.localeCompare(b.card.name) || a.id.localeCompare(b.id));
+  const visible = ordered.filter(person => {
+    if (restricted) return false;
     if (!query) return true;
-    const searchable = words([person.card.name, ...evidence(person.card).map(item => item.text)].join(" "));
+    const name = words(person.card.name);
+    if (nameTerms.length && nameTerms.every(term => name.some(word => word.startsWith(term)))) return true;
+    const searchable = words(evidence(person.card).map(item => item.text).join(" "));
     return terms.length > 0 && terms.every(term => searchable.some(word => word.startsWith(term)));
-  }).sort((a, b) => a.card.name.localeCompare(b.card.name) || a.id.localeCompare(b.id));
-  if (query || !viewer) return { people: visible, matches: [] };
+  });
+  if (!viewer) return { people: visible, matches: [] };
   const viewerSignals = signals(viewer);
-  const matches = visible.flatMap(person => scoreMatch(person, viewerSignals)).sort((a, b) => b.score - a.score);
+  const matches = ordered.flatMap(person => scoreMatch(person, viewerSignals)).sort((a, b) => b.score - a.score);
   return { people: visible, matches: matches.slice(0, 3).map(({ match }) => match) };
 }

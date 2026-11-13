@@ -24,6 +24,10 @@ export type IntakeGuest = {
 };
 export type IntakeSnapshot = { event: IntakeEvent; guests: IntakeGuest[]; startedAt: number; syncedAt: number };
 
+export function eventIsOpen(event: IntakeEvent, now: number): boolean {
+  return now >= Date.parse(event.startAt) - 60 * 60_000 && now < Date.parse(event.endAt);
+}
+
 const apiOrigin = "https://public-api.luma.com";
 export const eventIdSchema = z.string().regex(/^evt-[A-Za-z0-9]{1,64}$/);
 const idSchema = z.string().regex(/^[A-Za-z0-9_-]{1,100}$/);
@@ -38,6 +42,7 @@ const rawGuest = z.object({
   approval_status: z.string(),
   registration_answers: z.array(z.object({ question_id: idSchema, question_type: z.string(), value: z.unknown() })).max(100).nullish(),
   event_tickets: z.array(z.object({ checked_in_at: isoDate.nullish() })).max(100),
+  is_ticket_key_invalidated: z.boolean().optional(),
 });
 const rawPage = z.object({ entries: z.array(rawGuest).max(100), has_more: z.boolean(), next_cursor: z.string().max(1000).nullish() });
 
@@ -61,6 +66,16 @@ export function cleanLink(input: string): string {
 const normalizeLabel = (label: string) => label.toLowerCase().trim().replace(/\s+/g, " ");
 const tidy = (value: string | null | undefined, limit: number) => (value ?? "").replace(/\s+/g, " ").trim().slice(0, limit);
 export const comparableName = (name: string) => normalizeLabel(name.normalize("NFKC"));
+
+export function lumaGuestKey(input: string, eventId: string): string | null {
+  try {
+    const url = new URL(input.trim());
+    if (!["https://luma.com", "https://lu.ma"].includes(url.origin) || url.username || url.password ||
+        url.pathname !== "/check-in/" + eventId || url.hash) return null;
+    const values = url.searchParams.getAll("pk");
+    return values.length === 1 && /^g-[A-Za-z0-9_-]{6,100}$/.test(values[0]) ? values[0] : null;
+  } catch { return null; }
+}
 
 export function publicText(value: string, limit: number): string {
   return tidy(value.slice(0, limit * 4).replace(/\b[\w.+-]+@[\w.-]+\.[a-z]{2,}\b/gi, "").replace(
@@ -89,11 +104,21 @@ function sourceCard(event: IntakeEvent, guest: z.infer<typeof rawGuest>): CardSo
 }
 
 const guestName = (guest: z.infer<typeof rawGuest>) => tidy(guest.user_name, 80) || tidy(guest.user_first_name, 80);
+const scopedGuestId = (eventId: string, guestId: string) =>
+  createHash("sha256").update(eventId + "\0" + guestId).digest("base64url").slice(0, 32);
 const revision = (key: string, event: IntakeEvent, guestId: string, card: CardSource) =>
   createHmac("sha256", key).update(JSON.stringify([event.id, guestId, event.projectQuestion?.id, card])).digest("hex");
 
 export class ProjectQuestionMissing extends CommunityError {
   constructor() { super("Keep one ‘What are you working on?’ text question in Luma to sync this event.", 409); }
+}
+
+export class DiscoveryWindowClosed extends CommunityError {
+  readonly event: IntakeEvent;
+  constructor(event: IntakeEvent) {
+    super("Discovery opens during this Sunday’s session.", 409);
+    this.event = event;
+  }
 }
 
 export class LumaIntake {
@@ -147,10 +172,11 @@ export class LumaIntake {
     };
   }
 
-  async snapshot(eventId: string): Promise<IntakeSnapshot> {
+  async snapshot(eventId: string, openAt?: number): Promise<IntakeSnapshot> {
     const startedAt = Date.now();
     const deadline = AbortSignal.timeout(18_000);
     const event = await this.event(eventId, deadline);
+    if (openAt !== undefined && !eventIsOpen(event, openAt)) throw new DiscoveryWindowClosed(event);
     if (!event.projectQuestion) throw new ProjectQuestionMissing();
     const guests: IntakeGuest[] = [];
     const seen = new Set<string>();
@@ -167,7 +193,7 @@ export class LumaIntake {
         const name = guestName(guest);
         if (!name || guest.approval_status !== "approved") continue;
         guests.push({
-          id: createHash("sha256").update(event.id + "\0" + guest.id).digest("base64url").slice(0, 32),
+          id: scopedGuestId(event.id, guest.id),
           name,
           attendance: guest.event_tickets.length === 1 && guest.event_tickets[0].checked_in_at ? "checked-in" : "rsvp",
           revision: revision(this.key, event, guest.id, sourceCard(event, guest)),
@@ -180,6 +206,21 @@ export class LumaIntake {
       cursors.add(cursor);
     }
     throw new CommunityError("Couldn’t read the complete guest list. Nothing was imported.", 502);
+  }
+
+  async verifyGuest(eventId: string, key: string): Promise<string> {
+    if (!eventIdSchema.safeParse(eventId).success || !/^g-[A-Za-z0-9_-]{6,100}$/.test(key)) {
+      throw new CommunityError("Use the QR code from your Luma ticket.");
+    }
+    const denied = () => new CommunityError("That ticket could not be verified for this Sunday.", 403);
+    const raw = await this.get("/v1/events/guests/get", { event_id: eventId, id: key }).catch(error => {
+      if (error instanceof CommunityError && error.status === 404) throw denied();
+      throw error;
+    });
+    const guest = rawGuest.safeParse(raw);
+    if (!guest.success || guest.data.approval_status !== "approved" || guest.data.is_ticket_key_invalidated ||
+        guest.data.event_tickets.length !== 1) throw denied();
+    return scopedGuestId(eventId, guest.data.id);
   }
 
   async cardSource(event: IntakeEvent, entry: IntakeGuest): Promise<CardSource> {

@@ -1,12 +1,18 @@
 import { createHash } from "node:crypto";
 import { LINK_QUESTION, type IntakeGuest, type IntakeSnapshot } from "./intake.ts";
 import type { Portfolio } from "./portfolio.ts";
+import { matchPeople } from "./matching.ts";
+import type { PilotDiscovery } from "./store.ts";
 
 const sampleLink = "https://example.com/jamie";
 const people = [
   { id: "sample-alex", name: "Alex Rivera", project: "Editing a short documentary about voice memos people keep.", link: "", here: true },
   { id: "sample-jamie", name: "Jamie Okafor", project: "Making music from field recordings around Los Angeles.", link: sampleLink, here: true },
   { id: "sample-casey", name: "Casey Lin", project: "Building tiny sets in Blender for a short film.", link: "", here: true },
+  { id: "sample-mira", name: "Mira Patel", project: "Printing a two-color risograph zine about the bus routes I grew up on.", link: "", here: true },
+  { id: "sample-ines", name: "Inés Morales", project: "Making ceramic cups with glazes mixed from local clay.", link: "", here: true },
+  { id: "sample-noah", name: "Noah Kim", project: "Building a tiny synthesizer with an Arduino and salvaged speakers.", link: "", here: true },
+  { id: "sample-zoe", name: "Zoe Chen", project: "Designing a typeface based on hand-painted market signs.", link: "", here: true },
   { id: "sample-sam", name: "Sam Adeyemi", project: "An iOS app for saving ideas on long walks.", link: "", here: false },
 ];
 
@@ -29,4 +35,11 @@ export function sampleSnapshot(now: number): IntakeSnapshot {
       source: { kind: "sample", card: { project, link, portfolioSubmitted: !!link } },
     })),
   };
+}
+
+export function sampleDirectory(query: string, now: number): PilotDiscovery {
+  const [viewer, ...attendees] = people.filter(person => person.here).map(({ id, name, project, link }) => ({
+    id, card: { name, project, portfolio: samplePortfolio(link) },
+  }));
+  return { ...matchPeople(attendees, viewer.card, query), query, expiresAt: now + 60_000 };
 }

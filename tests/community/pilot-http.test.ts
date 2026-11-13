@@ -19,6 +19,109 @@ function harness(t: TestContext, flags: Record<string, string> = {}, fetcher?: t
 }
 const cookie = (res: Response) => res.headers.get("set-cookie")?.split(";")[0] ?? "";
 
+test("a visitor can search the sample room and see pairings without signing in", async t => {
+  const request = harness(t, { COMMUNITY_PILOT_HOST_KEY: "" });
+  const response = await request({ action: "directory", query: "Blender" });
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  assert.deepEqual(result.people.map((person: { card: { name: string } }) => person.card.name), ["Casey Lin"]);
+  assert.ok(result.matches.some((match: { person: { card: { name: string } } }) => match.person.card.name === "Jamie Okafor"));
+  assert.equal(response.headers.get("set-cookie"), null);
+  assert.doesNotMatch(JSON.stringify(result), /Sam Adeyemi/);
+});
+
+test("a real room uses event-scoped Luma tickets for personal pairing and an explicit directory share", async t => {
+  const id = "evt-TicketTest";
+  const now = Date.now();
+  const lookupIds: string[] = [];
+  let listed = 0;
+  const alex = {
+    id: "gst-Alex", user_name: "Alex Rivera", approval_status: "approved", user_email: "alex@example.test",
+    registration_answers: [{ question_id: "project", question_type: "text", value: "Editing a short documentary." }],
+    event_tickets: [{ checked_in_at: new Date(now).toISOString() }],
+  };
+  const jamie = {
+    ...alex, id: "gst-Jamie", user_name: "Jamie Okafor", user_email: "jamie@example.test",
+    registration_answers: [{ question_id: "project", question_type: "text", value: "Scoring short films." }],
+  };
+  const request = harness(t, { COMMUNITY_PILOT_LIVE: "true", LUMA_API_KEY: "test-key", COMMUNITY_PILOT_LUMA_EVENT_ID: id, COMMUNITY_PILOT_HOST_KEY: "" }, async input => {
+    const url = new URL(String(input));
+    assert.equal(url.origin, "https://public-api.luma.com");
+    assert.equal(url.searchParams.get("event_id"), id);
+    if (url.pathname === "/v1/events/get") return Response.json({
+      id, name: "Luma ticket test", timezone: "America/Los_Angeles", start_at: new Date(now - 60_000).toISOString(),
+      end_at: new Date(now + 60 * 60_000).toISOString(),
+      registration_questions: [{ id: "project", label: "What are you working on?", question_type: "text", required: true }],
+    });
+    if (url.pathname === "/v1/events/guests/list") {
+      listed++;
+      return Response.json({ entries: [alex, jamie], has_more: false });
+    }
+    assert.equal(url.pathname, "/v1/events/guests/get");
+    const identifier = url.searchParams.get("id")!;
+    lookupIds.push(identifier);
+    if (["g-ticketalex", alex.id].includes(identifier)) return Response.json(alex);
+    if (["g-ticketjamie", jamie.id].includes(identifier)) return Response.json(jamie);
+    if (identifier === "g-invalidticket") return Response.json({ ...jamie, is_ticket_key_invalidated: true });
+    return Response.json({}, { status: 404 });
+  });
+  const directory = (query = "", member = "") => request({ action: "directory", query }, member).then(res => res.json());
+  const join = (pk: string, eventId = id) => request({ action: "join", ticket: "https://luma.com/check-in/" + eventId + "?pk=" + pk });
+  assert.deepEqual((await directory()).people, []);
+  assert.equal(listed, 1);
+  assert.equal((await join("gst-Jamie")).status, 400);
+  assert.equal((await join("g-ticketjamie", "evt-Other")).status, 400);
+  assert.deepEqual(lookupIds, []);
+  assert.equal((await join("g-invalidticket")).status, 403);
+  for (let i = 0; i < 12; i++) assert.equal((await join("g-unrecognized" + i)).status, 403);
+  const joinedJamie = await join("g-ticketjamie");
+  assert.equal(joinedJamie.status, 200);
+  assert.doesNotMatch(await joinedJamie.clone().text(), /ticketjamie|jamie@example\.test|Scoring short films/);
+  const jamieView = await joinedJamie.json();
+  const jamieCookie = cookie(joinedJamie);
+  const preparedJamie = await request({ action: "prepare", context: jamieView.context }, jamieCookie).then(res => res.json());
+  assert.deepEqual((await directory()).people, []);
+  assert.equal((await request({
+    action: "share", context: jamieView.context, revision: preparedJamie.revision, includePortfolio: false, directory: true,
+  }, jamieCookie)).status, 200);
+  assert.deepEqual((await directory("Scoring")).people.map((person: { card: { name: string } }) => person.card.name), ["Jamie Okafor"]);
+  assert.deepEqual((await directory()).matches, []);
+
+  const joinedAlex = await join("g-ticketalex");
+  assert.equal(joinedAlex.status, 200);
+  const alexView = await joinedAlex.json();
+  const alexCookie = cookie(joinedAlex);
+  await request({ action: "prepare", context: alexView.context }, alexCookie);
+  const paired = await request({ action: "directory", query: "casey", context: alexView.context }, alexCookie).then(res => res.json());
+  assert.deepEqual(paired.people, []);
+  assert.equal(paired.matches[0]?.person.card.name, "Jamie Okafor");
+  assert.equal(paired.matches[0]?.topic, "short films");
+  assert.equal(listed, 1, "the automatic roster refresh is shared");
+
+  await request({ action: "hide", context: jamieView.context }, jamieCookie);
+  assert.deepEqual((await directory()).people, []);
+});
+
+test("opening search before the event does not fetch the roster or resolve a ticket", async t => {
+  const id = "evt-FutureRoom";
+  const paths: string[] = [];
+  const start = Date.now() + 24 * 60 * 60_000;
+  const request = harness(t, { COMMUNITY_PILOT_LIVE: "true", LUMA_API_KEY: "test-key", COMMUNITY_PILOT_LUMA_EVENT_ID: id }, async input => {
+    paths.push(new URL(String(input)).pathname);
+    return Response.json({
+      id, name: "Future Sunday", timezone: "America/Los_Angeles", start_at: new Date(start).toISOString(),
+      end_at: new Date(start + 60 * 60_000).toISOString(),
+      registration_questions: [{ id: "project", label: "What are you working on?", question_type: "text", required: true }],
+    });
+  });
+  const response = await request({ action: "directory" });
+  assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).people, []);
+  const joined = await request({ action: "join", ticket: "https://luma.com/check-in/" + id + "?pk=g-futureguest" });
+  assert.equal(joined.status, 409);
+  assert.deepEqual(paths, ["/v1/events/get"]);
+});
+
 test("pilot routes reject disabled, hosted, off-host, cross-origin and anonymous admin requests", async t => {
   const login = { action: "host-login", key: hostKey };
   assert.equal((await harness(t, { COMMUNITY_PILOT_ENABLED: "false" })(login)).status, 404);

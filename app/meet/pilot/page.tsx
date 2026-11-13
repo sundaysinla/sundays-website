@@ -1,3 +1,3 @@
-import HostPanel from "@/components/community/pilot/HostPanel";
+import { redirect } from "next/navigation";
 
-export default function PilotHostPage() { return <HostPanel />; }
+export default function PilotPage() { redirect("/meet"); }
