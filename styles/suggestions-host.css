@@ -69,6 +69,14 @@
 .basket-review-hint { margin-top: 3px; }
 .basket-inbox-pages { display: flex; gap: 22px; padding-top: 11px; }
 
+.basket-host-discussion { grid-column: 1 / -1; border-top: 1px dashed var(--basket-rule); padding: 8px 22px; }
+.basket-host-discussion ul { display: grid; gap: 8px; padding-block: 8px; }
+.basket-host-discussion li { border: 1px solid var(--basket-rule); border-radius: 4px; padding: 9px 12px 4px; background: var(--basket-sheet); }
+.basket-host-discussion li p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.basket-host-comment-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; }
+.basket-host-comment-actions span { color: var(--basket-muted); font-size: .83rem; }
+.basket-host-discussion button { min-height: 40px; }
+
 @media (max-width: 650px) {
   .basket-host-heading { align-items: start; }
   .basket-host-filters > div { min-width: min(135px, 100%); flex: 1 1 auto; }

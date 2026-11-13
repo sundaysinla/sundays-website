@@ -1,4 +1,4 @@
-import { basketHostKey, HOST_COOKIE, hostSessionCookie, localOrigin, sameSecret, validHostSession, voterHash } from './access.ts';
+import { authenticateHost, basketConfig, basketOrigin, basketVisitor, hostSessionCookie, localOrigin, validHostSession, voterHash } from './access.ts';
 import { basketCookie, BasketError, VOTER_COOKIE } from './model.ts';
 import { basketRequest } from './requests.ts';
 import { openBasket } from './store.ts';
@@ -38,50 +38,61 @@ async function readRequest(request: Request): Promise<unknown> {
 }
 
 export async function handleBasket(request: Request, env = process.env, now = Date.now()): Promise<Response> {
-  const key = basketHostKey(env);
+  const config = basketConfig(env);
   const { host, protocol } = new URL(request.url);
-  const origin = localOrigin(request.headers.get('host'), protocol);
-  if (!key || !origin || !localOrigin(host, protocol)) return reply({ error: 'Basket unavailable.' }, 404);
+  const origin = config && basketOrigin(config, request.headers, protocol);
+  if (!config || !origin || (config.mode === 'local' && !localOrigin(host, protocol))) {
+    return reply({ error: 'Basket unavailable.' }, 404);
+  }
   if (request.headers.get('origin') !== origin) return reply({ error: 'Open the basket directly to continue.' }, 403);
 
   try {
     const parsed = basketRequest.safeParse(await readRequest(request));
     if (!parsed.success) throw new BasketError('Check your entry and try again.', 400);
     const input = parsed.data;
+    const secure = origin.startsWith('https:');
     if (input.action === 'sign-out') {
       const response = reply({ ok: true }, 200);
-      response.headers.set('Set-Cookie', hostSessionCookie(null, now, protocol === 'https:'));
+      response.headers.set('Set-Cookie', hostSessionCookie(config, null, now, secure));
       return response;
     }
     const cookies = request.headers.get('cookie') ?? '';
-    if (input.action === 'review' && !validHostSession(basketCookie(cookies, HOST_COOKIE), key, now)) {
-      throw new BasketError('Sign in as a host to save this review.', 401);
+    if ((input.action === 'review' || input.action === 'host-comments' || input.action === 'moderate-comment') &&
+      !validHostSession(config, cookies, now)) {
+      throw new BasketError('Sign in as a host to continue.', 401);
     }
-    const store = await openBasket(env.SUGGESTIONS_BASKET_DB_PATH);
-    if (input.action === 'drop') {
-      return reply({ saved: true, ...store.drop(input, now) }, 201);
+    const store = openBasket(config.connection);
+    switch (input.action) {
+      case 'drop':
+        return reply({ saved: true, ...await store.drop(input, now, basketVisitor(config, request.headers)) }, 201);
+      case 'comments':
+        return reply({ discussion: await store.comments(input.id, input.before) }, 200);
+      case 'host-comments':
+        return reply({ hostDiscussion: await store.hostComments(input.id, input.before) }, 200);
+      case 'moderate-comment':
+        return reply(await store.moderateComment(input.id, input.commentId, input.hidden, now), 200);
+      case 'comment':
+        return reply({ discussion: await store.addComment(input, now, basketVisitor(config, request.headers)) }, 201);
+      case 'vote': {
+        const voter = voterHash(basketCookie(cookies, VOTER_COOKIE));
+        if (!voter) throw new BasketError('Allow cookies in this browser to vote.', 400);
+        return reply({ votes: await store.vote(input.id, voter, input.value, now, basketVisitor(config, request.headers)) }, 200);
+      }
+      case 'sign-in': {
+        await store.signInAttempt(now, basketVisitor(config, request.headers));
+        const id = authenticateHost(config, input.key);
+        if (!id) throw new BasketError('Check the host key and try again.', 401);
+        const response = reply({ ok: true }, 200);
+        response.headers.set('Set-Cookie', hostSessionCookie(config, id, now, secure));
+        return response;
+      }
+      case 'review':
+        return reply({ note: await store.review(input, now) }, 200);
     }
-    if (input.action === 'comments') {
-      return reply({ discussion: store.comments(input.id, input.before) }, 200);
-    }
-    if (input.action === 'comment') {
-      return reply({ discussion: store.addComment(input, now) }, 201);
-    }
-    if (input.action === 'vote') {
-      const voter = voterHash(basketCookie(cookies, VOTER_COOKIE));
-      if (!voter) throw new BasketError('Allow cookies in this browser to vote.', 400);
-      return reply({ votes: store.vote(input.id, voter, input.value, now) }, 200);
-    }
-    if (input.action === 'sign-in') {
-      store.signInAttempt(now);
-      if (!sameSecret(input.key, key)) throw new BasketError('Check the host key and try again.', 401);
-      const response = reply({ ok: true }, 200);
-      response.headers.set('Set-Cookie', hostSessionCookie(key, now, protocol === 'https:'));
-      return response;
-    }
-    return reply({ note: store.review(input, now) }, 200);
   } catch (error) {
     if (error instanceof BasketError) return reply({ error: error.message }, error.status);
-    return reply({ error: 'The basket couldn’t save that. Try again in a moment.' }, 503);
+    const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
+    console.error('Basket request failed', typeof code === 'string' && /^[A-Z0-9_]+$/.test(code) ? code : 'UNKNOWN');
+    return reply({ error: 'The basket is temporarily unavailable. Try again in a moment.' }, 503);
   }
 }

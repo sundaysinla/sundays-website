@@ -39,6 +39,8 @@ export const basketRequest = z.discriminatedUnion('action', [
   reviewRequest,
   commentRequest,
   z.object({ action: z.literal('comments'), id: z.string().uuid(), before: z.number().int().positive().safe().optional() }).strict(),
+  z.object({ action: z.literal('host-comments'), id: z.string().uuid(), before: z.number().int().positive().safe().optional() }).strict(),
+  z.object({ action: z.literal('moderate-comment'), id: z.string().uuid(), commentId: z.number().int().positive().safe(), hidden: z.boolean() }).strict(),
   z.object({ action: z.literal('vote'), id: z.string().uuid(), value: z.union([z.literal(-1), z.literal(0), z.literal(1)]) }).strict(),
   z.object({ action: z.literal('sign-in'), key: z.string().min(1).max(256) }).strict(),
   z.object({ action: z.literal('sign-out') }).strict(),

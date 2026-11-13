@@ -4,21 +4,25 @@ import BasketComposer from '@/components/suggestions/BasketComposer';
 import BasketNoteText from '@/components/suggestions/BasketNoteText';
 import BasketPost from '@/components/suggestions/BasketPost';
 import BasketPostList, { BasketTile } from '@/components/suggestions/BasketPostList';
-import { basketHostKey, localOrigin, voterHash } from '@/lib/suggestions/access';
+import { basketConfig, basketOrigin, voterHash } from '@/lib/suggestions/access';
 import { basketCookie, VOTER_COOKIE } from '@/lib/suggestions/model';
 import { openBasket } from '@/lib/suggestions/store';
 import '@/styles/suggestions-discussion.css';
 
-export default async function BasketPage({ searchParams }: { searchParams: { page?: string | string[] } }) {
-  const requestHeaders = headers();
-  if (!basketHostKey() || !localOrigin(requestHeaders.get('host'))) notFound();
+export default async function BasketPage({ searchParams }: { searchParams: Promise<{ page?: string | string[] }> }) {
+  const config = basketConfig();
+  const requestHeaders = await headers();
+  if (!config || !basketOrigin(config, requestHeaders)) notFound();
 
-  const requested = typeof searchParams.page === 'string' ? Number(searchParams.page) : 1;
+  const { page: rawPage } = await searchParams;
+  const requested = typeof rawPage === 'string' ? Number(rawPage) : 1;
   const page = Number.isSafeInteger(requested) && requested > 0 ? requested - 1 : 0;
   const voter = voterHash(basketCookie(requestHeaders.get('cookie') ?? '', VOTER_COOKIE));
-  const basket = await openBasket();
-  const { posts, hasNext } = basket.publicFeed(voter, page);
-  const recaps = page === 0 ? basket.showcase() : [];
+  const basket = openBasket(config.connection);
+  const [{ posts, hasNext }, recaps] = await Promise.all([
+    basket.publicFeed(voter, page),
+    page === 0 ? basket.showcase() : [],
+  ]);
 
   return (
     <main className="basket-shell">

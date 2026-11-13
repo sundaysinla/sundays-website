@@ -6,12 +6,8 @@ import Image from 'next/image'
 import Button from './Button'
 import BigQuote from './BigQuote'
 
-export default function NavBar() {
+export default function NavBar({ showSuggestions }: { showSuggestions: boolean }) {
     const [open, setOpen] = useState(false)
-    const showSuggestions = process.env.NODE_ENV === 'development' &&
-        process.env.NEXT_PUBLIC_SUGGESTIONS_BASKET === 'true' &&
-        typeof window !== 'undefined' &&
-        ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
     const suggestionsLink = showSuggestions && (
         <Link
             href="/basket"

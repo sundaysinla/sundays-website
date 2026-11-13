@@ -5,7 +5,7 @@ import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import SiteGrid from '@/components/SiteGrid';
 import SundaysWordmark from '@/components/SundaysWordmark';
-import { basketHostKey, localOrigin } from '@/lib/suggestions/access';
+import { basketConfig, basketOrigin } from '@/lib/suggestions/access';
 import '@/styles/suggestions-basket.css';
 
 export const dynamic = 'force-dynamic';
@@ -17,8 +17,9 @@ export const metadata: Metadata = {
   referrer: 'no-referrer',
 };
 
-export default function BasketLayout({ children }: { children: React.ReactNode }) {
-  if (!basketHostKey() || !localOrigin(headers().get('host'))) notFound();
+export default async function BasketLayout({ children }: { children: React.ReactNode }) {
+  const config = basketConfig();
+  if (!config || !basketOrigin(config, await headers())) notFound();
 
   return (
     <div className="basket-page">

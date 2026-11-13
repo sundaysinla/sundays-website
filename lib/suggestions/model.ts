@@ -36,6 +36,9 @@ export type Vote = -1 | 0 | 1;
 export type VoteState = { score: number; vote: Vote };
 export type BasketComment = { id: number; body: string; createdAt: number };
 export type DiscussionPage = { comments: BasketComment[]; count: number; before: number | null };
+export type HostDiscussionPage = Omit<DiscussionPage, 'comments'> & {
+  comments: (BasketComment & { hiddenAt: number | null })[];
+};
 export type PublicPost = Pick<BasketNote, 'id' | 'note' | 'createdAt' | 'status'> & {
   votes: VoteState;
   discussion: DiscussionPage;

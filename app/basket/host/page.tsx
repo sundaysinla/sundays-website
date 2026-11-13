@@ -3,23 +3,26 @@ import { cookies, headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import HostAccess from '@/components/suggestions/HostAccess';
+import HostDiscussion from '@/components/suggestions/HostDiscussion';
 import HostReview from '@/components/suggestions/HostReview';
-import { basketHostKey, HOST_COOKIE, localOrigin, validHostSession } from '@/lib/suggestions/access';
+import { basketConfig, basketOrigin, validHostSession } from '@/lib/suggestions/access';
 import { reviewStatuses, statusLabels } from '@/lib/suggestions/model';
 import { openBasket } from '@/lib/suggestions/store';
 import '@/styles/suggestions-host.css';
 
 const shortDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' });
 
-export default async function BasketHostPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
-  const key = basketHostKey();
-  if (!key || !localOrigin(headers().get('host'))) notFound();
-  const signedIn = validHostSession(cookies().get(HOST_COOKIE)?.value, key);
+export default async function BasketHostPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const config = basketConfig();
+  const requestHeaders = await headers();
+  if (!config || !basketOrigin(config, requestHeaders)) notFound();
+  const signedIn = validHostSession(config, requestHeaders.get('cookie') ?? '');
 
-  const status = reviewStatuses.find(value => value === searchParams.status);
-  const rawPage = typeof searchParams.page === 'string' ? Number(searchParams.page) : 1;
+  const query = await searchParams;
+  const status = reviewStatuses.find(value => value === query.status);
+  const rawPage = typeof query.page === 'string' ? Number(query.page) : 1;
   const page = Number.isSafeInteger(rawPage) && rawPage > 0 ? rawPage - 1 : 0;
-  const inbox = signedIn ? (await openBasket()).inbox({ status, page }) : null;
+  const inbox = signedIn ? await openBasket(config.connection).inbox({ status, page }) : null;
 
   function pageLink(index: number) {
     const query = new URLSearchParams();
@@ -63,6 +66,7 @@ export default async function BasketHostPage({ searchParams }: { searchParams: R
                     </span>
                   </div>
                   <HostReview key={note.version} note={note} statusFilter={status} />
+                  {note.publicPost && <HostDiscussion id={note.id} />}
                 </article>
               ))}
             </div>

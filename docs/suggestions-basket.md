@@ -27,9 +27,9 @@ Morph's semantic search and editing endpoints returned 402. Source inspection an
 ## Posting and discussion
 
 1. Notes go to hosts by default. Checking **Post publicly so anyone can see it** puts the original text under **From the Basket** as soon as the write commits. Earlier recap consent applies to the host-written recap alone. Existing rows start with public posting off after migration.
-2. Each public suggestion has an upvote, a downvote, and a net score. A browser can change or clear its vote. The first vote creates a random browser cookie. SQLite stores its hash to identify that vote.
-3. Cards show two recent comments. Open a discussion to read ten comments at a time or leave a public reply. Opaque request keys make retries safe. A honeypot and persistent aggregate limits guard notes and comments.
-4. The host inbox distinguishes private notes, public posting consent, and earlier recap consent. Archiving a public note takes down its discussion. Version checks protect concurrent host reviews.
+2. Each public suggestion has an upvote, a downvote, and a net score. A browser can change or clear its vote. The first vote creates a random browser cookie. The database stores its hash to identify that vote.
+3. Cards show two recent comments. Open a discussion to read ten comments at a time or leave a public reply. Opaque request keys make retries safe. A honeypot and persistent rate limits guard submissions.
+4. The host inbox distinguishes private notes, public posting consent, and earlier recap consent. Hosts can hide or restore individual replies. Archiving a public note takes down its discussion. Version checks protect concurrent host reviews.
 
 ## Run locally
 
@@ -47,9 +47,50 @@ To exercise the full loop, write a note and check **Post publicly so anyone can 
 
 Notes, comments, and votes survive server restarts in `.sundays-basket/basket.sqlite`. Set `SUGGESTIONS_BASKET_DB_PATH` to use another local file. The Basket stores the text people submit and asks writers to omit identifying details. The local limits allow 30 new notes, 60 comments, 240 vote changes, and eight host key attempts per five-minute window. The host key issues a two-hour, same-site, HTTP-only session.
 
-`npm test` exercises the actual SQLite store and request handler. Run `./node_modules/.bin/tsc --noEmit --incremental false` separately because the existing Next.js build skips type checks.
+`npm test` exercises the SQLite store, request handler, and hosted configuration. Run `./node_modules/.bin/tsc --noEmit --incremental false` separately because the existing Next.js build skips type checks.
 
-The preview requires a loopback server and is disabled on Vercel. A hosted release would need durable shared storage, individual organizer sign-in, and public-facing abuse controls. The `lib/suggestions` request and store boundary is where those adapters fit.
+## Set up Turso and Vercel
+
+Use the Vercel project that serves `www.sundays.rsvp`. The repo selects Node 22 for the build and functions. Create two empty **libSQL** databases on the Sundays Turso account using the Free plan. Give Preview and Production separate database URLs and database-scoped tokens. Initialize Preview first. [Turso Quickstart](https://docs.turso.tech/quickstart) · [Turso Free plan](https://turso.tech/pricing)
+
+```sh
+turso db create sundays-basket-preview
+turso db show sundays-basket-preview --url
+turso db tokens create sundays-basket-preview
+```
+
+Use the URL and token in an ignored `.env.basket-preview.local` file with permissions `0600`. The two variable names are `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`. Run the setup command from the checkout. It creates or updates the schema and can be rerun.
+
+```sh
+node --env-file=.env.basket-preview.local --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/setup-basket-db.mjs
+```
+
+Repeat for `sundays-basket-production` and a separate ignored env file before the production deployment.
+
+In the Vercel project, enable automatic system environment variables and configure these server-side variables for the corresponding environment. For the CLI-based workflow in this repository, configure Preview variables for the Preview environment as a whole. Git-connected deployments also support branch-specific variables. [Vercel system variables](https://vercel.com/docs/environment-variables/system-environment-variables) · [Vercel environments](https://vercel.com/docs/environment-variables)
+
+| Variable | Value |
+| --- | --- |
+| `TURSO_DATABASE_URL` | URL of the database for this environment |
+| `TURSO_AUTH_TOKEN` | Write-capable token scoped to that database |
+| `SUGGESTIONS_BASKET_SESSION_SECRET` | Separate 32-byte random secret per environment, encoded as base64url |
+| `SUGGESTIONS_BASKET_HOSTS` | JSON object mapping organizer IDs to SHA-256 hex digests of their keys |
+| `SUGGESTIONS_BASKET_ORIGINS` | Production only. Set to `https://www.sundays.rsvp` |
+| `SUGGESTIONS_BASKET_ENABLED` | `true` for Preview after the schema is ready. Enable Production after Preview passes |
+
+Generate a session secret using `node -p 'require("node:crypto").randomBytes(32).toString("base64url")'`. Generate a key for each organizer, replacing `alex` with their ID.
+
+```sh
+node -e 'const {randomBytes,createHash}=require("node:crypto"); const id=process.argv[1]; const key=randomBytes(32).toString("base64url"); console.log(id+"."+key); console.log(JSON.stringify({[id]:createHash("sha256").update(key).digest("hex")}));' alex
+```
+
+Share the first line with that organizer through the team’s password manager. Combine the JSON entries from the second line into `SUGGESTIONS_BASKET_HOSTS`. Organizers enter the full key at `/basket/host`. Remove or replace an organizer’s digest and redeploy to revoke their key and sessions on the active deployment. Retire older accessible Preview deployments using those credentials. Each session lasts two hours and uses a Secure, HTTP-only cookie.
+
+Hosted limits allow six new notes, 15 comments, 90 vote changes, and eight host key attempts per IP address every five minutes. The database keeps a keyed hash for those counters. Visitors sharing Wi-Fi may share a limit. Preview uses the Vercel deployment and branch URLs. Production only serves the Basket on the configured public origin.
+
+Verify the Preview using a private note, an opted-in public note, a vote, and a reply. Check the signed-out inbox and the public board for private text. Sign in, hide and restore the reply, and verify both states from a separate browser. Redeploy Preview with the same database and verify the four writes are still present. Then deploy Production with the Production environment values and confirm its database starts empty. Set `SUGGESTIONS_BASKET_ENABLED=false` and redeploy to disable access while retaining stored notes.
+
+For a local test of the hosted driver, point `BASKET_TEST_LIBSQL_URL` at a disposable TLS-protected libSQL server on `127.0.0.1` configured to accept the test bearer token `fixture`. If using a local CA, set `NODE_EXTRA_CA_CERTS` before running `npm test`. The hosted test initializes the schema and writes synthetic rows.
 
 ## Browser verification
 

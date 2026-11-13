@@ -1,227 +1,187 @@
 import { randomUUID } from 'node:crypto';
-import { chmodSync, closeSync, mkdirSync, openSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import type { DatabaseSync } from 'node:sqlite';
-import { BasketError, canShowRecap, COMMENT_PREVIEW, type BasketComment, type BasketNote, type DiscussionPage, type PublicPost, type Recap, type ReviewStatus, type Vote, type VoteState } from './model.ts';
+import { sqliteAccess, tursoAccess, type BasketAccess, type Query, type TursoConnection } from './database.ts';
+import { BasketError, canShowRecap, COMMENT_PREVIEW, type BasketComment, type BasketNote, type DiscussionPage, type HostDiscussionPage, type PublicPost, type Recap, type ReviewStatus, type Vote, type VoteState } from './model.ts';
 import type { CommentRequest, DropRequest, ReviewRequest } from './requests.ts';
 
 const pageSize = 16;
 const commentPageSize = 10;
 const rateWindow = 5 * 60_000;
-const rateLimits = { drop: 30, 'sign-in': 8, comment: 60, vote: 240 };
+const localLimits = { drop: 30, 'sign-in': 8, comment: 60, vote: 240 };
+const hostedLimits = { drop: 6, 'sign-in': 8, comment: 15, vote: 90 };
 const visiblePost = "post_public = 1 AND status <> 'archived'";
 const noteFields = `id, note, allow_recap AS allowRecap, post_public AS publicPost, created_at AS createdAt, status,
   summary, outcome, published_at IS NOT NULL AS published, version`;
-
-const schema = `
-  CREATE TABLE IF NOT EXISTS suggestions (
-    id TEXT PRIMARY KEY,
-    request_id TEXT NOT NULL UNIQUE,
-    note TEXT NOT NULL,
-    category TEXT NOT NULL CHECK (category IN ('idea', 'try', 'improve', 'love')),
-    allow_recap INTEGER NOT NULL CHECK (allow_recap IN (0, 1)),
-    post_public INTEGER NOT NULL DEFAULT 0 CHECK (post_public IN (0, 1)),
-    created_at INTEGER NOT NULL,
-    status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'considering', 'tried', 'implemented', 'archived')),
-    summary TEXT NOT NULL DEFAULT '',
-    outcome TEXT NOT NULL DEFAULT '',
-    published_at INTEGER,
-    version INTEGER NOT NULL DEFAULT 1,
-    CHECK (published_at IS NULL OR (
-      allow_recap = 1 AND status IN ('tried', 'implemented') AND length(summary) > 0 AND length(outcome) > 0
-    ))
-  );
-  CREATE INDEX IF NOT EXISTS suggestions_by_date ON suggestions(created_at DESC, id DESC);
-  CREATE TABLE IF NOT EXISTS suggestion_limits (
-    scope TEXT PRIMARY KEY,
-    started_at INTEGER NOT NULL,
-    count INTEGER NOT NULL
-  );
-  CREATE TABLE IF NOT EXISTS suggestion_comments (
-    id INTEGER PRIMARY KEY,
-    suggestion_id TEXT NOT NULL REFERENCES suggestions(id),
-    request_id TEXT NOT NULL UNIQUE,
-    body TEXT NOT NULL,
-    created_at INTEGER NOT NULL
-  );
-  CREATE INDEX IF NOT EXISTS suggestion_comments_by_post ON suggestion_comments(suggestion_id, id DESC);
-  CREATE TABLE IF NOT EXISTS suggestion_votes (
-    suggestion_id TEXT NOT NULL REFERENCES suggestions(id),
-    voter_hash TEXT NOT NULL,
-    value INTEGER NOT NULL CHECK (value IN (-1, 1)),
-    PRIMARY KEY (suggestion_id, voter_hash)
-  );
-`;
 
 type NoteRow = Omit<BasketNote, 'allowRecap' | 'publicPost' | 'published'> & {
   allowRecap: 0 | 1;
   publicPost: 0 | 1;
   published: 0 | 1;
 };
-type PublicPostRow = Omit<PublicPost, 'votes' | 'discussion'> & VoteState;
+type PublicPostRow = Omit<PublicPost, 'votes' | 'discussion'> & VoteState & { count: number; preview: string };
 type Filters = { status?: ReviewStatus; page?: number };
+type RateAction = keyof typeof localLimits;
 
 function toNote(row: NoteRow): BasketNote {
   return { ...row, allowRecap: row.allowRecap === 1, publicPost: row.publicPost === 1, published: row.published === 1 };
 }
 
-function migratePublicConsent(db: DatabaseSync) {
-  const column = db.prepare("SELECT 1 FROM pragma_table_info('suggestions') WHERE name = 'post_public'");
-  if (column.get()) return;
-  db.exec('BEGIN IMMEDIATE');
-  // Another connection may have migrated while this one waited for the write lock.
-  if (!column.get()) db.exec('ALTER TABLE suggestions ADD COLUMN post_public INTEGER NOT NULL DEFAULT 0 CHECK (post_public IN (0, 1))');
-  db.exec('COMMIT');
+async function takeSlot(query: Query, action: RateAction, now: number, visitor: string | undefined) {
+  const scope = visitor ? `${action}:${visitor}` : action;
+  const limit = visitor ? hostedLimits[action] : localLimits[action];
+  const cutoff = now - rateWindow;
+  const [slot] = await query(`INSERT INTO suggestion_limits (scope, started_at, count) VALUES (?, ?, 1)
+    ON CONFLICT(scope) DO UPDATE SET
+      started_at = CASE WHEN started_at <= ? THEN excluded.started_at ELSE started_at END,
+      count = CASE WHEN started_at <= ? THEN 1 ELSE count + 1 END
+    WHERE started_at <= ? OR count < ?
+    RETURNING count`, [scope, now, cutoff, cutoff, cutoff, limit]);
+  if (!slot) throw new BasketError('Too many attempts. Try again in a few minutes.', 429);
+  if (visitor) await query('DELETE FROM suggestion_limits WHERE started_at <= ?', [cutoff]);
 }
 
-function takeSlot(db: DatabaseSync, scope: keyof typeof rateLimits, now: number) {
-  const row = db.prepare('SELECT started_at, count FROM suggestion_limits WHERE scope = ?').get(scope) as
-    { started_at: number; count: number } | undefined;
-  if (!row || now - row.started_at >= rateWindow) {
-    db.prepare(`INSERT INTO suggestion_limits (scope, started_at, count) VALUES (?, ?, 1)
-      ON CONFLICT(scope) DO UPDATE SET started_at = excluded.started_at, count = 1`).run(scope, now);
-    return;
-  }
-  if (row.count >= rateLimits[scope]) throw new BasketError('Too many attempts. Try again in a few minutes.', 429);
-  db.prepare('UPDATE suggestion_limits SET count = count + 1 WHERE scope = ?').run(scope);
+async function requirePublicPost(query: Query, id: string, forHost = false) {
+  const condition = forHost ? 'post_public = 1' : visiblePost;
+  const [post] = await query(`SELECT 1 FROM suggestions WHERE id = ? AND ${condition}`, [id]);
+  if (!post) throw new BasketError('This discussion is unavailable.', 404);
 }
 
-function requirePublicPost(db: DatabaseSync, id: string) {
-  if (!db.prepare(`SELECT 1 FROM suggestions WHERE id = ? AND ${visiblePost}`).get(id)) {
-    throw new BasketError('This discussion is unavailable.', 404);
-  }
+async function readDiscussion(query: Query, id: string, before?: number, forHost = false): Promise<HostDiscussionPage> {
+  const visibility = forHost ? '' : 'AND hidden_at IS NULL';
+  const [total] = await query<{ count: number }>(`SELECT COUNT(*) AS count FROM suggestion_comments
+    WHERE suggestion_id = ? ${visibility}`, [id]);
+  const rows = await query<HostDiscussionPage['comments'][number]>(`SELECT id, body, created_at AS createdAt, hidden_at AS hiddenAt
+    FROM suggestion_comments WHERE suggestion_id = ? ${visibility} AND (? IS NULL OR id < ?) ORDER BY id DESC LIMIT ?`,
+    [id, before ?? null, before ?? null, commentPageSize + 1]);
+  const comments = rows.slice(0, commentPageSize).map(({ id, body, createdAt, hiddenAt }) => ({ id, body, createdAt, hiddenAt }));
+  return { comments, count: total.count, before: rows.length > commentPageSize ? comments[commentPageSize - 1].id : null };
 }
 
-function readDiscussion(db: DatabaseSync, id: string, limit: number, before?: number): DiscussionPage {
-  const count = Number(db.prepare('SELECT COUNT(*) AS count FROM suggestion_comments WHERE suggestion_id = ?').get(id)?.count);
-  const rows = db.prepare(`SELECT id, body, created_at AS createdAt FROM suggestion_comments
-    WHERE suggestion_id = ? AND (? IS NULL OR id < ?) ORDER BY id DESC LIMIT ?`)
-    .all(id, before ?? null, before ?? null, limit + 1) as BasketComment[];
-  // SQLite rows have no prototype. Send plain objects across the React server/client boundary.
-  const comments = rows.slice(0, limit).map(({ id, body, createdAt }) => ({ id, body, createdAt }));
-  return { comments, count, before: rows.length > limit ? comments[comments.length - 1].id : null };
+function publicDiscussion(discussion: HostDiscussionPage): DiscussionPage {
+  return { ...discussion, comments: discussion.comments.map(({ id, body, createdAt }) => ({ id, body, createdAt })) };
 }
 
-class SQLiteBasket {
-  private readonly path: string;
-  private readonly Database: typeof DatabaseSync;
+class BasketStore {
+  private readonly access: BasketAccess;
 
-  constructor(path: string, Database: typeof DatabaseSync) {
-    this.path = path;
-    this.Database = Database;
+  constructor(access: BasketAccess) {
+    this.access = access;
   }
 
-  private access<T>(operation: (db: DatabaseSync) => T, write = false): T {
-    mkdirSync(dirname(this.path), { recursive: true, mode: 0o700 });
-    closeSync(openSync(this.path, 'a', 0o600));
-    chmodSync(this.path, 0o600);
-    const db = new this.Database(this.path);
-    try {
-      db.exec('PRAGMA busy_timeout = 2500');
-      db.exec(schema);
-      migratePublicConsent(db);
-      db.exec(write ? 'BEGIN IMMEDIATE' : 'BEGIN');
-      const result = operation(db);
-      db.exec('COMMIT');
-      return result;
-    } finally {
-      // Closing an uncommitted connection rolls back its transaction.
-      db.close();
-    }
-  }
-
-  drop({ requestId, category = 'idea', note, allowRecap, publicPost }: DropRequest, now: number) {
+  drop({ requestId, category = 'idea', note, allowRecap, publicPost }: DropRequest, now: number, visitor?: string) {
     const recapConsent = Number(allowRecap === true);
     const publicConsent = Number(publicPost === true);
-    return this.access(db => {
-      const previous = db.prepare('SELECT id, note, category, allow_recap, post_public, status FROM suggestions WHERE request_id = ?').get(requestId);
+    return this.access('write', async query => {
+      const [previous] = await query('SELECT id, note, category, allow_recap, post_public, status FROM suggestions WHERE request_id = ?', [requestId]);
       if (previous) {
         if (previous.note !== note || previous.category !== category || previous.allow_recap !== recapConsent || previous.post_public !== publicConsent) {
           throw new BasketError('This note changed. Try sending it again.', 409);
         }
         return publicPost && previous.status !== 'archived' ? { postId: String(previous.id) } : {};
       }
-      takeSlot(db, 'drop', now);
+      await takeSlot(query, 'drop', now, visitor);
       const id = randomUUID();
-      db.prepare(`INSERT INTO suggestions (id, request_id, note, category, allow_recap, post_public, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)`).run(id, requestId, note, category, recapConsent, publicConsent, now);
+      await query(`INSERT INTO suggestions (id, request_id, note, category, allow_recap, post_public, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`, [id, requestId, note, category, recapConsent, publicConsent, now]);
       return publicPost ? { postId: id } : {};
-    }, true);
+    });
   }
 
   publicFeed(voter: string | null, page = 0) {
-    return this.access(db => {
-      const rows = db.prepare(`SELECT id, note, created_at AS createdAt, status,
+    return this.access('read', async query => {
+      const rows = await query<PublicPostRow>(`SELECT id, note, created_at AS createdAt, status,
         COALESCE((SELECT SUM(value) FROM suggestion_votes WHERE suggestion_id = suggestions.id), 0) AS score,
-        COALESCE((SELECT value FROM suggestion_votes WHERE suggestion_id = suggestions.id AND voter_hash = ?), 0) AS vote
-        FROM suggestions WHERE ${visiblePost} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`)
-        .all(voter, pageSize + 1, page * pageSize) as PublicPostRow[];
-      const posts: PublicPost[] = rows.slice(0, pageSize).map(({ score, vote, ...post }) => ({
-        ...post, votes: { score, vote }, discussion: readDiscussion(db, post.id, COMMENT_PREVIEW),
-      }));
+        COALESCE((SELECT value FROM suggestion_votes WHERE suggestion_id = suggestions.id AND voter_hash = ?), 0) AS vote,
+        (SELECT COUNT(*) FROM suggestion_comments WHERE suggestion_id = suggestions.id AND hidden_at IS NULL) AS count,
+        (SELECT json_group_array(json_object('id', id, 'body', body, 'createdAt', created_at))
+          FROM (SELECT id, body, created_at FROM suggestion_comments WHERE suggestion_id = suggestions.id
+            AND hidden_at IS NULL ORDER BY id DESC LIMIT ?)) AS preview
+        FROM suggestions WHERE ${visiblePost} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`,
+        [voter, COMMENT_PREVIEW, pageSize + 1, page * pageSize]);
+      const posts: PublicPost[] = rows.slice(0, pageSize).map(({ score, vote, count, preview, ...post }) => {
+        const comments: BasketComment[] = JSON.parse(preview);
+        const before = count > COMMENT_PREVIEW ? comments[COMMENT_PREVIEW - 1].id : null;
+        return { ...post, votes: { score, vote }, discussion: { comments, count, before } };
+      });
       return { posts, hasNext: rows.length > pageSize };
     });
   }
 
   comments(id: string, before?: number) {
-    return this.access(db => {
-      requirePublicPost(db, id);
-      return readDiscussion(db, id, commentPageSize, before);
+    return this.access('read', async query => {
+      await requirePublicPost(query, id);
+      return publicDiscussion(await readDiscussion(query, id, before));
     });
   }
 
-  addComment({ id, requestId, body }: CommentRequest, now: number) {
-    return this.access(db => {
-      requirePublicPost(db, id);
-      const previous = db.prepare('SELECT suggestion_id, body FROM suggestion_comments WHERE request_id = ?').get(requestId);
+  hostComments(id: string, before?: number) {
+    return this.access('read', async query => {
+      await requirePublicPost(query, id, true);
+      return readDiscussion(query, id, before, true);
+    });
+  }
+
+  moderateComment(id: string, commentId: number, hidden: boolean, now: number) {
+    return this.access('write', async query => {
+      await requirePublicPost(query, id, true);
+      const [comment] = await query<{ hiddenAt: number | null }>(`UPDATE suggestion_comments
+        SET hidden_at = CASE WHEN ? THEN COALESCE(hidden_at, ?) ELSE NULL END
+        WHERE id = ? AND suggestion_id = ? RETURNING hidden_at AS hiddenAt`, [Number(hidden), now, commentId, id]);
+      if (!comment) throw new BasketError('This comment is unavailable.', 404);
+      return { hiddenAt: comment.hiddenAt };
+    });
+  }
+
+  addComment({ id, requestId, body }: CommentRequest, now: number, visitor?: string) {
+    return this.access('write', async query => {
+      await requirePublicPost(query, id);
+      const [previous] = await query('SELECT suggestion_id, body FROM suggestion_comments WHERE request_id = ?', [requestId]);
       if (previous && (previous.suggestion_id !== id || previous.body !== body)) {
         throw new BasketError('This comment changed. Try sending it again.', 409);
       }
       if (!previous) {
-        takeSlot(db, 'comment', now);
-        db.prepare('INSERT INTO suggestion_comments (suggestion_id, request_id, body, created_at) VALUES (?, ?, ?, ?)')
-          .run(id, requestId, body, now);
+        await takeSlot(query, 'comment', now, visitor);
+        await query('INSERT INTO suggestion_comments (suggestion_id, request_id, body, created_at) VALUES (?, ?, ?, ?)',
+          [id, requestId, body, now]);
       }
-      return readDiscussion(db, id, commentPageSize);
-    }, true);
+      return publicDiscussion(await readDiscussion(query, id));
+    });
   }
 
-  vote(id: string, voter: string, value: Vote, now: number): VoteState {
-    return this.access(db => {
-      requirePublicPost(db, id);
-      const previous = db.prepare('SELECT value FROM suggestion_votes WHERE suggestion_id = ? AND voter_hash = ?').get(id, voter);
+  vote(id: string, voter: string, value: Vote, now: number, visitor?: string) {
+    return this.access('write', async query => {
+      await requirePublicPost(query, id);
+      const [previous] = await query('SELECT value FROM suggestion_votes WHERE suggestion_id = ? AND voter_hash = ?', [id, voter]);
       if ((previous?.value ?? 0) !== value) {
-        takeSlot(db, 'vote', now);
+        await takeSlot(query, 'vote', now, visitor);
         if (value === 0) {
-          db.prepare('DELETE FROM suggestion_votes WHERE suggestion_id = ? AND voter_hash = ?').run(id, voter);
+          await query('DELETE FROM suggestion_votes WHERE suggestion_id = ? AND voter_hash = ?', [id, voter]);
         } else {
-          db.prepare(`INSERT INTO suggestion_votes (suggestion_id, voter_hash, value) VALUES (?, ?, ?)
-            ON CONFLICT(suggestion_id, voter_hash) DO UPDATE SET value = excluded.value`).run(id, voter, value);
+          await query(`INSERT INTO suggestion_votes (suggestion_id, voter_hash, value) VALUES (?, ?, ?)
+            ON CONFLICT(suggestion_id, voter_hash) DO UPDATE SET value = excluded.value`, [id, voter, value]);
         }
       }
-      const score = Number(db.prepare('SELECT COALESCE(SUM(value), 0) AS score FROM suggestion_votes WHERE suggestion_id = ?').get(id)?.score);
-      return { score, vote: value };
-    }, true);
+      const [total] = await query<{ score: number }>('SELECT COALESCE(SUM(value), 0) AS score FROM suggestion_votes WHERE suggestion_id = ?', [id]);
+      return { score: total.score, vote: value };
+    });
   }
 
-  signInAttempt(now: number) {
-    this.access(db => takeSlot(db, 'sign-in', now), true);
+  signInAttempt(now: number, visitor?: string) {
+    return this.access('write', query => takeSlot(query, 'sign-in', now, visitor));
   }
 
   inbox({ status, page = 0 }: Filters = {}) {
-    return this.access(db => {
-      const rows = db.prepare(`SELECT ${noteFields} FROM suggestions
+    return this.access('read', async query => {
+      const rows = await query<NoteRow>(`SELECT ${noteFields} FROM suggestions
         WHERE (? IS NULL OR status = ?)
-        ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`)
-        .all(status ?? null, status ?? null, pageSize + 1, page * pageSize) as unknown as NoteRow[];
+        ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`, [status ?? null, status ?? null, pageSize + 1, page * pageSize]);
       return { notes: rows.slice(0, pageSize).map(toNote), hasNext: rows.length > pageSize };
     });
   }
 
-  review(input: ReviewRequest, now: number): BasketNote {
-    return this.access(db => {
+  review(input: ReviewRequest, now: number) {
+    return this.access('write', async query => {
       const { id, version, status, summary, outcome, publish } = input;
-      const raw = db.prepare(`SELECT ${noteFields} FROM suggestions WHERE id = ?`).get(id) as NoteRow | undefined;
+      const [raw] = await query<NoteRow>(`SELECT ${noteFields} FROM suggestions WHERE id = ?`, [id]);
       if (!raw) throw new BasketError('This note is no longer in the basket.', 404);
       const current = toNote(raw);
       if (publish && (!current.allowRecap || !canShowRecap(status) || !summary || !outcome)) {
@@ -232,23 +192,23 @@ class SQLiteBasket {
       }
       if (current.version !== version) throw new BasketError('This note changed in another review. Reload the inbox to see it.', 409);
 
-      const row = db.prepare(`UPDATE suggestions SET status = ?, summary = ?, outcome = ?,
+      const [row] = await query<NoteRow>(`UPDATE suggestions SET status = ?, summary = ?, outcome = ?,
         published_at = CASE WHEN ? THEN COALESCE(published_at, ?) ELSE NULL END,
-        version = version + 1 WHERE id = ? RETURNING ${noteFields}`)
-        .get(status, summary, outcome, Number(publish), now, id) as NoteRow;
+        version = version + 1 WHERE id = ? RETURNING ${noteFields}`, [status, summary, outcome, Number(publish), now, id]);
       return toNote(row);
-    }, true);
+    });
   }
 
   showcase() {
-    return this.access(db => db.prepare(`SELECT id, summary, outcome, status FROM suggestions
-      WHERE published_at IS NOT NULL AND allow_recap = 1 AND post_public = 0 AND status IN ('tried', 'implemented')
-      ORDER BY published_at DESC, id DESC`).all() as Recap[]);
+    return this.access('read', async query => {
+      const rows = await query<Recap>(`SELECT id, summary, outcome, status FROM suggestions
+        WHERE published_at IS NOT NULL AND allow_recap = 1 AND post_public = 0 AND status IN ('tried', 'implemented')
+        ORDER BY published_at DESC, id DESC`);
+      return rows.map(row => ({ ...row }));
+    });
   }
 }
 
-export async function openBasket(path = process.env.SUGGESTIONS_BASKET_DB_PATH ?? '.sundays-basket/basket.sqlite') {
-  // The disabled feature never loads SQLite on a hosted runtime.
-  const { DatabaseSync } = await import('node:sqlite');
-  return new SQLiteBasket(resolve(path), DatabaseSync);
+export function openBasket(connection: string | TursoConnection = '.sundays-basket/basket.sqlite') {
+  return new BasketStore(typeof connection === 'string' ? sqliteAccess(connection) : tursoAccess(connection));
 }

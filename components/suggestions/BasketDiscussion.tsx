@@ -13,7 +13,7 @@ export default function BasketDiscussion({ id, preview, ready, children }: {
 }) {
   const [expanded, setExpanded] = useState(false);
   const [pointerToggle, setPointerToggle] = useState(false);
-  const [loaded, setLoaded] = useState<DiscussionPage | null>(null);
+  const [loaded, setLoaded] = useState<{ preview: DiscussionPage; discussion: DiscussionPage } | null>(null);
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState<'read' | 'send' | null>(null);
   const [uncertain, setUncertain] = useState(false);
@@ -26,7 +26,7 @@ export default function BasketDiscussion({ id, preview, ready, children }: {
   const toggleButton = useRef<HTMLButtonElement>(null);
   const olderButton = useRef<HTMLButtonElement>(null);
   const commentInput = useRef<HTMLTextAreaElement>(null);
-  const discussion = loaded && loaded.count >= preview.count ? loaded : preview;
+  const discussion = loaded?.preview === preview ? loaded.discussion : preview;
   const items = expanded ? discussion.comments : discussion.comments.slice(0, COMMENT_PREVIEW);
   const layoutDependency = expanded
     ? ['open', items.length, discussion.before, pending === 'read', error?.message, missingComment].join(':')
@@ -55,10 +55,11 @@ export default function BasketDiscussion({ id, preview, ready, children }: {
       if (before !== undefined && response.discussion.before === null && document.activeElement === olderButton.current) {
         commentList.current?.focus({ preventScroll: true });
       }
-      setLoaded(before === undefined ? response.discussion : {
+      const discussionPage = before === undefined ? response.discussion : {
         ...response.discussion,
         comments: [...discussion.comments, ...response.discussion.comments],
-      });
+      };
+      setLoaded({ preview, discussion: discussionPage });
     } catch (error) {
       setError({ message: error instanceof BasketRequestError ? error.message : 'Comments couldn’t load. Try again.', reading: true, before });
     } finally {
@@ -85,7 +86,7 @@ export default function BasketDiscussion({ id, preview, ready, children }: {
       requestId.current ??= crypto.randomUUID();
       const response = await postBasket({ action: 'comment', id, requestId: requestId.current, body, website });
       if (!response.discussion) throw new Error('Missing saved comment');
-      setLoaded(response.discussion);
+      setLoaded({ preview, discussion: response.discussion });
       setDraft('');
       setUncertain(false);
       setAnnouncement('Comment posted.');

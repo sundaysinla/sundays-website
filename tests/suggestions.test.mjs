@@ -70,7 +70,7 @@ test('a committed note survives reopening the database and retries do not duplic
   assert.deepEqual(await response.json(), { saved: true });
   assert.equal((await send(request)).status, 201);
   assert.equal((await send({ ...request, note: 'A different note' })).status, 409);
-  const result = (await store()).inbox();
+  const result = await store().inbox();
   assert.equal(result.notes.length, 1);
   assert.equal(result.notes[0].note, 'Can we have a quiet table?');
   assert.equal(result.notes[0].status, 'new');
@@ -93,7 +93,7 @@ test('the preview rejects hosted, foreign-host, cross-origin and malformed reque
     assert.equal((await send(drop(bad))).status, 400);
   }
   assert.equal((await send(drop({ note: 'x'.repeat(9000) }))).status, 413);
-  assert.deepEqual((await store()).inbox().notes, []);
+  assert.deepEqual((await store().inbox()).notes, []);
 });
 
 test('publication needs a valid host session, explicit permission, a finished trial, and a written recap', async (t) => {
@@ -101,33 +101,34 @@ test('publication needs a valid host session, explicit permission, a finished tr
   await send(drop({ note: 'Private original. Keep this inside the inbox.' }));
   await send(drop({ category: 'try', note: 'Separate raw text from the public recap.', allowRecap: true }));
   const basket = await store();
-  const [privateNote] = basket.inbox().notes.filter(note => !note.allowRecap);
-  const [allowedNote] = basket.inbox().notes.filter(note => note.allowRecap);
+  const { notes } = await basket.inbox();
+  const [privateNote] = notes.filter(note => !note.allowRecap);
+  const [allowedNote] = notes.filter(note => note.allowRecap);
   assert.equal((await send(review(allowedNote))).status, 401);
   const headers = { cookie: await signIn() };
   assert.equal((await send(review(privateNote), { headers })).status, 409);
   assert.equal((await send(review(allowedNote, { status: 'considering' }), { headers })).status, 409);
   assert.equal((await send(review(allowedNote, { outcome: '' }), { headers })).status, 409);
-  assert.deepEqual(basket.showcase(), []);
+  assert.deepEqual(await basket.showcase(), []);
 
   const published = review(allowedNote);
   assert.equal((await send(published, { headers })).status, 200);
   assert.equal((await send(published, { headers })).status, 200, 'same review can be retried');
   assert.equal((await send({ ...published, outcome: 'An older edit' }, { headers })).status, 409);
-  const [recap] = basket.showcase();
+  const [recap] = await basket.showcase();
   assert.deepEqual(Object.keys(recap).sort(), ['id', 'outcome', 'status', 'summary']);
   assert.equal(recap.summary, published.summary);
   assert.equal(recap.outcome, published.outcome);
-  const [saved] = basket.inbox({ status: 'tried' }).notes;
+  const [saved] = (await basket.inbox({ status: 'tried' })).notes;
   assert.equal((await send(review(saved, { status: 'archived', publish: false }), { headers })).status, 200);
-  assert.deepEqual(basket.showcase(), []);
-  assert.equal(basket.inbox({ status: 'archived' }).notes.length, 1);
+  assert.deepEqual(await basket.showcase(), []);
+  assert.equal((await basket.inbox({ status: 'archived' })).notes.length, 1);
 });
 
 test('host cookies are signed, scoped to a key, expire, and can be cleared', async (t) => {
   const { send, signIn, store, env } = fixture(t);
   await send(drop({ allowRecap: true }));
-  const [row] = (await store()).inbox().notes;
+  const [row] = (await store().inbox()).notes;
   const cookie = await signIn();
   assert.equal((await send(review(row), { headers: { cookie: cookie + 'x' } })).status, 401);
   assert.equal((await send(review(row), { headers: { cookie }, now: start + 2 * 60 * 60_000 })).status, 401);
@@ -145,8 +146,8 @@ test('the persistent rate limit counts new notes and expires independently of ho
   assert.equal((await send(first)).status, 201);
   assert.equal((await send(drop())).status, 429);
   assert.equal((await send(drop(), { now: start + 5 * 60_000 })).status, 201);
-  assert.equal((await store()).inbox().hasNext, true);
-  assert.equal((await store()).inbox({ page: 1 }).notes.length, 15);
+  assert.equal((await store().inbox()).hasNext, true);
+  assert.equal((await store().inbox({ page: 1 })).notes.length, 15);
   for (let i = 0; i < 8; i++) {
     assert.equal((await send({ action: 'sign-in', key: 'wrong' })).status, 401);
   }
@@ -174,14 +175,15 @@ test('public posting is explicit and only public originals become discussions', 
   assert.equal((await send({ ...input, publicPost: false })).status, 409);
 
   const basket = await store();
-  const feed = basket.publicFeed(null);
+  const feed = await basket.publicFeed(null);
   assert.deepEqual(feed.posts.map(post => post.note), [input.note]);
   assert(!('category' in feed.posts[0]));
-  const legacy = basket.inbox().notes.find(note => note.allowRecap && !note.publicPost);
+  const { notes } = await basket.inbox();
+  const legacy = notes.find(note => note.allowRecap && !note.publicPost);
   const headers = { cookie: await signIn() };
   assert.equal((await send(review(legacy), { headers })).status, 200);
-  assert.equal(basket.showcase().length, 1);
-  for (const id of basket.inbox().notes.filter(note => !note.publicPost).map(note => note.id)) {
+  assert.equal((await basket.showcase()).length, 1);
+  for (const id of notes.filter(note => !note.publicPost).map(note => note.id)) {
     assert.equal((await send({ action: 'comments', id })).status, 404);
     assert.equal((await send({ action: 'comment', id, requestId: randomUUID(), body: 'Private?', website: '' })).status, 404);
     assert.equal((await send({ action: 'vote', id, value: 1 }, { headers: { cookie: 'sundays_basket_voter=' + randomUUID() } })).status, 404);
@@ -205,10 +207,11 @@ test('existing SQLite notes keep their private originals when the public consent
   }
 
   const basket = await store();
-  assert.deepEqual(basket.publicFeed(null).posts, []);
-  assert.equal(basket.inbox().notes[0].note, original);
-  assert.equal(basket.inbox().notes[0].publicPost, false);
-  assert.equal(basket.showcase()[0].summary, 'Existing summary');
+  assert.deepEqual((await basket.publicFeed(null)).posts, []);
+  const [saved] = (await basket.inbox()).notes;
+  assert.equal(saved.note, original);
+  assert.equal(saved.publicPost, false);
+  assert.equal((await basket.showcase())[0].summary, 'Existing summary');
 });
 
 test('one browser can add, change, retry and remove a vote without affecting another browser’s vote', async (t) => {
@@ -224,7 +227,7 @@ test('one browser can add, change, retry and remove a vote without affecting ano
   assert.deepEqual((await (await vote(b, -1)).json()).votes, { score: 0, vote: -1 });
   assert.deepEqual((await (await vote(a, -1)).json()).votes, { score: -2, vote: -1 });
   assert.deepEqual((await (await vote(a, 0)).json()).votes, { score: -1, vote: 0 });
-  assert.deepEqual((await store()).publicFeed(voterHash(b)).posts[0].votes, { score: -1, vote: -1 });
+  assert.deepEqual((await store().publicFeed(voterHash(b))).posts[0].votes, { score: -1, vote: -1 });
 });
 
 test('public comments have a bounded preview, a paginated history, and duplicate-safe retries', async (t) => {
@@ -241,7 +244,7 @@ test('public comments have a bounded preview, a paginated history, and duplicate
   assert.equal((await send(retry)).status, 201);
   assert.equal((await send({ ...retry, body: 'Different comment' })).status, 409);
   const basket = await store();
-  const [post] = basket.publicFeed(null).posts;
+  const [post] = (await basket.publicFeed(null)).posts;
   assert.equal(post.discussion.count, 13);
   assert.deepEqual(post.discussion.comments.map(item => item.body), ['Reply 13', 'Reply 12']);
   assert.equal(Object.getPrototypeOf(post.discussion.comments[0]), Object.prototype);
@@ -252,10 +255,10 @@ test('public comments have a bounded preview, a paginated history, and duplicate
   assert.deepEqual(older.comments.map(item => item.body), ['Reply 3', 'Reply 2', 'Reply 1']);
   assert.equal(older.before, null);
 
-  const [row] = basket.inbox().notes;
+  const [row] = (await basket.inbox()).notes;
   const headers = { cookie: await signIn() };
   assert.equal((await send(review(row, { status: 'archived', publish: false }), { headers })).status, 200);
-  assert.deepEqual(basket.publicFeed(null).posts, []);
+  assert.deepEqual((await basket.publicFeed(null)).posts, []);
   assert.equal((await send({ action: 'comments', id })).status, 404);
   assert.equal((await send(retry)).status, 404);
   assert.equal((await send({ action: 'vote', id, value: 1 }, { headers: { cookie: 'sundays_basket_voter=' + randomUUID() } })).status, 404);

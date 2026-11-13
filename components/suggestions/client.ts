@@ -1,4 +1,4 @@
-import { basketCookie, VOTER_COOKIE, VOTER_TOKEN_PATTERN, type BasketNote, type DiscussionPage, type VoteState } from '@/lib/suggestions/model';
+import { basketCookie, VOTER_COOKIE, VOTER_TOKEN_PATTERN, type BasketNote, type DiscussionPage, type HostDiscussionPage, type VoteState } from '@/lib/suggestions/model';
 import type { BasketCommand } from '@/lib/suggestions/requests';
 
 type BasketResponse = {
@@ -8,6 +8,8 @@ type BasketResponse = {
   note?: BasketNote;
   votes?: VoteState;
   discussion?: DiscussionPage;
+  hostDiscussion?: HostDiscussionPage;
+  hiddenAt?: number | null;
   error?: string;
 };
 
