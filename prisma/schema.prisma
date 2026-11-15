@@ -1,0 +1,268 @@
+// Sundays membership portal — Auth.js + portal domain models
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Auth.js ─────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  profile       Profile?
+  demos         DemoHistory[]
+  lumaLink      LumaLink?
+  attendances   Attendance[]
+  carpoolOffers CarpoolOffer[]
+  notifications Notification[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Profile ─────────────────────────────────────────────────────────────────
+
+model Profile {
+  id                       String    @id @default(cuid())
+  userId                   String    @unique
+  user                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName              String?
+  contactEmail             String
+  contactEmailVerified     Boolean   @default(false)
+  pendingContactEmail      String?
+  pendingContactEmailToken String?
+  pendingContactEmailExpires DateTime?
+  bio                      String?   @db.Text
+  portfolioUrl             String?
+  school                   String? // USC | UCLA | other
+  avatarUrl                String?
+  avatarData               Bytes?  // uploaded photo, resized in the browser; served from /api/avatar/[userId]
+  avatarMime               String?
+  phone                    String? // E.164; for carpool texts and last-minute changes
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+}
+
+model DemoHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  notes     String?  @db.Text
+  eventId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ─── Luma ────────────────────────────────────────────────────────────────────
+
+model LumaLink {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lumaGuestEmail String
+  lastSyncedAt   DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model EventCache {
+  id                      String   @id @default(cuid())
+  lumaEventId             String   @unique
+  title                   String
+  startAt                 DateTime
+  endAt                   DateTime?
+  timezone                String?
+  address                 String?
+  lat                     Float?
+  lng                     Float?
+  lumaUrl                 String?
+  registrationQuestions   Json?
+  status                  String   @default("active") // active | cancelled (Luma stopped listing it) | deleted (Luma 404s)
+  coverUrl                String?
+  lastSeenAt              DateTime?
+  replacedBy              String?  // lumaEventId the carpool was moved to after this one went away
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  attendances             Attendance[]
+  carpoolOffers           CarpoolOffer[]
+  cars                    Car[]
+}
+
+model Attendance {
+  id                   String     @id @default(cuid())
+  userId               String
+  user                 User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lumaEventId          String
+  event                EventCache @relation(fields: [lumaEventId], references: [lumaEventId], onDelete: Cascade)
+  status               String // going | declined | pending_approval | waitlist | invited
+  registrationAnswers  Json?
+  lumaGuestId          String?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  @@unique([userId, lumaEventId])
+  @@index([lumaEventId])
+}
+
+// ─── Carpool ─────────────────────────────────────────────────────────────────
+//
+// One CarpoolOffer per person per event: "I can drive" or "I need a ride",
+// with a geocoded start / pickup point. A driver's offer owns a Car; a rider's
+// offer sits in at most one CarStop. Hosts write people in as offers with no
+// user (guestName / guestEmail); a later sign-up with that email claims them.
+
+enum CarpoolRole {
+  driver
+  rider
+}
+
+enum CarpoolOfferStatus {
+  open
+  withdrawn
+}
+
+enum CarStopSource {
+  matcher // suggested by cheapest-insertion; cleared on re-suggest until confirmed
+  host    // placed by a host; the matcher never moves it
+}
+
+model CarpoolOffer {
+  id            String             @id @default(cuid())
+  userId        String?
+  user          User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestName     String?
+  guestEmail    String?
+  guestPhone    String? // E.164; write-ins without an account still get texts
+  lumaEventId   String
+  event         EventCache         @relation(fields: [lumaEventId], references: [lumaEventId], onDelete: Cascade)
+  role          CarpoolRole
+  address       String
+  lat           Float
+  lng           Float
+  neighborhood  String?
+  seatsTotal    Int?
+  notes         String?            @db.Text
+  status        CarpoolOfferStatus @default(open)
+  lastMessageNoticeAt DateTime?    // throttles "new message in your car" texts/emails
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  car           Car?
+  stop          CarStop?
+  messages      CarMessage[]
+
+  @@unique([userId, lumaEventId])
+  @@index([lumaEventId, role, status])
+  @@index([guestEmail])
+}
+
+model Car {
+  id            String       @id @default(cuid())
+  lumaEventId   String
+  event         EventCache   @relation(fields: [lumaEventId], references: [lumaEventId], onDelete: Cascade)
+  driverOfferId String       @unique
+  driverOffer   CarpoolOffer @relation(fields: [driverOfferId], references: [id], onDelete: Cascade)
+  seatsTotal    Int
+  routeKm       Float        @default(0) // driver start → stops in order → venue
+  directKm      Float        @default(0) // driver start → venue
+  confirmedAt   DateTime?    // set by a host; members are notified once
+  changedAt     DateTime?    // last edit after confirmation; cleared on re-confirm
+  stops         CarStop[]
+  messages      CarMessage[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([lumaEventId])
+}
+
+/// Group chat for one car. Members post from the portal; hosts can post from the board.
+model CarMessage {
+  id            String        @id @default(cuid())
+  carId         String
+  car           Car           @relation(fields: [carId], references: [id], onDelete: Cascade)
+  authorOfferId String?       // null = a host
+  authorOffer   CarpoolOffer? @relation(fields: [authorOfferId], references: [id], onDelete: SetNull)
+  authorName    String        // snapshot: host's name, or the member's name at the time
+  body          String        @db.Text
+  createdAt     DateTime      @default(now())
+
+  @@index([carId, createdAt])
+}
+
+model CarStop {
+  id           String        @id @default(cuid())
+  carId        String
+  car          Car           @relation(fields: [carId], references: [id], onDelete: Cascade)
+  riderOfferId String        @unique
+  riderOffer   CarpoolOffer  @relation(fields: [riderOfferId], references: [id], onDelete: Cascade)
+  order        Int
+  source       CarStopSource
+  addedKm      Float         @default(0) // insertion cost when placed
+  confirmedAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([carId, order])
+}
+
+// ─── Notifications ───────────────────────────────────────────────────────────
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String    @db.Text
+  href      String?
+  readAt    DateTime?
+  emailSent Boolean   @default(false)
+  meta      Json?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+}

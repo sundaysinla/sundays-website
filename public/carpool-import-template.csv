@@ -1,0 +1,6 @@
+name,email,phone,role,address,seats,notes,car
+Emily Shen,emily@ucla.edu,310-555-0101,driver,"Westwood Village, Los Angeles, CA",3,Leaving Westwood at 1:15,
+Kai Davey,kai@ucla.edu,,rider,"Culver City, CA",,,Emily Shen
+Hannah He,,424-555-0199,rider,"Koreatown, Los Angeles, CA",,has a bike,Emily Shen
+Sam Cheng,sam@usc.edu,,driver,"USC Village, Los Angeles, CA",2,,
+Maia Rocha,,,rider,"1168 W 27th St, Los Angeles, CA 90007",,,
