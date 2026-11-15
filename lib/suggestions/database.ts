@@ -4,20 +4,32 @@ type SqlValue = string | number | boolean | null;
 type Mode = 'read' | 'write';
 export type Query = <Row = Record<string, unknown>>(sql: string, args?: SqlValue[]) => Promise<Row[]>;
 export type BasketAccess = <Result>(mode: Mode, operation: (query: Query) => Promise<Result>) => Promise<Result>;
-export type PostgresConnection = { url: string; tls: boolean };
+type Tls = false | 'require' | { rejectUnauthorized: true; ca?: string };
+export type PostgresConnection = { url: string; ssl: Tls };
 
 const loopback = /^(?:localhost|127\.0\.0\.1|\[::1\])$/i;
+const pemCertificate = /^-----BEGIN CERTIFICATE-----[\s\S]+-----END CERTIFICATE-----\s*$/;
 
 // Accepts a Supabase connection string, such as the POSTGRES_URL set by the Vercel integration.
-// Query parameters like sslmode and supa are dropped because TLS is configured explicitly below.
-export function postgresConnection(value: string | undefined): PostgresConnection | null {
+// With Supabase's root CA (Project Settings → Database → SSL), the server certificate and hostname
+// are verified. A URL asking for sslmode=verify-full or verify-ca is verified against the system CAs.
+// Otherwise remote connections are encrypted without verification, which is what sslmode=require means.
+export function postgresConnection(value: string | undefined, ca?: string): PostgresConnection | null {
   if (!value?.trim()) return null;
+  const certificate = ca?.trim() ? ca.trim().replace(/\\n/g, '\n') : undefined;
+  if (certificate !== undefined && !pemCertificate.test(certificate)) return null;
   try {
     const parsed = new URL(value.trim());
     if (!['postgres:', 'postgresql:'].includes(parsed.protocol) || !parsed.hostname || !parsed.username ||
       parsed.hash || parsed.pathname.length < 2) return null;
+    const mode = parsed.searchParams.get('sslmode');
+    // Other parameters, such as Supabase's supa=, are not valid Postgres startup parameters.
     parsed.search = '';
-    return { url: parsed.toString(), tls: !loopback.test(parsed.hostname) };
+    const verify = certificate !== undefined || mode === 'verify-full' || mode === 'verify-ca';
+    const ssl: Tls = verify
+      ? { rejectUnauthorized: true, ...(certificate ? { ca: certificate } : {}) }
+      : loopback.test(parsed.hostname) ? false : 'require'; // Weaker modes are upgraded for remote hosts.
+    return { url: parsed.toString(), ssl };
   } catch {
     return null;
   }
@@ -26,11 +38,12 @@ export function postgresConnection(value: string | undefined): PostgresConnectio
 // Serverless instances reuse one small pool between requests.
 const clients = new Map<string, postgres.Sql>();
 
-export function postgresClient({ url, tls }: PostgresConnection) {
-  let sql = clients.get(url);
+export function postgresClient({ url, ssl }: PostgresConnection) {
+  const key = url + '\0' + JSON.stringify(ssl);
+  let sql = clients.get(key);
   if (!sql) {
     sql = postgres(url, {
-      ssl: tls ? 'require' : false,
+      ssl,
       prepare: false, // Supabase's transaction pooler on port 6543 has no prepared statements.
       max: 3,
       idle_timeout: 20,
@@ -39,7 +52,7 @@ export function postgresClient({ url, tls }: PostgresConnection) {
       // Timestamps and counts are bigint. They stay well within Number's safe range.
       types: { bigint: { to: 20, from: [20], serialize: (value: number) => String(value), parse: (value: string) => Number(value) } },
     });
-    clients.set(url, sql);
+    clients.set(key, sql);
   }
   return sql;
 }

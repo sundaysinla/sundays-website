@@ -35,7 +35,7 @@ export function basketConfig(env: NodeJS.ProcessEnv = process.env): BasketConfig
   if (!env.VERCEL) {
     const key = env.SUGGESTIONS_BASKET_HOST_KEY;
     // Locally, only an explicit database is used, never a production POSTGRES_URL pulled from Vercel.
-    const connection = postgresConnection(env.SUGGESTIONS_BASKET_DATABASE_URL);
+    const connection = postgresConnection(env.SUGGESTIONS_BASKET_DATABASE_URL, env.SUGGESTIONS_BASKET_DATABASE_CA);
     if (env.NODE_ENV !== 'development' || env.NEXT_PUBLIC_SUGGESTIONS_BASKET !== 'true' ||
       !key || key.length < 32 || key.length > 256 || !connection) return null;
     return { mode: 'local', key, connection };
@@ -43,7 +43,7 @@ export function basketConfig(env: NodeJS.ProcessEnv = process.env): BasketConfig
 
   if (env.VERCEL !== '1' || env.SUGGESTIONS_BASKET_ENABLED !== 'true') return null;
   // POSTGRES_URL is the pooled Supabase connection string that the Vercel integration sets.
-  const connection = postgresConnection(env.POSTGRES_URL);
+  const connection = postgresConnection(env.POSTGRES_URL, env.SUGGESTIONS_BASKET_DATABASE_CA);
   const hosts = organizerDigests(env.SUGGESTIONS_BASKET_HOSTS);
   const secret = env.SUGGESTIONS_BASKET_SESSION_SECRET;
   if (!connection || !hosts || !secret || !tokenPattern.test(secret)) return null;

@@ -6,7 +6,7 @@ import type { PostgresConnection } from './database.ts';
 export const migrationFile = new URL('../../supabase/migrations/20261115000000_suggestions_basket.sql', import.meta.url);
 
 export async function migrateBasket(connection: PostgresConnection) {
-  const sql = postgres(connection.url, { ssl: connection.tls ? 'require' : false, prepare: false, max: 1, onnotice: () => undefined });
+  const sql = postgres(connection.url, { ssl: connection.ssl, prepare: false, max: 1, onnotice: () => undefined });
   try {
     await sql.unsafe(await readFile(migrationFile, 'utf8'));
   } finally {

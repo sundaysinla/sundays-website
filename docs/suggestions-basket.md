@@ -74,6 +74,7 @@ The Basket stores everything in Supabase Postgres. The schema lives in [`supabas
    | Variable | Value |
    | --- | --- |
    | `POSTGRES_URL` | Set by the Supabase integration. The Basket accepts any `postgres://` URL and always connects over TLS to non-local hosts |
+   | `SUGGESTIONS_BASKET_DATABASE_CA` | Supabase's root certificate, from **Project Settings → Database → SSL Configuration → Download certificate**. Paste the whole PEM file (escaped `\n` line breaks also work) |
    | `SUGGESTIONS_BASKET_SESSION_SECRET` | 32-byte random secret, encoded as base64url |
    | `SUGGESTIONS_BASKET_HOSTS` | JSON object mapping organizer IDs to SHA-256 hex digests of their keys |
    | `SUGGESTIONS_BASKET_ORIGINS` | `https://www.sundays.rsvp` |
@@ -81,6 +82,8 @@ The Basket stores everything in Supabase Postgres. The schema lives in [`supabas
    | `CRON_SECRET` | Random string of at least 16 characters. Vercel Cron sends it to the daily keepalive |
 
 4. **Redeploy** Production. `/basket` and `/basket/host` appear once every value is present.
+
+With `SUGGESTIONS_BASKET_DATABASE_CA` set, the Basket verifies the database's certificate and hostname, so nothing on the network can impersonate Supabase and capture the database password. Without it, the connection is still encrypted (`sslmode=require`) but the certificate is not checked. A `sslmode=verify-full` in the URL is honored against the system CAs. A value that isn't a PEM certificate turns the Basket off instead of skipping verification. Use the same variable when running the setup script from a checkout.
 
 Generate a session secret or cron secret using `node -p 'require("node:crypto").randomBytes(32).toString("base64url")'`. Generate a key for each organizer, replacing `alex` with their ID.
 

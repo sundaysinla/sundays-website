@@ -91,12 +91,22 @@ test('organizer keys and sessions can be revoked independently and IP buckets us
   assert.notEqual(basketVisitor(config, address), hash);
 });
 
-test('Supabase connection strings use TLS and drop query parameters the driver should not forward', () => {
-  assert.deepEqual(postgresConnection(supabaseUrl), {
-    url: 'postgres://postgres.abcdefghijklmnop:fixture@aws-0-us-west-1.pooler.supabase.com:6543/postgres', tls: true,
-  });
-  assert.equal(postgresConnection('postgresql://postgres@127.0.0.1:55432/basket').tls, false);
+const fixtureCa = '-----BEGIN CERTIFICATE-----\nMIIBfixture\n-----END CERTIFICATE-----';
+
+test('Supabase connection strings use TLS, verify with a CA, and drop parameters the driver should not forward', () => {
+  const pooled = 'postgres://postgres.abcdefghijklmnop:fixture@aws-0-us-west-1.pooler.supabase.com:6543/postgres';
+  assert.deepEqual(postgresConnection(supabaseUrl), { url: pooled, ssl: 'require' });
+  assert.deepEqual(postgresConnection(supabaseUrl, fixtureCa), { url: pooled, ssl: { rejectUnauthorized: true, ca: fixtureCa } });
+  assert.deepEqual(postgresConnection(supabaseUrl, fixtureCa.replaceAll('\n', '\\n')).ssl, { rejectUnauthorized: true, ca: fixtureCa },
+    'escaped newlines from a one-line env var are restored');
+  assert.deepEqual(postgresConnection(pooled + '?sslmode=verify-full').ssl, { rejectUnauthorized: true });
+  assert.equal(postgresConnection(pooled + '?sslmode=disable').ssl, 'require', 'remote hosts never drop below require');
+  assert.equal(postgresConnection(supabaseUrl, 'not a certificate'), null);
+  assert.equal(postgresConnection('postgresql://postgres@127.0.0.1:55432/basket').ssl, false);
   assert.equal(postgresConnection('  '), null);
+  const { env } = fixture();
+  assert(basketConfig({ ...env, SUGGESTIONS_BASKET_DATABASE_CA: fixtureCa }));
+  assert.equal(basketConfig({ ...env, SUGGESTIONS_BASKET_DATABASE_CA: 'garbage' }), null, 'a bad CA disables the Basket instead of skipping verification');
 });
 
 function keepalive(env, authorization) {
