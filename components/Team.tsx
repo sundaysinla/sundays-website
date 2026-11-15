@@ -80,7 +80,7 @@ const alumniCol3: Member[] = [
 
 export default function Team() {
   return (
-    <section className="bg-[#FCFAF7] text-[#2A2A24] py-32 px-6 md:px-12 lg:px-16 relative">
+    <section className="bg-[color:rgb(var(--sundays-paper))] text-[color:var(--sundays-ink)] py-32 px-6 md:px-12 lg:px-16 relative">
       {/* Dashed column grid */}
       <div
         className="absolute inset-0 pointer-events-none grid grid-cols-8 md:grid-cols-[repeat(16,1fr)]"
