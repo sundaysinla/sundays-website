@@ -89,6 +89,12 @@ test('organizer keys and sessions can be revoked independently and IP buckets us
   assert.equal(basketVisitor(config, address), hash);
   address.set('x-vercel-forwarded-for', '192.0.2.99');
   assert.notEqual(basketVisitor(config, address), hash);
+  const bucket = ip => basketVisitor(config, new Headers({ 'x-vercel-forwarded-for': ip }));
+  assert.equal(bucket('2001:db8:0:0:ffff:1:2:3'), hash, 'addresses in one /64 share a rate-limit bucket');
+  assert.notEqual(bucket('2001:db8:0:1::1'), hash, 'a different /64 gets its own bucket');
+  assert.equal(bucket('::ffff:192.0.2.99'), bucket('192.0.2.99'), 'IPv4-mapped addresses count as their IPv4 address');
+  assert.equal(bucket('::1'), bucket('0:0:0:0:0:0:0:2'));
+  assert.throws(() => bucket('fe80::1%eth0'), /couldn’t verify/);
 });
 
 const fixtureCa = '-----BEGIN CERTIFICATE-----\nMIIBfixture\n-----END CERTIFICATE-----';

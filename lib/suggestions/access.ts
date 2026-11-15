@@ -128,12 +128,32 @@ export function hostSessionCookie(config: BasketConfig, id: string | null, now: 
   return `${name}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secure ? '; Secure' : ''}`;
 }
 
+// One connection usually owns a whole IPv6 /64, so rate limits bucket by that prefix.
+// IPv4-mapped IPv6 addresses count as the IPv4 address they carry.
+function rateBucket(address: string, version: number) {
+  if (version === 4) return address;
+  const compressed = new URL(`https://[${address}]`).hostname.slice(1, -1);
+  const [head, tail] = compressed.includes('::') ? compressed.split('::') : [compressed, undefined];
+  const left = head ? head.split(':') : [];
+  const right = tail ? tail.split(':') : [];
+  const groups = [...left, ...Array(8 - left.length - right.length).fill('0'), ...right].map(group => parseInt(group, 16));
+  if (groups.slice(0, 5).every(group => group === 0) && groups[5] === 0xffff) {
+    return [groups[6] >> 8, groups[6] & 255, groups[7] >> 8, groups[7] & 255].join('.');
+  }
+  return groups.slice(0, 4).map(group => group.toString(16)).join(':') + '::/64';
+}
+
 export function basketVisitor(config: BasketConfig, headers: Headers) {
   if (config.mode === 'local') return undefined;
   // Vercel overwrites this header at ingress. Ignore client-supplied forwarding chains.
   const address = headers.get('x-vercel-forwarded-for');
   const version = address ? isIP(address) : 0;
-  if (!address || !version) throw new BasketError('The basket couldn’t verify this request. Try again.', 403);
-  const normalized = version === 6 ? new URL(`https://[${address}]`).hostname : address;
-  return createHmac('sha256', config.secret).update('sundays-basket-visitor\0' + normalized).digest('hex');
+  let bucket: string | undefined;
+  try {
+    bucket = address && version ? rateBucket(address, version) : undefined;
+  } catch {
+    bucket = undefined;
+  }
+  if (!bucket) throw new BasketError('The basket couldn’t verify this request. Try again.', 403);
+  return createHmac('sha256', config.secret).update('sundays-basket-visitor\0' + bucket).digest('hex');
 }
