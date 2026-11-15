@@ -1,17 +1,19 @@
-import { tursoAccess, tursoConnection } from '../lib/suggestions/database.ts';
+import { postgresConnection } from '../lib/suggestions/database.ts';
 import { migrateBasket } from '../lib/suggestions/schema.ts';
 
-const connection = tursoConnection(process.env);
+// Prefer the direct connection for schema changes. The pooled URL also works.
+const { SUGGESTIONS_BASKET_DATABASE_URL, POSTGRES_URL_NON_POOLING, POSTGRES_URL } = process.env;
+const connection = postgresConnection(SUGGESTIONS_BASKET_DATABASE_URL || POSTGRES_URL_NON_POOLING || POSTGRES_URL);
 if (!connection) {
-  console.error('Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN for the target Basket database.');
+  console.error('Set SUGGESTIONS_BASKET_DATABASE_URL (local) or POSTGRES_URL_NON_POOLING (Supabase) to a postgres:// connection string.');
   process.exitCode = 1;
 } else {
   try {
-    await tursoAccess(connection)('write', migrateBasket);
-    console.log('Basket schema is ready.');
+    await migrateBasket(connection);
+    console.log(`Basket schema is ready on ${new URL(connection.url).host}.`);
   } catch (error) {
     const code = typeof error?.code === 'string' && /^[A-Z0-9_]+$/.test(error.code) ? ` (${error.code})` : '';
-    console.error(`Could not prepare the Basket database${code}. Check the database URL and token, then retry.`);
+    console.error(`Could not prepare the Basket database${code}. Check the connection string, then retry.`);
     process.exitCode = 1;
   }
 }

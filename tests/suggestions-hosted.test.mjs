@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import test from 'node:test';
 import { authenticateHost, basketConfig, basketOrigin, basketVisitor, hostSessionCookie, validHostSession, voterHash } from '../lib/suggestions/access.ts';
-import { tursoAccess } from '../lib/suggestions/database.ts';
-import { handleBasket } from '../lib/suggestions/handler.ts';
-import { migrateBasket } from '../lib/suggestions/schema.ts';
+import { postgresConnection } from '../lib/suggestions/database.ts';
+import { handleBasket, handleKeepalive } from '../lib/suggestions/handler.ts';
 import { openBasket } from '../lib/suggestions/store.ts';
+import { freshDatabase, needsPostgres } from './basket-postgres.mjs';
 
 const host = 'basket-preview-fixture.vercel.app';
 const origin = `https://${host}`;
@@ -13,14 +13,16 @@ const now = 1_800_000_000_000;
 const token = () => randomBytes(32).toString('base64url');
 const digest = value => createHash('sha256').update(value).digest('hex');
 
-function fixture(databaseUrl = 'libsql://basket-test.example') {
+const supabaseUrl = 'postgres://postgres.abcdefghijklmnop:fixture@aws-0-us-west-1.pooler.supabase.com:6543/postgres?sslmode=require&supa=base-pooler.x';
+
+function fixture(databaseUrl = supabaseUrl) {
   const keys = { alex: token(), jo: token() };
   const hosts = { alex: digest(keys.alex), jo: digest(keys.jo) };
   const env = {
     NODE_ENV: 'production', VERCEL: '1', VERCEL_ENV: 'preview', VERCEL_URL: host,
     SUGGESTIONS_BASKET_ENABLED: 'true',
     SUGGESTIONS_BASKET_SESSION_SECRET: token(), SUGGESTIONS_BASKET_HOSTS: JSON.stringify(hosts),
-    TURSO_DATABASE_URL: databaseUrl, TURSO_AUTH_TOKEN: 'fixture',
+    POSTGRES_URL: databaseUrl,
   };
 
   function send(payload, { headers, environment = env, time = now } = {}) {
@@ -41,8 +43,9 @@ test('Vercel enables the Basket only with complete configuration and an approved
   const { env, send } = fixture();
   for (const patch of [
     { SUGGESTIONS_BASKET_ENABLED: 'false' }, { SUGGESTIONS_BASKET_HOSTS: '{}' },
-    { TURSO_DATABASE_URL: 'file:/tmp/basket' }, { TURSO_DATABASE_URL: 'libsql://basket-test.example?tls=0' },
-    { TURSO_AUTH_TOKEN: '' }, { VERCEL: undefined }, { VERCEL_ENV: 'development' },
+    { POSTGRES_URL: undefined }, { POSTGRES_URL: 'file:/tmp/basket' }, { POSTGRES_URL: 'https://db.example.supabase.co' },
+    { POSTGRES_URL: 'postgres://db.example.supabase.co:5432/postgres' }, { POSTGRES_URL: 'postgres://user:pw@db.example.supabase.co' },
+    { VERCEL: undefined }, { VERCEL_ENV: 'development' },
   ]) {
     assert.equal((await send({ action: 'sign-out' }, { environment: { ...env, ...patch } })).status, 404);
   }
@@ -88,15 +91,36 @@ test('organizer keys and sessions can be revoked independently and IP buckets us
   assert.notEqual(basketVisitor(config, address), hash);
 });
 
-// The integration fixture is a disposable sqld over TLS. Restrict it to loopback.
-const testUrl = process.env.BASKET_TEST_LIBSQL_URL;
-test('libSQL persists private notes, idempotent writes, moderation, votes and per-IP limits', { skip: !testUrl }, async () => {
-  assert.match(testUrl, /^https:\/\/127\.0\.0\.1:\d+$/);
-  const { env, keys, send } = fixture(testUrl);
+test('Supabase connection strings use TLS and drop query parameters the driver should not forward', () => {
+  assert.deepEqual(postgresConnection(supabaseUrl), {
+    url: 'postgres://postgres.abcdefghijklmnop:fixture@aws-0-us-west-1.pooler.supabase.com:6543/postgres', tls: true,
+  });
+  assert.equal(postgresConnection('postgresql://postgres@127.0.0.1:55432/basket').tls, false);
+  assert.equal(postgresConnection('  '), null);
+});
+
+function keepalive(env, authorization) {
+  return handleKeepalive(new Request('https://www.sundays.rsvp/api/suggestions/keepalive', {
+    headers: authorization ? { authorization } : {},
+  }), env);
+}
+
+test('the daily keepalive needs the Basket, a cron secret and the matching bearer token', async () => {
+  const { env } = fixture();
+  const secret = token();
+  assert.equal((await keepalive(env, `Bearer ${secret}`)).status, 404);
+  assert.equal((await keepalive({ ...env, CRON_SECRET: 'short' }, 'Bearer short')).status, 404);
+  assert.equal((await keepalive({ ...env, CRON_SECRET: secret }, undefined)).status, 401);
+  assert.equal((await keepalive({ ...env, CRON_SECRET: secret }, `Bearer ${token()}`)).status, 401);
+});
+
+test('Postgres persists private notes, idempotent writes, moderation, votes and per-IP limits', { skip: needsPostgres }, async (t) => {
+  const { env, keys, send } = fixture(await freshDatabase(t));
   const config = basketConfig(env);
   assert(config);
-  await tursoAccess(config.connection)('write', migrateBasket);
   const basket = openBasket(config.connection);
+  const cron = token();
+  assert.equal((await keepalive({ ...env, CRON_SECRET: cron }, `Bearer ${cron}`)).status, 200);
 
   const marker = randomUUID();
   const drop = (note, publicPost) => ({ action: 'drop', requestId: randomUUID(), note, publicPost, website: '' });

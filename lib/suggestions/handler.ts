@@ -1,4 +1,4 @@
-import { authenticateHost, basketConfig, basketOrigin, basketVisitor, hostSessionCookie, localOrigin, validHostSession, voterHash } from './access.ts';
+import { authenticateHost, basketConfig, basketOrigin, basketVisitor, hostSessionCookie, localOrigin, sameSecret, validHostSession, voterHash } from './access.ts';
 import { basketCookie, BasketError, VOTER_COOKIE } from './model.ts';
 import { basketRequest } from './requests.ts';
 import { openBasket } from './store.ts';
@@ -94,5 +94,21 @@ export async function handleBasket(request: Request, env = process.env, now = Da
     const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
     console.error('Basket request failed', typeof code === 'string' && /^[A-Z0-9_]+$/.test(code) ? code : 'UNKNOWN');
     return reply({ error: 'The basket is temporarily unavailable. Try again in a moment.' }, 503);
+  }
+}
+
+// Vercel Cron calls this daily with `Authorization: Bearer $CRON_SECRET`.
+export async function handleKeepalive(request: Request, env = process.env): Promise<Response> {
+  const config = basketConfig(env);
+  const secret = env.CRON_SECRET;
+  if (!config || config.mode !== 'hosted' || !secret || secret.length < 16) return reply({ error: 'Basket unavailable.' }, 404);
+  if (!sameSecret(request.headers.get('authorization') ?? '', `Bearer ${secret}`)) return reply({ error: 'Not allowed.' }, 401);
+  try {
+    await openBasket(config.connection).ping();
+    return reply({ ok: true }, 200);
+  } catch (error) {
+    const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
+    console.error('Basket keepalive failed', typeof code === 'string' && /^[A-Z0-9_]+$/.test(code) ? code : 'UNKNOWN');
+    return reply({ error: 'The basket database did not respond.' }, 503);
   }
 }

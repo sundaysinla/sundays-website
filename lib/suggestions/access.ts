@@ -1,6 +1,6 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { isIP } from 'node:net';
-import { tursoConnection, type TursoConnection } from './database.ts';
+import { postgresConnection, type PostgresConnection } from './database.ts';
 import { basketCookie, BasketError, VOTER_TOKEN_PATTERN } from './model.ts';
 
 const localCookie = 'sundays_basket_host';
@@ -12,8 +12,8 @@ const digestPattern = /^[a-f0-9]{64}$/;
 const hostPattern = /^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/i;
 const vercelHost = /^[a-z0-9-]+\.vercel\.app$/i;
 
-type LocalBasket = { mode: 'local'; key: string; connection: string };
-type HostedBasket = { mode: 'hosted'; hosts: Map<string, string>; secret: string; origins: Set<string>; connection: TursoConnection };
+type LocalBasket = { mode: 'local'; key: string; connection: PostgresConnection };
+type HostedBasket = { mode: 'hosted'; hosts: Map<string, string>; secret: string; origins: Set<string>; connection: PostgresConnection };
 type BasketConfig = LocalBasket | HostedBasket;
 
 function organizerDigests(value: string | undefined) {
@@ -34,13 +34,16 @@ function organizerDigests(value: string | undefined) {
 export function basketConfig(env: NodeJS.ProcessEnv = process.env): BasketConfig | null {
   if (!env.VERCEL) {
     const key = env.SUGGESTIONS_BASKET_HOST_KEY;
+    // Locally, only an explicit database is used, never a production POSTGRES_URL pulled from Vercel.
+    const connection = postgresConnection(env.SUGGESTIONS_BASKET_DATABASE_URL);
     if (env.NODE_ENV !== 'development' || env.NEXT_PUBLIC_SUGGESTIONS_BASKET !== 'true' ||
-      !key || key.length < 32 || key.length > 256) return null;
-    return { mode: 'local', key, connection: env.SUGGESTIONS_BASKET_DB_PATH ?? '.sundays-basket/basket.sqlite' };
+      !key || key.length < 32 || key.length > 256 || !connection) return null;
+    return { mode: 'local', key, connection };
   }
 
   if (env.VERCEL !== '1' || env.SUGGESTIONS_BASKET_ENABLED !== 'true') return null;
-  const connection = tursoConnection(env);
+  // POSTGRES_URL is the pooled Supabase connection string that the Vercel integration sets.
+  const connection = postgresConnection(env.POSTGRES_URL);
   const hosts = organizerDigests(env.SUGGESTIONS_BASKET_HOSTS);
   const secret = env.SUGGESTIONS_BASKET_SESSION_SECRET;
   if (!connection || !hosts || !secret || !tokenPattern.test(secret)) return null;
@@ -82,7 +85,7 @@ function digest(value: string) {
   return createHash('sha256').update(value).digest('hex');
 }
 
-function sameSecret(actual: string, expected: string) {
+export function sameSecret(actual: string, expected: string) {
   return timingSafeEqual(Buffer.from(digest(actual), 'hex'), Buffer.from(digest(expected), 'hex'));
 }
 

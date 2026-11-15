@@ -1,27 +1,25 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdtempSync, rmSync, statSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
-import { handleBasket } from '../lib/suggestions/handler.ts';
-import { openBasket } from '../lib/suggestions/store.ts';
+import postgres from 'postgres';
 import { voterHash } from '../lib/suggestions/access.ts';
+import { closeBasketClients, postgresConnection } from '../lib/suggestions/database.ts';
+import { handleBasket } from '../lib/suggestions/handler.ts';
+import { migrateBasket } from '../lib/suggestions/schema.ts';
+import { openBasket } from '../lib/suggestions/store.ts';
+import { freshDatabase, needsPostgres } from './basket-postgres.mjs';
 
 const host = 'localhost:4010';
 const origin = `http://${host}`;
 const start = 1_800_000_000_000;
 
-function fixture(t) {
-  const directory = mkdtempSync(join(tmpdir(), 'sundays-basket-test-'));
-  t.after(() => rmSync(directory, { recursive: true, force: true }));
-  const path = join(directory, 'basket.sqlite');
+async function fixture(t) {
+  const url = await freshDatabase(t);
   const env = {
     NODE_ENV: 'development',
     NEXT_PUBLIC_SUGGESTIONS_BASKET: 'true',
     SUGGESTIONS_BASKET_HOST_KEY: 'basket-test-key-for-a-temporary-database',
-    SUGGESTIONS_BASKET_DB_PATH: path,
+    SUGGESTIONS_BASKET_DATABASE_URL: url,
   };
 
   function send(payload, options = {}) {
@@ -41,7 +39,7 @@ function fixture(t) {
     return cookie.split(';')[0];
   }
 
-  return { env, path, send, signIn, store: () => openBasket(path) };
+  return { env, url, send, signIn, store: () => openBasket(postgresConnection(url)) };
 }
 
 function drop(values = {}) {
@@ -61,8 +59,8 @@ function review(row, values = {}) {
   };
 }
 
-test('a committed note survives reopening the database and retries do not duplicate it', async (t) => {
-  const { path, send, store } = fixture(t);
+test('a committed note survives reconnecting and retries do not duplicate it', { skip: needsPostgres }, async (t) => {
+  const { send, store } = await fixture(t);
   const request = drop({ note: '  Can we have a quiet table?  ' });
   const response = await send(request);
   assert.equal(response.status, 201);
@@ -70,17 +68,22 @@ test('a committed note survives reopening the database and retries do not duplic
   assert.deepEqual(await response.json(), { saved: true });
   assert.equal((await send(request)).status, 201);
   assert.equal((await send({ ...request, note: 'A different note' })).status, 409);
+  await closeBasketClients();
   const result = await store().inbox();
   assert.equal(result.notes.length, 1);
   assert.equal(result.notes[0].note, 'Can we have a quiet table?');
   assert.equal(result.notes[0].status, 'new');
-  assert.equal(statSync(path).mode & 0o777, 0o600);
+  assert.equal(result.notes[0].publicPost, false);
 });
 
-test('the preview rejects hosted, foreign-host, cross-origin and malformed requests before saving', async (t) => {
-  const { env, send, store } = fixture(t);
+test('the preview rejects hosted, foreign-host, cross-origin and malformed requests before saving', { skip: needsPostgres }, async (t) => {
+  const { env, send, store } = await fixture(t);
   assert.equal((await send(drop(), { env: { ...env, VERCEL: '1' } })).status, 404);
   assert.equal((await send(drop(), { env: { ...env, NODE_ENV: 'production' } })).status, 404);
+  assert.equal((await send(drop(), { env: { ...env, SUGGESTIONS_BASKET_DATABASE_URL: undefined } })).status, 404);
+  assert.equal((await send(drop(), {
+    env: { ...env, SUGGESTIONS_BASKET_DATABASE_URL: undefined, POSTGRES_URL: env.SUGGESTIONS_BASKET_DATABASE_URL },
+  })).status, 404, 'local development never falls back to a pulled production URL');
   assert.equal((await send(drop(), { url: 'http://example.com/api/suggestions' })).status, 404);
   assert.equal((await send(drop(), { headers: { host: 'sundays.example' } })).status, 404);
   assert.equal((await send(drop(), { headers: { origin: 'https://other.example' } })).status, 403);
@@ -96,8 +99,8 @@ test('the preview rejects hosted, foreign-host, cross-origin and malformed reque
   assert.deepEqual((await store().inbox()).notes, []);
 });
 
-test('publication needs a valid host session, explicit permission, a finished trial, and a written recap', async (t) => {
-  const { send, signIn, store } = fixture(t);
+test('publication needs a valid host session, explicit permission, a finished trial, and a written recap', { skip: needsPostgres }, async (t) => {
+  const { send, signIn, store } = await fixture(t);
   await send(drop({ note: 'Private original. Keep this inside the inbox.' }));
   await send(drop({ category: 'try', note: 'Separate raw text from the public recap.', allowRecap: true }));
   const basket = await store();
@@ -125,8 +128,8 @@ test('publication needs a valid host session, explicit permission, a finished tr
   assert.equal((await basket.inbox({ status: 'archived' })).notes.length, 1);
 });
 
-test('host cookies are signed, scoped to a key, expire, and can be cleared', async (t) => {
-  const { send, signIn, store, env } = fixture(t);
+test('host cookies are signed, scoped to a key, expire, and can be cleared', { skip: needsPostgres }, async (t) => {
+  const { send, signIn, store, env } = await fixture(t);
   await send(drop({ allowRecap: true }));
   const [row] = (await store().inbox()).notes;
   const cookie = await signIn();
@@ -138,8 +141,8 @@ test('host cookies are signed, scoped to a key, expire, and can be cleared', asy
   assert.match((await send({ action: 'sign-out' }, { headers: { cookie } })).headers.get('set-cookie'), /Max-Age=0/);
 });
 
-test('the persistent rate limit counts new notes and expires independently of host login attempts', async (t) => {
-  const { env, send, store } = fixture(t);
+test('the persistent rate limit counts new notes and expires independently of host login attempts', { skip: needsPostgres }, async (t) => {
+  const { env, send, store } = await fixture(t);
   const first = drop();
   assert.equal((await send(first)).status, 201);
   for (let i = 1; i < 30; i++) assert.equal((await send(drop())).status, 201);
@@ -160,8 +163,8 @@ function publicDrop(values = {}) {
   return drop({ category: undefined, allowRecap: undefined, publicPost: true, ...values });
 }
 
-test('public posting is explicit and only public originals become discussions', async (t) => {
-  const { send, signIn, store } = fixture(t);
+test('public posting is explicit and only public originals become discussions', { skip: needsPostgres }, async (t) => {
+  const { send, signIn, store } = await fixture(t);
   await send(drop({ note: 'Legacy consent for a short recap only.', allowRecap: true }));
   await send(publicDrop({ note: 'A private note to hosts.', publicPost: false }));
   assert.equal((await send(drop({ publicPost: true }))).status, 400);
@@ -190,32 +193,29 @@ test('public posting is explicit and only public originals become discussions', 
   }
 });
 
-test('existing SQLite notes keep their private originals when the public consent column is added', async (t) => {
-  const { path, store } = fixture(t);
-  const original = 'Original text from the previous schema.';
-  const db = new DatabaseSync(path);
-  try {
-    db.exec(`CREATE TABLE suggestions (
-      id TEXT PRIMARY KEY, request_id TEXT UNIQUE, note TEXT, category TEXT, allow_recap INTEGER,
-      created_at INTEGER, status TEXT, summary TEXT, outcome TEXT, published_at INTEGER, version INTEGER
-    )`);
-    db.prepare('INSERT INTO suggestions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-      randomUUID(), randomUUID(), original, 'idea', 1, start, 'tried', 'Existing summary', 'Existing outcome', start, 2,
-    );
-  } finally {
-    db.close();
+test('rerunning the migration keeps notes and locks Supabase API roles out of the basket schema', { skip: needsPostgres }, async (t) => {
+  const { url, send, store } = await fixture(t);
+  await send(drop({ note: 'Kept across migrations.', allowRecap: true }));
+  const admin = postgres(url, { max: 1, onnotice: () => undefined });
+  t.after(() => admin.end({ timeout: 5 }));
+  for (const role of ['anon', 'authenticated']) {
+    await admin.unsafe(`DO $$ BEGIN CREATE ROLE ${role} NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
+    await admin.unsafe(`GRANT USAGE ON SCHEMA basket TO ${role}; GRANT SELECT ON ALL TABLES IN SCHEMA basket TO ${role}`);
   }
-
-  const basket = await store();
-  assert.deepEqual((await basket.publicFeed(null)).posts, []);
-  const [saved] = (await basket.inbox()).notes;
-  assert.equal(saved.note, original);
-  assert.equal(saved.publicPost, false);
-  assert.equal((await basket.showcase())[0].summary, 'Existing summary');
+  await migrateBasket(postgresConnection(url));
+  assert.equal((await store().inbox()).notes[0].note, 'Kept across migrations.');
+  const tables = await admin`SELECT relname, relrowsecurity FROM pg_class WHERE relnamespace = 'basket'::regnamespace AND relkind = 'r'`;
+  assert.equal(tables.length, 4);
+  assert(tables.every(table => table.relrowsecurity));
+  for (const role of ['anon', 'authenticated']) {
+    const [access] = await admin`SELECT has_schema_privilege(${role}, 'basket', 'USAGE') AS usage,
+      has_table_privilege(${role}, 'basket.suggestions', 'SELECT') AS read`;
+    assert.deepEqual({ ...access }, { usage: false, read: false });
+  }
 });
 
-test('one browser can add, change, retry and remove a vote without affecting another browser’s vote', async (t) => {
-  const { send, store } = fixture(t);
+test('one browser can add, change, retry and remove a vote without affecting another browser’s vote', { skip: needsPostgres }, async (t) => {
+  const { send, store } = await fixture(t);
   const { postId: id } = await (await send(publicDrop())).json();
   const a = randomUUID();
   const b = randomUUID();
@@ -230,8 +230,8 @@ test('one browser can add, change, retry and remove a vote without affecting ano
   assert.deepEqual((await store().publicFeed(voterHash(b))).posts[0].votes, { score: -1, vote: -1 });
 });
 
-test('public comments have a bounded preview, a paginated history, and duplicate-safe retries', async (t) => {
-  const { send, signIn, store } = fixture(t);
+test('public comments have a bounded preview, a paginated history, and duplicate-safe retries', { skip: needsPostgres }, async (t) => {
+  const { send, signIn, store } = await fixture(t);
   const { postId: id } = await (await send(publicDrop())).json();
   const comment = (body, extra = {}) => ({ action: 'comment', id, body, requestId: randomUUID(), website: '', ...extra });
   for (const bad of [comment(' '), comment('x'.repeat(501)), comment('Spam', { website: 'https://spam.example' })]) {
