@@ -4,9 +4,6 @@ const front = 'M77 238 C88 309 107 369 150 399 C202 432 391 433 449 401 C494 375
 const rimBack = 'M77 240 C74 212 164 184 299 183 C429 182 525 205 525 238';
 const rimFront = 'M77 238 C96 268 186 284 299 282 C415 281 510 261 525 238';
 const handle = 'M124 215 C126 129 180 56 271 43 C388 26 477 98 477 212';
-const paintTin = 'M10 23H105Q111 23 112 29L116 51Q117 57 111 58H7Q1 58 2 52L5 30Q6 23 10 23Z';
-const paintColors = ['#cfab6b', '#bf8a77', '#92a278', '#9a8fae'];
-const stampedSlip = 'M1 1 102 0 105 107 1 110Z';
 
 const courses = [
   'M72 248 Q282 329 529 247',
@@ -36,6 +33,12 @@ export default function BasketIllustration({ delivery }: { delivery: 'still' | '
   const lining = `${prefix}-lining`;
   const bodyShade = `${prefix}-body-shade`;
   const slipPaper = `${prefix}-slip-paper`;
+  const warmPaper = `${prefix}-warm-paper`;
+  const ivoryPaper = `${prefix}-ivory-paper`;
+  const sagePaper = `${prefix}-sage-paper`;
+  const blushPaper = `${prefix}-blush-paper`;
+  const tapeSheen = `${prefix}-tape-sheen`;
+  const paperSheen = `${prefix}-paper-sheen`;
 
   return (
     <figure className="basket-art" data-delivery={delivery ?? 'idle'} aria-hidden="true">
@@ -73,6 +76,36 @@ export default function BasketIllustration({ delivery }: { delivery: 'still' | '
             <stop stopColor="var(--basket-accent-wash)" />
             <stop offset="1" stopColor="var(--basket-accent-paper)" />
           </linearGradient>
+          <linearGradient id={warmPaper} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop stopColor="#fffdf8" />
+            <stop offset=".55" stopColor="#f8f2e7" />
+            <stop offset="1" stopColor="#eee5d5" />
+          </linearGradient>
+          <linearGradient id={ivoryPaper} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop stopColor="#fffefa" />
+            <stop offset=".52" stopColor="#fcf8ef" />
+            <stop offset="1" stopColor="#efe8da" />
+          </linearGradient>
+          <linearGradient id={sagePaper} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop stopColor="#eef2e5" />
+            <stop offset=".48" stopColor="var(--basket-accent-paper)" />
+            <stop offset="1" stopColor="#cdd9b7" />
+          </linearGradient>
+          <linearGradient id={blushPaper} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop stopColor="#fcf5ee" />
+            <stop offset=".56" stopColor="#f3e7db" />
+            <stop offset="1" stopColor="#e8d8ca" />
+          </linearGradient>
+          <linearGradient id={tapeSheen} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop stopColor="#fffaf0" stopOpacity=".92" />
+            <stop offset=".5" stopColor="#d8cbae" stopOpacity=".78" />
+            <stop offset="1" stopColor="#f5ecdc" stopOpacity=".84" />
+          </linearGradient>
+          <linearGradient id={paperSheen} x1="0%" y1="0%" x2="100%" y2="75%">
+            <stop stopColor="#fff" stopOpacity=".84" />
+            <stop offset=".48" stopColor="#fff" stopOpacity=".28" />
+            <stop offset="1" stopColor="#fff" stopOpacity="0" />
+          </linearGradient>
         </defs>
 
         <ellipse cx="302" cy="432" rx="232" ry="18" fill={`url(#${ground})`} opacity=".27" />
@@ -92,31 +125,55 @@ export default function BasketIllustration({ delivery }: { delivery: 'still' | '
           <path d={rimBack} fill="none" stroke={`url(#${cane})`} strokeWidth="13" />
           <path d={rimBack} fill="none" stroke="#8b6746" strokeWidth="13" strokeDasharray="1 5" strokeLinecap="butt" />
 
-          <g transform="translate(245 247) rotate(-18)">
-            <image href="/maker-paintbrush.png" x="-36" y="-136" width="180" height="180" />
-          </g>
-          <image href="/polaroid4.png" width="110" height="163" transform="translate(144 160) rotate(-14)" />
-          <g transform="translate(235 192) rotate(7)">
-            <path d={paintTin} transform="translate(2 3)" fill="#523d29" opacity=".26" />
-            <path d="M8 24 15 6Q16 2 21 2H96Q102 2 103 8L108 24Z" fill="#e5e8db" stroke="#68735c" strokeWidth="1.4" />
-            <path d="M22 8H96L99 20H18Z" fill="#f6f3e8" stroke="#aab19a" strokeWidth=".9" />
-            <path d="m45 8-2 12m27-12 1 12" fill="none" stroke="#c9cbbb" strokeWidth=".9" />
-            <path d={paintTin} fill="#bbc5ab" stroke="#68735c" strokeWidth="1.4" />
-            <path d="M12 28H104L109 49H8Z" fill="#f5f1e4" stroke="#929b83" strokeWidth="1" />
-            {paintColors.map((color, index) => (
-              <rect key={color} x={14 + index * 23} y="32" width="18" height="13" rx="2.6"
-                fill={color} stroke="#6b6452" strokeOpacity=".4" strokeWidth=".8" />
-            ))}
-            <path d="M7 53H111M17 34h10m13 0h10m13 0h10m13 0h10" fill="none" stroke="#fff9e8" strokeWidth="1" opacity=".68" />
-            <path d={paintTin} fill={`url(#${grain})`} opacity=".16" />
-          </g>
-          <g transform="translate(364 174) rotate(13)">
-            <path d={stampedSlip} transform="translate(2 2)" fill="#523d29" opacity=".18" />
-            <path d={stampedSlip} fill="#fcf8ef" stroke="#715d46" strokeWidth="1.4" />
-            <path d="m80 .5 22-.5.7 21Z" fill="#e9deca" stroke="#ad997c" strokeWidth=".8" />
-            <path d="m81 1.5 20 18" fill="none" stroke="#fffcf6" strokeWidth=".75" />
-            <image href="/smiley.png" x="27" y="27" width="32" height="32" />
-            <path d={stampedSlip} fill={`url(#${grain})`} opacity=".18" />
+          <g className="basket-suggestion-slips" strokeLinecap="round" strokeLinejoin="round">
+            <g transform="translate(145 190) rotate(-14)">
+              <g className="basket-slip basket-slip--letter">
+                <path d="M2 14 91 0 105 111 13 124 0 20Z" transform="translate(2 3)" fill="#55402d" opacity=".16" />
+                <path d="M2 14 91 0 105 111 13 124 0 20Z" fill={`url(#${warmPaper})`} stroke="#715d46" strokeWidth="1.4" />
+                <path d="M8 18 64 9 81 14 15 28Z" fill={`url(#${paperSheen})`} opacity=".48" />
+                <path d="M9 18 67 9" fill="none" stroke="#fffdf7" strokeWidth=".9" opacity=".72" />
+                <path d="m72 3 19-3 2 21-18-2Z" fill="#e9deca" stroke="#ad997c" strokeWidth=".8" />
+                <path d="m72 3 3 16 18 2" fill="none" stroke="#fffaf1" strokeWidth=".8" />
+                <path d="m17 43 59-9m-56 21 47-7m-43 19 54-8" fill="none" stroke="#9c8c72" strokeWidth="1.15" />
+                <path d="m17 43 59-9m-56 21 47-7m-43 19 54-8" fill="none" stroke="#fffaf1" strokeWidth=".35" opacity=".75" />
+                <path d="M2 14 91 0 105 111 13 124 0 20Z" fill={`url(#${grain})`} opacity=".13" />
+              </g>
+            </g>
+            <g transform="translate(370 177) rotate(12)">
+              <g className="basket-slip basket-slip--folded">
+                <path d="M1 0 90 9 77 119 0 107Z" transform="translate(2 3)" fill="#55402d" opacity=".14" />
+                <path d="M1 0 90 9 77 119 0 107Z" fill={`url(#${ivoryPaper})`} stroke="#715d46" strokeWidth="1.4" />
+                <path d="m6 8 59 7-5 13L4 20Z" fill={`url(#${paperSheen})`} opacity=".38" />
+                <path d="m69 7 21 2-3 22-20-2Z" fill="#e9deca" stroke="#ad997c" strokeWidth=".8" />
+                <path d="m69 7-2 20 20 2" fill="none" stroke="#fffaf1" strokeWidth=".8" />
+                <path d="m13 47 57 7m-58 7 43 5m-44 7 50 6" fill="none" stroke="#9c8c72" strokeWidth="1.15" />
+                <path d="M1 0 90 9 77 119 0 107Z" fill={`url(#${grain})`} opacity=".13" />
+              </g>
+            </g>
+            <g transform="translate(224 151) rotate(4)">
+              <g className="basket-slip basket-slip--sticky">
+                <path d="M1 1 100 0 105 126 4 129Z" transform="translate(2 3)" fill="#55402d" opacity=".15" />
+                <path d="M1 1 100 0 105 126 4 129Z" fill={`url(#${sagePaper})`} stroke="#68735c" strokeWidth="1.5" />
+                <path d="M7 8 73 7Q86 8 94 15L18 29Q10 22 7 8Z" fill={`url(#${paperSheen})`} opacity=".54" />
+                <path d="M6 5 96 4 101 122 10 125Z" fill="none" stroke="#fffdf6" strokeWidth=".85" opacity=".48" />
+                <path d="m31-3 38 1 2 15-38-1Z" fill={`url(#${tapeSheen})`} stroke="#9c8f70" strokeWidth=".8" opacity=".78" />
+                <path d="m35-1 32 1" fill="none" stroke="#fffdf6" strokeWidth="1.1" opacity=".92" />
+                <path d="M88 25C89 29 90 30 94 31 90 32 89 33 88 37 87 33 86 32 82 31 86 30 87 29 88 25Z" fill="#fffdf6" stroke="#93a07e" strokeWidth=".45" opacity=".88" />
+                <path d="M16 37h68m-66 12h55m-54 12h61m-59 12h43" fill="none" stroke="#839071" strokeWidth="1.2" />
+                <path d="M16 37h68m-66 12h55m-54 12h61m-59 12h43" fill="none" stroke="#f8f6e8" strokeWidth=".35" opacity=".75" />
+                <path d="M1 1 100 0 105 126 4 129Z" fill={`url(#${grain})`} opacity=".12" />
+              </g>
+            </g>
+            <g transform="translate(283 190) rotate(-3)">
+              <g className="basket-slip basket-slip--blush">
+                <path d="M0 5 73 0 78 93 4 98Z" transform="translate(2 3)" fill="#55402d" opacity=".15" />
+                <path d="M0 5 73 0 78 93 4 98Z" fill={`url(#${blushPaper})`} stroke="#80694f" strokeWidth="1.3" />
+                <path d="M5 11 48 6 57 12 11 22Z" fill={`url(#${paperSheen})`} opacity=".42" />
+                <path d="m55 1 18-1 2 20-19-1Z" fill="#ead5c6" stroke="#ad8d77" strokeWidth=".8" />
+                <path d="M14 34h48m-47 11h37m-36 11h42" fill="none" stroke="#a88973" strokeWidth="1.1" />
+                <path d="M0 5 73 0 78 93 4 98Z" fill={`url(#${grain})`} opacity=".13" />
+              </g>
+            </g>
           </g>
 
           {delivery && (

@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const metadata: Metadata = {
   title: 'The Suggestions Basket · Sundays in LA',
-  description: 'Leave a little note for the Sundays hosts.',
+  description: 'Send feedback, suggestions, and ideas to help make Sundays better.',
   robots: { index: false, follow: false },
   referrer: 'no-referrer',
 };

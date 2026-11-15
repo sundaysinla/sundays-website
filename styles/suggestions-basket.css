@@ -302,6 +302,20 @@
   }
 }
 
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  .basket-slip {
+    transform-box: fill-box;
+    transform-origin: center 90%;
+    pointer-events: auto;
+    transition: transform 380ms cubic-bezier(.22, .8, .28, 1), filter 380ms cubic-bezier(.22, .8, .28, 1);
+  }
+
+  .basket-slip--letter:hover { transform: translateY(-4px) rotate(-1deg); filter: drop-shadow(0 3px 2px rgb(65 48 32 / 15%)); }
+  .basket-slip--folded:hover { transform: translateY(-4px) rotate(1deg); filter: drop-shadow(0 3px 2px rgb(65 48 32 / 14%)); }
+  .basket-slip--sticky:hover { transform: translateY(-5px) rotate(-.8deg); filter: drop-shadow(0 4px 2px rgb(65 48 32 / 16%)); }
+  .basket-slip--blush:hover { transform: translateY(-4px) rotate(.8deg); filter: drop-shadow(0 3px 2px rgb(65 48 32 / 14%)); }
+}
+
 @media (hover: hover) and (pointer: fine) {
   .basket-button:hover:not(:disabled) {
     color: var(--sundays-action-ink);
