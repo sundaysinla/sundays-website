@@ -95,7 +95,7 @@ export async function commitImport(rows: ImportRow[], ctx: ImportContext) {
 
   // Existing drivers on the board, by lowercase full name and first name.
   const cars = await prisma.car.findMany({
-    where: { lumaEventId: ctx.lumaEventId, driverOffer: { status: "open" } },
+    where: { lumaEventId: ctx.lumaEventId, kind: "drive", driverOffer: { status: "open" } },
     include: { driverOffer: { include: { user: { include: { profile: true } } } } },
   });
   const carByName = new Map<string, string>();
@@ -107,7 +107,8 @@ export async function commitImport(rows: ImportRow[], ctx: ImportContext) {
     if (!carByName.has(first)) carByName.set(first, carId);
   };
   for (const c of cars) {
-    remember(c.driverOffer.user?.profile?.displayName || c.driverOffer.user?.name || c.driverOffer.guestName || "", c.id);
+    const d = c.driverOffer;
+    if (d) remember(d.user?.profile?.displayName || d.user?.name || d.guestName || "", c.id);
   }
 
   let created = 0;

@@ -1,0 +1,5 @@
+{
+  "crons": [
+    { "path": "/api/cron/met-nudge", "schedule": "0 16 * * 1" }
+  ]
+}

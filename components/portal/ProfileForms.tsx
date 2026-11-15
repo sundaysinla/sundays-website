@@ -47,24 +47,24 @@ async function shrinkImage(file: File): Promise<Blob> {
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="font-['Monument-Grotesk'] text-[11px] uppercase tracking-wide text-[#C0B9A5]">
+    <span className="font-ui text-[11px] uppercase tracking-wide text-ink/55">
       {children}
     </span>
   );
 }
 
 const inputClass =
-  "h-11 rounded-2xl border-[#C0B9A5]/60 bg-white font-['Office-Times-Round'] text-base text-[#010101] placeholder:text-[#C0B9A5] focus-visible:ring-[#C0B9A5]";
+  "h-11 rounded-2xl border-ink/15 bg-white font-body text-base text-ink placeholder:text-ink/35 focus-visible:ring-lime";
 
 function Status({ result }: { result: ActionResult | null }) {
   if (!result) return null;
   if (result.ok) {
     return (
-      <p className="font-['Office-Times-Round'] text-sm text-[#3A372F]">Saved.</p>
+      <p className="font-body text-sm text-ink/75">Saved.</p>
     );
   }
   return (
-    <p className="font-['Office-Times-Round'] text-sm text-red-700">{result.error}</p>
+    <p className="font-body text-sm text-red-700">{result.error}</p>
   );
 }
 
@@ -134,7 +134,7 @@ export default function ProfileForms({
       <section className="space-y-4">
         <div>
           <FieldLabel>Photo</FieldLabel>
-          <p className="mt-1 font-['Office-Times-Round'] text-sm text-[#8a8478]">
+          <p className="mt-1 font-body text-sm text-ink/55">
             Shown in the header and, later, to people you&apos;ve met at Sundays.
           </p>
         </div>
@@ -143,7 +143,7 @@ export default function ProfileForms({
             // eslint-disable-next-line @next/next/no-img-element
             <img src={avatarUrl} alt="" width={64} height={64} className="h-16 w-16 rounded-full object-cover" referrerPolicy="no-referrer" />
           ) : (
-            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[#EBEAE0] font-['Monument-Grotesk'] text-xl text-[#010101]">
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-paper-2 font-ui text-xl text-ink">
               {(profile.displayName?.trim()?.[0] ?? "?").toUpperCase()}
             </span>
           )}
@@ -154,14 +154,14 @@ export default function ProfileForms({
               </Button>
             ) : null}
             {avatarUrl ? (
-              <button type="button" disabled={pending} onClick={() => run(updateAvatar, setAvatarResult, avatarFd("remove"))} className="font-['Monument-Grotesk'] text-[11px] uppercase text-[#C0B9A5] hover:text-[#8a8478]">
+              <button type="button" disabled={pending} onClick={() => run(updateAvatar, setAvatarResult, avatarFd("remove"))} className="font-ui text-[11px] uppercase text-ink/55 hover:text-ink">
                 Remove
               </button>
             ) : null}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <label className="inline-flex cursor-pointer items-center rounded-2xl border border-black bg-black px-4 pt-2 pb-1.5 font-['Monument-Grotesk'] text-[12px] uppercase text-[#EEEBE3] transition-colors hover:bg-[#EEEBE3] hover:text-black md:text-[13px]">
+          <label className="inline-flex cursor-pointer items-center rounded-2xl border border-ink bg-ink px-4 pt-2 pb-1.5 font-ui text-[12px] uppercase text-paper transition-colors hover:bg-blueberry-200/30 hover:text-ink md:text-[13px]">
             {uploading ? "Uploading…" : "Upload a photo"}
             <input
               type="file"
@@ -187,13 +187,13 @@ export default function ProfileForms({
               }}
             />
           </label>
-          <span className="font-['Office-Times-Round'] text-xs text-[#8a8478]">Any photo from your phone or computer. It's cropped to a square and kept small.</span>
+          <span className="font-body text-xs text-ink/55">Any photo from your phone or computer. It's cropped to a square and kept small.</span>
         </div>
         <Status result={avatarResult} />
       </section>
 
       <form
-        className="space-y-5 border-t border-dashed border-[#C0B9A5]/50 pt-10"
+        className="space-y-5 border-t border-dashed border-ink/15 pt-10"
         onSubmit={(e) => {
           e.preventDefault();
           run(updateProfile, setProfileResult, new FormData(e.currentTarget));
@@ -214,7 +214,7 @@ export default function ProfileForms({
             name="bio"
             defaultValue={profile.bio ?? ""}
             rows={3}
-            className="rounded-2xl border-[#C0B9A5]/60 bg-white font-['Office-Times-Round'] text-base text-[#010101] placeholder:text-[#C0B9A5] focus-visible:ring-[#C0B9A5]"
+            className="rounded-2xl border-ink/15 bg-white font-body text-base text-ink placeholder:text-ink/35 focus-visible:ring-lime"
             placeholder="What are you into?"
           />
         </label>
@@ -236,7 +236,7 @@ export default function ProfileForms({
             className={inputClass}
             placeholder="(310) 555-0101"
           />
-          <span className="block font-['Office-Times-Round'] text-xs text-[#8a8478]">
+          <span className="block font-body text-xs text-ink/55">
             For texts about your carpool and last-minute changes. Shared with your car once a host confirms it.
           </span>
         </label>
@@ -264,20 +264,20 @@ export default function ProfileForms({
         </div>
       </form>
 
-      <section className="space-y-4 border-t border-dashed border-[#C0B9A5]/50 pt-10">
+      <section className="space-y-4 border-t border-dashed border-ink/15 pt-10">
         <div>
           <FieldLabel>Contact email</FieldLabel>
-          <p className="mt-1 font-['Office-Times-Round'] text-sm text-[#8a8478]">
+          <p className="mt-1 font-body text-sm text-ink/55">
             Used for RSVP and carpool notifications. Change this when you leave a school inbox.
           </p>
-          <p className="mt-2 font-['Office-Times-Round'] text-base text-[#010101]">
+          <p className="mt-2 font-body text-base text-ink">
             {profile.contactEmail}
             {!profile.contactEmailVerified && (
-              <span className="ml-2 text-sm text-[#8a8478]">(unverified)</span>
+              <span className="ml-2 text-sm text-ink/55">(unverified)</span>
             )}
           </p>
           {profile.pendingContactEmail && (
-            <p className="mt-1 font-['Office-Times-Round'] text-sm text-[#3A372F]">
+            <p className="mt-1 font-body text-sm text-ink/75">
               Pending verification: {profile.pendingContactEmail}
             </p>
           )}
@@ -306,10 +306,10 @@ export default function ProfileForms({
         <Status result={emailResult} />
       </section>
 
-      <section className="space-y-4 border-t border-dashed border-[#C0B9A5]/50 pt-10">
+      <section className="space-y-4 border-t border-dashed border-ink/15 pt-10">
         <div>
           <FieldLabel>Luma guest email</FieldLabel>
-          <p className="mt-1 font-['Office-Times-Round'] text-sm text-[#8a8478]">
+          <p className="mt-1 font-body text-sm text-ink/55">
             Email you use (or used) when registering on Luma — for matching past attendance.
           </p>
         </div>
@@ -337,29 +337,29 @@ export default function ProfileForms({
         <Status result={lumaResult} />
       </section>
 
-      <section className="space-y-5 border-t border-dashed border-[#C0B9A5]/50 pt-10">
+      <section className="space-y-5 border-t border-dashed border-ink/15 pt-10">
         <div>
           <FieldLabel>What you&apos;ve worked on</FieldLabel>
-          <p className="mt-1 font-['Office-Times-Round'] text-sm text-[#8a8478]">
+          <p className="mt-1 font-body text-sm text-ink/55">
             These prefills &quot;what are you working on&quot; when you RSVP.
           </p>
         </div>
 
         {demos.length === 0 ? (
-          <p className="font-['Office-Times-Round'] text-sm text-[#8a8478]">No demos yet.</p>
+          <p className="font-body text-sm text-ink/55">No demos yet.</p>
         ) : (
           <ul className="space-y-3">
             {demos.map((demo) => (
               <li
                 key={demo.id}
-                className="flex items-start justify-between gap-4 border-b border-dashed border-[#C0B9A5]/30 pb-3"
+                className="flex items-start justify-between gap-4 border-b border-dashed border-ink/10 pb-3"
               >
                 <div>
-                  <p className="font-['Office-Times-Round'] text-base text-[#010101]">
+                  <p className="font-body text-base text-ink">
                     {demo.title}
                   </p>
                   {demo.notes && (
-                    <p className="font-['Office-Times-Round'] text-sm text-[#8a8478]">
+                    <p className="font-body text-sm text-ink/55">
                       {demo.notes}
                     </p>
                   )}
@@ -373,7 +373,7 @@ export default function ProfileForms({
                   <input type="hidden" name="id" value={demo.id} />
                   <button
                     type="submit"
-                    className="font-['Monument-Grotesk'] text-[10px] uppercase text-[#C0B9A5] hover:text-[#8a8478]"
+                    className="font-ui text-[10px] uppercase text-ink/55 hover:text-ink"
                     disabled={pending}
                   >
                     Remove

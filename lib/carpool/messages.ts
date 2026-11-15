@@ -1,5 +1,5 @@
 /**
- * Group chat per car. Anyone in the car (driver or a seated rider) can post
+ * Group chat per car (or Uber group). Anyone in it (driver or a seated rider) can post
  * once they've been placed; hosts can post from the board. New messages fan
  * out as a text (if there's a phone) or an email, throttled to one notice per
  * person per 30 minutes so a busy thread doesn't spam.
@@ -71,7 +71,7 @@ export async function postCarMessage(params: {
   });
   if (!car) throw new Error("That car no longer exists");
 
-  const members = [car.driverOffer, ...car.stops.map((s) => s.riderOffer)];
+  const members = [...(car.driverOffer ? [car.driverOffer] : []), ...car.stops.map((s) => s.riderOffer)];
   const author = params.author;
   let authorName: string;
   let authorOfferId: string | null = null;

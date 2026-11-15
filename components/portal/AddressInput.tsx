@@ -14,7 +14,7 @@ type Suggestion = {
 const LA_PROXIMITY = "-118.36,34.04";
 
 export const inputClass =
-  "h-11 w-full rounded-2xl border border-[#C0B9A5]/60 bg-white px-4 font-['Office-Times-Round'] text-base text-[#010101] placeholder:text-[#C0B9A5] focus:outline-none focus:ring-2 focus:ring-[#BDFF00]";
+  "h-11 w-full rounded-2xl border border-ink/15 bg-white px-4 font-body text-base text-ink placeholder:text-ink/35 focus:outline-none focus:ring-2 focus:ring-lime";
 
 /**
  * Address field with Mapbox autocomplete. When a suggestion is picked, the
@@ -160,7 +160,7 @@ export default function AddressInput({
         <ul
           id={listId}
           role="listbox"
-          className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-2xl border border-[#C0B9A5]/60 bg-white shadow-[0_8px_24px_rgba(1,1,1,0.06)]"
+          className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-2xl border border-ink/15 bg-white shadow-[0_8px_24px_rgba(1,1,1,0.06)]"
         >
           {items.map((s, i) => (
             <li
@@ -173,8 +173,8 @@ export default function AddressInput({
               }}
               onMouseEnter={() => setActive(i)}
               className={cn(
-                "cursor-pointer px-4 py-2.5 font-['Office-Times-Round'] text-sm text-[#2A2A24]",
-                i === active ? "bg-[#EEEBE3]" : "bg-white"
+                "cursor-pointer px-4 py-2.5 font-body text-sm text-ink/85",
+                i === active ? "bg-paper-2" : "bg-white"
               )}
             >
               {s.placeName}
@@ -183,7 +183,7 @@ export default function AddressInput({
         </ul>
       )}
       {!token && (
-        <p className="mt-1 font-['Office-Times-Round'] text-xs text-[#8a8478]">
+        <p className="mt-1 font-body text-xs text-ink/55">
           Type the full street address — suggestions are off until a public Mapbox token is set.
         </p>
       )}

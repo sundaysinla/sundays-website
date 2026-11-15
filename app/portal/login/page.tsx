@@ -12,7 +12,7 @@ export default async function LoginPage() {
   return (
     <Suspense
       fallback={
-        <p className="text-center font-['Office-Times-Round'] text-sm text-[#8a8478]">
+        <p className="text-center font-body text-sm text-ink/55">
           Loading…
         </p>
       }

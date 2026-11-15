@@ -6,6 +6,7 @@ import Eyebrow from "@/components/Eyebrow";
 import Button from "@/components/Button";
 import { ensureProfile } from "@/lib/profile";
 import { getUpcomingCachedEvent, syncUpcomingEvents, syncUserAttendance } from "@/lib/luma-sync";
+import { recentAttendedEvents, syncEventGuests } from "@/lib/attendance";
 
 export const dynamic = "force-dynamic";
 
@@ -38,15 +39,24 @@ export default async function PortalHomePage() {
     }),
     getUpcomingCachedEvent(),
   ]);
+  if (upcoming) {
+    try {
+      await syncEventGuests(upcoming.lumaEventId);
+    } catch {
+      // non-fatal
+    }
+  }
+  const recent = await recentAttendedEvents(session.user.id, 10);
+  const toMark = recent.find((r) => r.live && r.checkedIn) ?? recent.find((r) => r.metCount === 0) ?? null;
 
   return (
     <div className="max-w-2xl space-y-12">
       <section className="space-y-3">
-        <Eyebrow>Membership</Eyebrow>
-        <h1 className="font-['Office-Times-Sharp-Regular'] text-3xl lowercase leading-tight text-[#010101] md:text-4xl">
+        <Eyebrow className="font-ui text-blueberry">Membership</Eyebrow>
+        <h1 className="font-heading text-3xl lowercase leading-tight text-ink md:text-4xl">
           hey {profile.displayName?.split(" ")[0]?.toLowerCase() || "there"}
         </h1>
-        <p className="max-w-md font-['Office-Times-Round'] text-base text-[#3A372F]">
+        <p className="max-w-md font-body text-base text-ink/75">
           Edit your profile, RSVP for this week, or find a ride across campus.
         </p>
       </section>
@@ -63,13 +73,28 @@ export default async function PortalHomePage() {
         </Button>
       </section>
 
+      {toMark ? (
+        <section className="space-y-3 rounded-[24px] bg-lime p-6">
+          <Eyebrow className="font-ui text-ink/70">{toMark.live ? "You're checked in" : "Since Sunday"}</Eyebrow>
+          <h2 className="font-heading text-2xl lowercase leading-tight text-ink md:text-3xl">{toMark.live ? "who are you meeting?" : "who did you meet?"}</h2>
+          <p className="max-w-md font-body text-base text-ink/80">
+            {toMark.live
+              ? `Tap people as you talk to them at ${toMark.title}, and jot a line about what it was about while it's fresh.`
+              : `Thirty seconds: tap the people you talked to at ${toMark.title}. It builds your met-graph, and it's how we'll know who to introduce you to.`}
+          </p>
+          <Button href={`/portal/met?event=${encodeURIComponent(toMark.lumaEventId)}`} variant="dark" size="md">
+            {toMark.live ? "Open the room" : "Mark who you met"}
+          </Button>
+        </section>
+      ) : null}
+
       {upcoming && (
-        <section className="space-y-2 border-t border-dashed border-[#C0B9A5]/50 pt-8">
-          <Eyebrow>Upcoming</Eyebrow>
-          <h2 className="font-['Office-Times-Sharp-Regular'] text-xl lowercase text-[#010101]">
+        <section className="space-y-2 border-t border-dashed border-ink/15 pt-8">
+          <Eyebrow className="font-ui text-blueberry">Upcoming</Eyebrow>
+          <h2 className="font-heading text-2xl lowercase text-ink">
             {upcoming.title}
           </h2>
-          <p className="font-['Office-Times-Round'] text-sm text-[#8a8478]">
+          <p className="font-body text-sm text-ink/55">
             {upcoming.startAt.toLocaleString("en-US", {
               weekday: "long",
               month: "short",
@@ -82,27 +107,27 @@ export default async function PortalHomePage() {
         </section>
       )}
 
-      <section className="space-y-4 border-t border-dashed border-[#C0B9A5]/50 pt-8">
+      <section className="space-y-4 border-t border-dashed border-ink/15 pt-8">
         <div className="flex items-baseline justify-between">
-          <Eyebrow>Recent demos</Eyebrow>
+          <Eyebrow className="font-ui text-blueberry">Recent demos</Eyebrow>
           <Link
             href="/portal/profile"
-            className="font-['Monument-Grotesk'] text-[11px] uppercase text-[#C0B9A5] hover:text-[#8a8478]"
+            className="font-ui text-[11px] uppercase text-ink/55 hover:text-ink"
           >
             Manage
           </Link>
         </div>
         {demos.length === 0 ? (
-          <p className="font-['Office-Times-Round'] text-sm text-[#8a8478]">
+          <p className="font-body text-sm text-ink/55">
             Nothing yet — add what you&apos;ve been working on in your profile.
           </p>
         ) : (
           <ul className="space-y-3">
             {demos.map((demo) => (
-              <li key={demo.id} className="font-['Office-Times-Round'] text-base text-[#2A2A24]">
-                <span className="text-[#010101]">{demo.title}</span>
+              <li key={demo.id} className="font-body text-base text-ink/85">
+                <span className="text-ink">{demo.title}</span>
                 {demo.notes && (
-                  <span className="mt-0.5 block text-sm text-[#8a8478]">{demo.notes}</span>
+                  <span className="mt-0.5 block text-sm text-ink/55">{demo.notes}</span>
                 )}
               </li>
             ))}
@@ -110,10 +135,10 @@ export default async function PortalHomePage() {
         )}
       </section>
 
-      <section className="space-y-4 border-t border-dashed border-[#C0B9A5]/50 pt-8">
-        <Eyebrow>Past attendance</Eyebrow>
+      <section className="space-y-4 border-t border-dashed border-ink/15 pt-8">
+        <Eyebrow className="font-ui text-blueberry">Past attendance</Eyebrow>
         {attendances.length === 0 ? (
-          <p className="font-['Office-Times-Round'] text-sm text-[#8a8478]">
+          <p className="font-body text-sm text-ink/55">
             No synced Sundays yet. RSVP once and they&apos;ll show up here.
           </p>
         ) : (
@@ -121,10 +146,10 @@ export default async function PortalHomePage() {
             {attendances.map((a) => (
               <li
                 key={a.id}
-                className="flex items-baseline justify-between gap-4 font-['Office-Times-Round'] text-sm"
+                className="flex items-baseline justify-between gap-4 font-body text-sm"
               >
-                <span className="text-[#2A2A24]">{a.event.title}</span>
-                <span className="shrink-0 font-['Monument-Grotesk'] text-[10px] uppercase text-[#C0B9A5]">
+                <span className="text-ink/85">{a.event.title}</span>
+                <span className="shrink-0 font-ui text-[10px] uppercase text-ink/55">
                   {a.event.status !== "active" ? "cancelled" : a.status}
                 </span>
               </li>

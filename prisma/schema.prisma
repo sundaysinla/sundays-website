@@ -11,9 +11,9 @@ datasource db {
 // ─── Auth.js ─────────────────────────────────────────────────────────────────
 
 model User {
-  id            String    @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?        @unique
   emailVerified DateTime?
   image         String?
   accounts      Account[]
@@ -24,8 +24,8 @@ model User {
   attendances   Attendance[]
   carpoolOffers CarpoolOffer[]
   notifications Notification[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model Account {
@@ -65,24 +65,24 @@ model VerificationToken {
 // ─── Profile ─────────────────────────────────────────────────────────────────
 
 model Profile {
-  id                       String    @id @default(cuid())
-  userId                   String    @unique
-  user                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  displayName              String?
-  contactEmail             String
-  contactEmailVerified     Boolean   @default(false)
-  pendingContactEmail      String?
-  pendingContactEmailToken String?
+  id                         String    @id @default(cuid())
+  userId                     String    @unique
+  user                       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName                String?
+  contactEmail               String
+  contactEmailVerified       Boolean   @default(false)
+  pendingContactEmail        String?
+  pendingContactEmailToken   String?
   pendingContactEmailExpires DateTime?
-  bio                      String?   @db.Text
-  portfolioUrl             String?
-  school                   String? // USC | UCLA | other
-  avatarUrl                String?
-  avatarData               Bytes?  // uploaded photo, resized in the browser; served from /api/avatar/[userId]
-  avatarMime               String?
-  phone                    String? // E.164; for carpool texts and last-minute changes
-  createdAt                DateTime  @default(now())
-  updatedAt                DateTime  @updatedAt
+  bio                        String?   @db.Text
+  portfolioUrl               String?
+  school                     String? // USC | UCLA | other
+  avatarUrl                  String?
+  avatarData                 Bytes? // uploaded photo, resized in the browser; served from /api/avatar/[userId]
+  avatarMime                 String?
+  phone                      String? // E.164; for carpool texts and last-minute changes
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
 }
 
 model DemoHistory {
@@ -101,52 +101,81 @@ model DemoHistory {
 // ─── Luma ────────────────────────────────────────────────────────────────────
 
 model LumaLink {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   lumaGuestEmail String
   lastSyncedAt   DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 model EventCache {
-  id                      String   @id @default(cuid())
-  lumaEventId             String   @unique
-  title                   String
-  startAt                 DateTime
-  endAt                   DateTime?
-  timezone                String?
-  address                 String?
-  lat                     Float?
-  lng                     Float?
-  lumaUrl                 String?
-  registrationQuestions   Json?
-  status                  String   @default("active") // active | cancelled (Luma stopped listing it) | deleted (Luma 404s)
-  coverUrl                String?
-  lastSeenAt              DateTime?
-  replacedBy              String?  // lumaEventId the carpool was moved to after this one went away
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-  attendances             Attendance[]
-  carpoolOffers           CarpoolOffer[]
-  cars                    Car[]
+  id                    String         @id @default(cuid())
+  lumaEventId           String         @unique
+  title                 String
+  startAt               DateTime
+  endAt                 DateTime?
+  timezone              String?
+  address               String?
+  lat                   Float?
+  lng                   Float?
+  lumaUrl               String?
+  registrationQuestions Json?
+  status                String         @default("active") // active | cancelled (Luma stopped listing it) | deleted (Luma 404s)
+  coverUrl              String?
+  lastSeenAt            DateTime?
+  replacedBy            String? // lumaEventId the carpool was moved to after this one went away
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  attendances           Attendance[]
+  carpoolOffers         CarpoolOffer[]
+  cars                  Car[]
 }
 
+/// One row per person per Sunday. Members have a userId; people who RSVP'd on
+/// Luma or walked in without an account are kept by guestEmail / guestName and
+/// claimed when they sign up. `checkedInAt` is the door list's truth.
 model Attendance {
-  id                   String     @id @default(cuid())
-  userId               String
-  user                 User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lumaEventId          String
-  event                EventCache @relation(fields: [lumaEventId], references: [lumaEventId], onDelete: Cascade)
-  status               String // going | declined | pending_approval | waitlist | invited
-  registrationAnswers  Json?
-  lumaGuestId          String?
-  createdAt            DateTime   @default(now())
-  updatedAt            DateTime   @updatedAt
+  id                  String     @id @default(cuid())
+  userId              String?
+  user                User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestName           String?
+  guestEmail          String?
+  lumaEventId         String
+  event               EventCache @relation(fields: [lumaEventId], references: [lumaEventId], onDelete: Cascade)
+  status              String // going | declined | pending_approval | waitlist | invited | walkin
+  registrationAnswers Json?
+  lumaGuestId         String?
+  checkedInAt         DateTime?
+  checkedInBy         String? // "luma" or the host's userId
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  meetingsA           Meeting[]  @relation("MeetingA")
+  meetingsB           Meeting[]  @relation("MeetingB")
 
   @@unique([userId, lumaEventId])
+  @@unique([lumaEventId, guestEmail])
   @@index([lumaEventId])
+}
+
+/// Two people who talked at one Sunday. `aId` < `bId` so a pair is stored once.
+model Meeting {
+  id               String     @id @default(cuid())
+  lumaEventId      String
+  aId              String
+  a                Attendance @relation("MeetingA", fields: [aId], references: [id], onDelete: Cascade)
+  bId              String
+  b                Attendance @relation("MeetingB", fields: [bId], references: [id], onDelete: Cascade)
+  noteA            String?    @db.Text // what A remembers talking about; private to A
+  noteB            String?    @db.Text // same, for B
+  recordedByUserId String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @default(now()) @updatedAt
+
+  @@unique([lumaEventId, aId, bId])
+  @@index([aId])
+  @@index([bId])
 }
 
 // ─── Carpool ─────────────────────────────────────────────────────────────────
@@ -168,32 +197,37 @@ enum CarpoolOfferStatus {
 
 enum CarStopSource {
   matcher // suggested by cheapest-insertion; cleared on re-suggest until confirmed
-  host    // placed by a host; the matcher never moves it
+  host // placed by a host; the matcher never moves it
+}
+
+enum CarKind {
+  drive // a member drives and picks riders up where they are
+  rideshare // an Uber/Lyft from a campus meetup spot; riders walk to the hub
 }
 
 model CarpoolOffer {
-  id            String             @id @default(cuid())
-  userId        String?
-  user          User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  guestName     String?
-  guestEmail    String?
-  guestPhone    String? // E.164; write-ins without an account still get texts
-  lumaEventId   String
-  event         EventCache         @relation(fields: [lumaEventId], references: [lumaEventId], onDelete: Cascade)
-  role          CarpoolRole
-  address       String
-  lat           Float
-  lng           Float
-  neighborhood  String?
-  seatsTotal    Int?
-  notes         String?            @db.Text
-  status        CarpoolOfferStatus @default(open)
-  lastMessageNoticeAt DateTime?    // throttles "new message in your car" texts/emails
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  car           Car?
-  stop          CarStop?
-  messages      CarMessage[]
+  id                  String             @id @default(cuid())
+  userId              String?
+  user                User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestName           String?
+  guestEmail          String?
+  guestPhone          String? // E.164; write-ins without an account still get texts
+  lumaEventId         String
+  event               EventCache         @relation(fields: [lumaEventId], references: [lumaEventId], onDelete: Cascade)
+  role                CarpoolRole
+  address             String
+  lat                 Float
+  lng                 Float
+  neighborhood        String?
+  seatsTotal          Int?
+  notes               String?            @db.Text
+  status              CarpoolOfferStatus @default(open)
+  lastMessageNoticeAt DateTime? // throttles "new message in your car" texts/emails
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  car                 Car?
+  stop                CarStop?
+  messages            CarMessage[]
 
   @@unique([userId, lumaEventId])
   @@index([lumaEventId, role, status])
@@ -201,20 +235,24 @@ model CarpoolOffer {
 }
 
 model Car {
-  id            String       @id @default(cuid())
+  id            String        @id @default(cuid())
   lumaEventId   String
-  event         EventCache   @relation(fields: [lumaEventId], references: [lumaEventId], onDelete: Cascade)
-  driverOfferId String       @unique
-  driverOffer   CarpoolOffer @relation(fields: [driverOfferId], references: [id], onDelete: Cascade)
+  event         EventCache    @relation(fields: [lumaEventId], references: [lumaEventId], onDelete: Cascade)
+  kind          CarKind       @default(drive)
+  driverOfferId String?       @unique // drive cars only
+  driverOffer   CarpoolOffer? @relation(fields: [driverOfferId], references: [id], onDelete: Cascade)
+  hubId         String? // rideshare: key into lib/carpool/hubs.ts
+  meetAt        DateTime? // rideshare: when riders meet at the hub
+  bookerOfferId String? // rideshare: the rider who orders it; null = a host does
   seatsTotal    Int
-  routeKm       Float        @default(0) // driver start → stops in order → venue
-  directKm      Float        @default(0) // driver start → venue
-  confirmedAt   DateTime?    // set by a host; members are notified once
-  changedAt     DateTime?    // last edit after confirmation; cleared on re-confirm
+  routeKm       Float         @default(0) // start (driver or hub) → stops in order → venue
+  directKm      Float         @default(0) // start → venue
+  confirmedAt   DateTime? // set by a host; members are notified once
+  changedAt     DateTime? // last edit after confirmation; cleared on re-confirm
   stops         CarStop[]
   messages      CarMessage[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   @@index([lumaEventId])
 }
@@ -224,9 +262,9 @@ model CarMessage {
   id            String        @id @default(cuid())
   carId         String
   car           Car           @relation(fields: [carId], references: [id], onDelete: Cascade)
-  authorOfferId String?       // null = a host
+  authorOfferId String? // null = a host
   authorOffer   CarpoolOffer? @relation(fields: [authorOfferId], references: [id], onDelete: SetNull)
-  authorName    String        // snapshot: host's name, or the member's name at the time
+  authorName    String // snapshot: host's name, or the member's name at the time
   body          String        @db.Text
   createdAt     DateTime      @default(now())
 

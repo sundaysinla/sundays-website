@@ -4,7 +4,6 @@ import { prisma } from "@/lib/db";
 import { isAdminEmail } from "@/lib/admin";
 import AuthProvider from "@/components/portal/AuthProvider";
 import NavBar from "@/components/NavBar";
-import GridLines from "@/components/GridLines";
 
 export const metadata: Metadata = {
   title: "Members · Sundays in LA",
@@ -47,8 +46,7 @@ export default async function PortalLayout({
 
   return (
     <AuthProvider>
-      <div className="relative min-h-screen overflow-x-clip bg-[#FEFDFB] text-[#2A2A24]">
-        <GridLines />
+      <div className="relative min-h-screen overflow-x-clip bg-paper font-body text-ink/85">
         <NavBar portal={portal} />
         <main className="mx-auto w-full max-w-[1280px] px-6 pt-8 pb-24 md:px-12 md:pt-12">
           {children}

@@ -27,6 +27,7 @@ const portalLinks = [
     { href: '/portal/profile', label: 'profile' },
     { href: '/portal/rsvp', label: 'rsvp' },
     { href: '/portal/carpool', label: 'carpool' },
+    { href: '/portal/met', label: 'people' },
 ]
 
 function Avatar({ name, image }: { name: string | null; image: string | null }) {

@@ -17,7 +17,19 @@ module.exports = {
       '2xl': '1536px',
     },
     extend: {
+      fontFamily: {
+        heading: ["PP-Editorial-New-UltraLight", "Georgia", "serif"],
+        "heading-italic": ["PP-Editorial-New-UltraLightItalic", "Georgia", "serif"],
+        body: ["Office-Times-Sharp-Regular", "Georgia", "serif"],
+        mono: ["Office-Times-Sharp-Mono", "ui-monospace", "SFMono-Regular", "monospace"],
+        ui: ["PP Neue Montreal", "Monument-Grotesk", "Helvetica Neue", "Arial", "sans-serif"],
+      },
       colors: {
+        // Sundays brand palette (Brand Guidelines, Aug 2026)
+        paper: { DEFAULT: "#FCFAF7", 2: "#F6F4EE" },
+        ink: "#010101",
+        blueberry: { DEFAULT: "#3600CF", 200: "#C3B3F1" },
+        lime: "#CBFF36",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

@@ -3,19 +3,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import type { GhostPin, MapCar, MapPoint } from "@/lib/carpool/map-types";
+import type { GhostPin, HubPin, MapCar, MapPoint } from "@/lib/carpool/map-types";
 
-export type { GhostPin, MapCar, MapPoint };
+export type { GhostPin, HubPin, MapCar, MapPoint };
 
 export const CAR_COLORS = [
-  "#1A1A17", // ink
-  "#7A6F5A", // taupe, darkened
-  "#5B6B3F", // olive
-  "#3E5A78", // slate
-  "#7A4E6E", // plum
-  "#A4573A", // rust
+  "#3600CF", // blueberry
+  "#E24BB4", // cursor pink
+  "#1FA463", // cursor green
+  "#F07C1F", // orange
+  "#010101", // ink
+  "#7B61FF", // cursor purple
   "#2F6F6A", // teal
-  "#8A7A2C", // ochre
+  "#B8860B", // ochre
 ];
 
 export function carColor(index: number) {
@@ -31,6 +31,8 @@ type Props = {
   self?: MapPoint | null;
   /** Approximate, unlabeled or first-name-only dots (member map). */
   ghosts?: GhostPin[];
+  /** Uber meetup spots to show even when no group uses them (host map). */
+  hubs?: HubPin[];
   selectedCarId?: string | null;
   onSelectCar?: (id: string | null) => void;
   /** The one pin a host may drag right now. Nothing is draggable otherwise. */
@@ -44,13 +46,17 @@ const ROUTE_SOURCE = "carpool-routes";
 const ROUTE_LAYER = "carpool-routes-line";
 const ROUTE_CASING = "carpool-routes-casing";
 
+/** The car's drive: driver → stops → venue, or for an Uber group, hub → venue. */
 function straightLine(car: MapCar, venue: { lat: number; lng: number }): [number, number][] {
+  if (car.hub) return [[car.hub.lng, car.hub.lat], [venue.lng, venue.lat]];
   return [
-    [car.driver.lng, car.driver.lat],
+    ...(car.driver ? [[car.driver.lng, car.driver.lat] as [number, number]] : []),
     ...car.stops.map((s) => [s.lng, s.lat] as [number, number]),
     [venue.lng, venue.lat],
   ];
 }
+
+const hubKey = (h: HubPin) => `${h.lat.toFixed(5)},${h.lng.toFixed(5)}`;
 
 const directionsCache = new Map<string, [number, number][]>();
 
@@ -79,7 +85,7 @@ async function fetchDrivingLine(
   }
 }
 
-type Kind = "venue" | "driver" | "stop" | "unassigned" | "self" | "ghost";
+type Kind = "venue" | "driver" | "stop" | "unassigned" | "self" | "ghost" | "hub";
 
 /**
  * Mapbox owns the root element's transform (that's how it positions markers),
@@ -112,7 +118,7 @@ function markerEl(
       inner.style.width = "18px";
       inner.style.height = "18px";
       inner.style.transform = "rotate(45deg)";
-      inner.style.background = "#BDFF00";
+      inner.style.background = "#CBFF36";
       inner.style.border = "2px solid #010101";
       inner.style.borderRadius = "3px";
       break;
@@ -120,15 +126,15 @@ function markerEl(
       inner.style.width = "28px";
       inner.style.height = "28px";
       inner.style.background = opts.color ?? "#010101";
-      inner.style.color = "#FEFDFB";
-      inner.style.border = "2px solid #FEFDFB";
+      inner.style.color = "#FCFAF7";
+      inner.style.border = "2px solid #FCFAF7";
       inner.style.boxShadow = "0 1px 4px rgba(1,1,1,0.25)";
       inner.textContent = opts.text ?? "D";
       break;
     case "stop":
       inner.style.width = "24px";
       inner.style.height = "24px";
-      inner.style.background = "#FEFDFB";
+      inner.style.background = "#FCFAF7";
       inner.style.color = opts.color ?? "#010101";
       inner.style.border = `2px solid ${opts.color ?? "#010101"}`;
       inner.style.boxShadow = "0 1px 4px rgba(1,1,1,0.2)";
@@ -137,52 +143,85 @@ function markerEl(
     case "unassigned":
       inner.style.width = "22px";
       inner.style.height = "22px";
-      inner.style.background = "#FEFDFB";
-      inner.style.color = "#8a8478";
-      inner.style.border = "2px dashed #C0B9A5";
+      inner.style.background = "#FCFAF7";
+      inner.style.color = "#010101";
+      inner.style.border = "2px dashed rgba(1,1,1,0.45)";
       inner.textContent = opts.text ?? "?";
       break;
     case "self":
-      inner.style.width = "26px";
-      inner.style.height = "26px";
-      inner.style.background = "#010101";
-      inner.style.color = "#BDFF00";
-      inner.style.border = "2px solid #BDFF00";
-      inner.style.boxShadow = "0 1px 4px rgba(1,1,1,0.25)";
-      inner.textContent = opts.text ?? "•";
+      cursorLabel(root, inner, { fill: "#010101", text: "#CBFF36", label: "me" });
       break;
-    case "ghost":
-      inner.style.width = "18px";
-      inner.style.height = "18px";
-      inner.style.background = "rgba(192,185,165,0.45)";
-      inner.style.border = "1px solid rgba(138,132,120,0.6)";
+    case "hub":
+      // A square "U" for the Uber meetup spot, with its name beside it.
+      inner.style.display = "block";
+      inner.style.position = "relative";
+      inner.style.width = "24px";
+      inner.style.height = "24px";
+      inner.style.borderRadius = "6px";
+      inner.style.background = "#010101";
+      inner.style.border = "2px solid #FCFAF7";
+      inner.style.boxShadow = "0 1px 4px rgba(1,1,1,0.25)";
+      inner.innerHTML = `<span style="display:flex;width:100%;height:100%;align-items:center;justify-content:center;color:#CBFF36;font-size:11px">U</span>`;
       if (opts.label) {
         const tag = document.createElement("span");
         tag.textContent = opts.label;
-        tag.style.position = "absolute";
-        tag.style.top = "20px";
-        tag.style.left = "50%";
-        tag.style.transform = "translateX(-50%)";
-        tag.style.whiteSpace = "nowrap";
-        tag.style.fontFamily = "'Monument-Grotesk', system-ui, sans-serif";
-        tag.style.fontSize = "9px";
-        tag.style.letterSpacing = "0.06em";
-        tag.style.textTransform = "uppercase";
-        tag.style.color = "#8a8478";
-        tag.style.background = "rgba(254,253,251,0.85)";
-        tag.style.padding = "2px 4px";
-        tag.style.borderRadius = "4px";
-        root.style.position = "relative";
-        root.appendChild(tag);
+        Object.assign(tag.style, {
+          position: "absolute",
+          left: "26px",
+          top: "4px",
+          whiteSpace: "nowrap",
+          fontSize: "10px",
+          lineHeight: "1",
+          padding: "3px 5px 2px",
+          borderRadius: "4px",
+          background: "rgba(252,250,247,0.92)",
+          color: "#010101",
+        });
+        inner.appendChild(tag);
+      }
+      break;
+    case "ghost":
+      if (opts.label) {
+        cursorLabel(root, inner, { fill: opts.color ?? "#3600CF", text: "#FCFAF7", label: opts.label });
+      } else {
+        inner.style.width = "16px";
+        inner.style.height = "16px";
+        inner.style.background = "rgba(195,179,241,0.7)";
+        inner.style.border = "1px solid rgba(54,0,207,0.35)";
       }
       break;
   }
 
   if (opts.editable) {
-    inner.style.outline = "3px solid #BDFF00";
+    inner.style.outline = "3px solid #CBFF36";
     inner.style.outlineOffset = "2px";
   }
   return root;
+}
+
+
+/** A pointer with a rounded label beside it — the guide's "Me" / "You ;)" cursor marks. */
+function cursorLabel(root: HTMLDivElement, inner: HTMLDivElement, o: { fill: string; text: string; label: string }) {
+  inner.style.display = "block";
+  inner.style.position = "relative";
+  inner.style.width = "16px";
+  inner.style.height = "16px";
+  inner.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" style="display:block"><path d="M2 1.5 L14 7.5 L8.5 9 L6.5 14.5 Z" fill="${o.fill}" stroke="#FCFAF7" stroke-width="1"/></svg>`;
+  const tag = document.createElement("span");
+  tag.textContent = o.label;
+  tag.style.position = "absolute";
+  tag.style.left = "14px";
+  tag.style.top = "12px";
+  tag.style.whiteSpace = "nowrap";
+  tag.style.fontFamily = "'PP Neue Montreal', 'Monument-Grotesk', system-ui, sans-serif";
+  tag.style.fontSize = "10px";
+  tag.style.lineHeight = "1";
+  tag.style.padding = "4px 6px 3px";
+  tag.style.borderRadius = "4px";
+  tag.style.background = o.fill;
+  tag.style.color = o.text;
+  tag.style.boxShadow = "0 1px 3px rgba(1,1,1,0.2)";
+  inner.appendChild(tag);
 }
 
 export default function CarpoolMap({
@@ -192,6 +231,7 @@ export default function CarpoolMap({
   unassigned,
   self = null,
   ghosts = [],
+  hubs = [],
   selectedCarId = null,
   onSelectCar,
   editablePinId = null,
@@ -210,7 +250,7 @@ export default function CarpoolMap({
     () =>
       JSON.stringify([
         venue ? [venue.lat, venue.lng] : null,
-        cars.map((c) => [c.driver.lat, c.driver.lng, ...c.stops.map((s) => [s.lat, s.lng])]),
+        cars.map((c) => [c.driver?.lat, c.driver?.lng, c.hub?.lat, c.hub?.lng, ...c.stops.map((s) => [s.lat, s.lng])]),
         unassigned.map((u) => [u.lat, u.lng]),
         self ? [self.lat, self.lng] : null,
         ghosts.map((g) => [g.lat, g.lng]),
@@ -238,7 +278,7 @@ export default function CarpoolMap({
         type: "line",
         source: ROUTE_SOURCE,
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": "#FEFDFB", "line-width": 6, "line-opacity": ["get", "opacity"] },
+        paint: { "line-color": "#FCFAF7", "line-width": ["+", ["get", "width"], 3], "line-opacity": ["get", "opacity"] },
       });
       map.addLayer({
         id: ROUTE_LAYER,
@@ -247,7 +287,7 @@ export default function CarpoolMap({
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
           "line-color": ["get", "color"],
-          "line-width": 3,
+          "line-width": ["get", "width"],
           "line-opacity": ["get", "opacity"],
           "line-dasharray": ["case", ["get", "straight"], ["literal", [1.5, 1.5]], ["literal", [1, 0]]],
         },
@@ -294,34 +334,43 @@ export default function CarpoolMap({
       add(markerEl("ghost", { label: g.label, title: g.label ?? "someone on the board" }), g.lng, g.lat);
     }
 
+    // One marker per meetup spot, however many groups leave from it.
+    const inUse = new Set(cars.filter((c) => c.hub).map((c) => hubKey(c.hub!)));
+    const allHubs = new Map<string, HubPin>();
+    for (const h of [...hubs, ...cars.flatMap((c) => (c.hub ? [c.hub] : []))]) allHubs.set(hubKey(h), h);
+    for (const [key, h] of allHubs) {
+      add(markerEl("hub", { label: h.label, title: `${h.label} · Uber meetup spot`, dim: !inUse.has(key) }), h.lng, h.lat);
+    }
+
     cars.forEach((car) => {
       const dim = !!selectedCarId && selectedCarId !== car.id;
-      const d = markerEl("driver", {
-        color: car.color,
-        text: car.driver.name.slice(0, 1).toUpperCase(),
-        dim,
-        title: `${car.driver.name} (driver)`,
-        editable: editablePinId === car.driver.offerId,
-      });
-      d.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        callbacks.current.onSelectCar?.(selectedCarId === car.id ? null : car.id);
-      });
-      add(d, car.driver.lng, car.driver.lat, car.driver.offerId);
-      car.stops.forEach((s) => {
-        const el = markerEl("stop", {
-          color: car.color,
-          text: String(s.order + 1),
-          dim,
-          title: `${s.name} · stop ${s.order + 1}`,
-          editable: editablePinId === s.offerId,
-        });
+      const select = (el: HTMLElement) =>
         el.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
           callbacks.current.onSelectCar?.(selectedCarId === car.id ? null : car.id);
         });
+      if (car.driver) {
+        const d = markerEl("driver", {
+          color: car.color,
+          text: car.driver.name.slice(0, 1).toUpperCase(),
+          dim,
+          title: `${car.driver.name} (driver)`,
+          editable: editablePinId === car.driver.offerId,
+        });
+        select(d);
+        add(d, car.driver.lng, car.driver.lat, car.driver.offerId);
+      }
+      car.stops.forEach((s) => {
+        const el = markerEl("stop", {
+          color: car.color,
+          // Uber riders all meet at one spot, so show who rather than a stop number.
+          text: car.hub ? s.name.slice(0, 1).toUpperCase() : String(s.order + 1),
+          dim,
+          title: car.hub ? `${s.name} · walks to ${car.hub.label}` : `${s.name} · stop ${s.order + 1}`,
+          editable: editablePinId === s.offerId,
+        });
+        select(el);
         add(el, s.lng, s.lat, s.offerId);
       });
     });
@@ -337,7 +386,7 @@ export default function CarpoolMap({
     });
 
     if (self) add(markerEl("self", { text: self.name.slice(0, 1).toUpperCase(), title: "You" }), self.lng, self.lat);
-  }, [ready, venue, cars, unassigned, self, ghosts, selectedCarId, editablePinId, onPinMove]);
+  }, [ready, venue, cars, unassigned, self, ghosts, hubs, selectedCarId, editablePinId, onPinMove]);
 
   // Routes: straight lines immediately, road geometry when Directions answers.
   useEffect(() => {
@@ -346,18 +395,30 @@ export default function CarpoolMap({
     const source = map.getSource(ROUTE_SOURCE) as mapboxgl.GeoJSONSource | undefined;
     if (!source) return;
 
-    const drawn = cars.filter((c) => c.stops.length > 0 || selectedCarId === c.id);
+    const drawn = cars.filter((c) => c.stops.length > 0 || c.hub || selectedCarId === c.id);
+    const feature = (coordinates: [number, number][], p: { color: string; opacity: number; straight: boolean; width: number }) => ({
+      type: "Feature" as const,
+      properties: p,
+      geometry: { type: "LineString" as const, coordinates },
+    });
     const build = (lines: Map<string, [number, number][]>) => ({
       type: "FeatureCollection" as const,
-      features: drawn.map((c) => ({
-        type: "Feature" as const,
-        properties: {
+      features: drawn.flatMap((c) => {
+        const dim = !!selectedCarId && selectedCarId !== c.id;
+        const drive = feature(lines.get(c.id) ?? straightLine(c, venue), {
           color: c.color,
-          opacity: selectedCarId && selectedCarId !== c.id ? 0.18 : 0.9,
+          opacity: dim ? 0.18 : 0.9,
           straight: !lines.has(c.id),
-        },
-        geometry: { type: "LineString" as const, coordinates: lines.get(c.id) ?? straightLine(c, venue) },
-      })),
+          width: 3,
+        });
+        // Uber riders walk to the hub: a thin dotted line from each of them.
+        const walks = c.hub
+          ? c.stops.map((s) =>
+              feature([[s.lng, s.lat], [c.hub!.lng, c.hub!.lat]], { color: c.color, opacity: dim ? 0.12 : 0.55, straight: true, width: 1.5 })
+            )
+          : [];
+        return [drive, ...walks];
+      }),
     });
 
     const lines = new Map<string, [number, number][]>();
@@ -385,7 +446,8 @@ export default function CarpoolMap({
     const pts: [number, number][] = [];
     if (venue) pts.push([venue.lng, venue.lat]);
     for (const c of cars) {
-      pts.push([c.driver.lng, c.driver.lat]);
+      if (c.driver) pts.push([c.driver.lng, c.driver.lat]);
+      if (c.hub) pts.push([c.hub.lng, c.hub.lat]);
       for (const s of c.stops) pts.push([s.lng, s.lat]);
     }
     for (const u of unassigned) pts.push([u.lng, u.lat]);

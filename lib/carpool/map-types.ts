@@ -2,10 +2,15 @@
 
 export type MapPoint = { offerId: string; lat: number; lng: number; name: string };
 
+/** A campus meetup spot for Uber groups. */
+export type HubPin = { lat: number; lng: number; label: string };
+
 export type MapCar = {
   id: string;
   color: string;
-  driver: MapPoint;
+  /** Null for an Uber group, which starts at `hub` instead. */
+  driver: MapPoint | null;
+  hub?: HubPin | null;
   stops: (MapPoint & { order: number; confirmed: boolean })[];
 };
 
@@ -15,7 +20,7 @@ export type GhostPin = { lat: number; lng: number; label: string | null };
 export type MemberMap = {
   /** The member's own exact pin, unless it's already drawn as part of `car`. */
   self: MapPoint | null;
-  /** Their car with exact pins and a route, only once a host has confirmed it. */
+  /** Their car with exact pins and a route once a host has confirmed it; an Uber group shows just the hub. */
   car: MapCar | null;
   ghosts: GhostPin[];
 };

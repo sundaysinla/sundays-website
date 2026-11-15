@@ -29,7 +29,7 @@ export async function createNotification(params: {
         subject: params.emailSubject!,
         html: `
           <p>${params.body}</p>
-          ${params.href ? `<p><a href="${base}${params.href}">Open carpool</a></p>` : ""}
+          ${params.href ? `<p><a href="${base}${params.href}">Open the portal</a></p>` : ""}
         `,
       });
       emailSent = true;

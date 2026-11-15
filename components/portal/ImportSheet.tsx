@@ -7,8 +7,8 @@ import type { ImportRow } from "@/lib/carpool/import";
 import { adminImportCommit, adminImportPreview } from "@/lib/actions/admin";
 import { cn } from "@/lib/utils";
 
-const label = "font-['Monument-Grotesk'] text-[10px] uppercase tracking-wide text-[#C0B9A5]";
-const body = "font-['Office-Times-Round'] text-[#2A2A24]";
+const label = "font-ui text-[10px] uppercase tracking-wide text-ink/55";
+const body = "font-body text-ink/85";
 
 /** Upload a CSV / Excel of people, preview what will happen, then import. */
 export default function ImportSheet() {
@@ -31,12 +31,12 @@ export default function ImportSheet() {
   }
 
   return (
-    <section className="space-y-4 border-t border-dashed border-[#C0B9A5]/50 pt-8">
+    <section className="space-y-4 border-t border-dashed border-ink/15 pt-8">
       <div>
         <h2 className={label}>Import a spreadsheet</h2>
-        <p className={cn(body, "mt-1 text-sm text-[#8a8478]")}>
-          A .csv or .xlsx with columns <span className="text-[#2A2A24]">name, email, phone, role, address, seats, notes, car</span>. Put a driver&apos;s name in <span className="text-[#2A2A24]">car</span> to seat a rider with them.{" "}
-          <a href="/carpool-import-template.csv" download className="underline decoration-[#C0B9A5] underline-offset-4 hover:decoration-black">
+        <p className={cn(body, "mt-1 text-sm text-ink/55")}>
+          A .csv or .xlsx with columns <span className="text-ink/85">name, email, phone, role, address, seats, notes, car</span>. Put a driver&apos;s name in <span className="text-ink/85">car</span> to seat a rider with them.{" "}
+          <a href="/carpool-import-template.csv" download className="underline decoration-blueberry-200 underline-offset-4 hover:decoration-blueberry">
             Download the template
           </a>
           .
@@ -44,8 +44,8 @@ export default function ImportSheet() {
       </div>
 
       {done ? (
-        <div className="space-y-2 rounded-2xl border border-dashed border-[#C0B9A5] bg-[#FCFAF7] p-4">
-          <p className={cn(body, "text-base text-[#010101]")}>
+        <div className="space-y-2 rounded-2xl border border-dashed border-ink/25 bg-paper-2 p-4">
+          <p className={cn(body, "text-base text-ink")}>
             Imported {done.created} {done.created === 1 ? "person" : "people"}
             {done.placed ? `, seated ${done.placed}` : ""}.
           </p>
@@ -56,7 +56,7 @@ export default function ImportSheet() {
               ))}
             </ul>
           ) : null}
-          <button type="button" onClick={reset} className="font-['Monument-Grotesk'] text-[10px] uppercase text-[#010101] underline decoration-[#C0B9A5] underline-offset-4">
+          <button type="button" onClick={reset} className="font-ui text-[10px] uppercase text-ink underline decoration-blueberry-200 underline-offset-4">
             Import another
           </button>
         </div>
@@ -64,15 +64,15 @@ export default function ImportSheet() {
         <div className="space-y-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <p className={cn(body, "text-sm")}>
-              <span className="text-[#010101]">{fileName}</span> · {importable.length} of {rows.length} rows will import
+              <span className="text-ink">{fileName}</span> · {importable.length} of {rows.length} rows will import
             </p>
-            <button type="button" onClick={reset} className="font-['Monument-Grotesk'] text-[10px] uppercase text-[#C0B9A5] hover:text-[#8a8478]">
+            <button type="button" onClick={reset} className="font-ui text-[10px] uppercase text-ink/55 hover:text-ink">
               Choose another file
             </button>
           </div>
-          <div className="max-h-80 overflow-auto rounded-2xl border border-[#C0B9A5]/50">
+          <div className="max-h-80 overflow-auto rounded-2xl border border-ink/15">
             <table className="w-full text-left text-sm">
-              <thead className="sticky top-0 bg-[#FCFAF7]">
+              <thead className="sticky top-0 bg-paper-2">
                 <tr>
                   {["Name", "Role", "Address", "Car", "Notes"].map((h) => (
                     <th key={h} className={cn(label, "px-3 py-2 font-normal")}>
@@ -81,32 +81,32 @@ export default function ImportSheet() {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-dashed divide-[#C0B9A5]/40">
+              <tbody className="divide-y divide-dashed divide-ink/12">
                 {rows.map((r) => (
                   <tr key={r.row} className={r.skip ? "opacity-50" : ""}>
                     <td className={cn(body, "px-3 py-2 align-top")}>
-                      <span className="text-[#010101]">{r.name || `(row ${r.row})`}</span>
-                      {r.email ? <span className="block text-xs text-[#8a8478]">{r.email}</span> : null}
-                      {r.phone ? <span className="block text-xs text-[#8a8478]">{r.phone}</span> : null}
+                      <span className="text-ink">{r.name || `(row ${r.row})`}</span>
+                      {r.email ? <span className="block text-xs text-ink/55">{r.email}</span> : null}
+                      {r.phone ? <span className="block text-xs text-ink/55">{r.phone}</span> : null}
                     </td>
                     <td className={cn(body, "px-3 py-2 align-top")}>
                       {r.role}
-                      {r.role === "driver" && r.seats ? <span className="text-[#8a8478]"> · {r.seats} seats</span> : null}
+                      {r.role === "driver" && r.seats ? <span className="text-ink/55"> · {r.seats} seats</span> : null}
                     </td>
                     <td className={cn(body, "px-3 py-2 align-top")}>
-                      {r.geo?.placeName ?? r.address ?? <span className="text-[#8a8478]">—</span>}
-                      {r.geo?.neighborhood ? <span className="block text-xs text-[#8a8478]">{r.geo.neighborhood}</span> : null}
+                      {r.geo?.placeName ?? r.address ?? <span className="text-ink/55">—</span>}
+                      {r.geo?.neighborhood ? <span className="block text-xs text-ink/55">{r.geo.neighborhood}</span> : null}
                     </td>
-                    <td className={cn(body, "px-3 py-2 align-top")}>{r.car ?? <span className="text-[#8a8478]">—</span>}</td>
+                    <td className={cn(body, "px-3 py-2 align-top")}>{r.car ?? <span className="text-ink/55">—</span>}</td>
                     <td className={cn(body, "px-3 py-2 align-top text-xs")}>
                       {r.issues.length ? (
-                        <ul className={r.skip ? "text-red-700" : "text-[#8a8478]"}>
+                        <ul className={r.skip ? "text-red-700" : "text-ink/55"}>
                           {r.issues.map((i, k) => (
                             <li key={k}>{i}</li>
                           ))}
                         </ul>
                       ) : (
-                        <span className="text-[#8a8478]">ok</span>
+                        <span className="text-ink/55">ok</span>
                       )}
                     </td>
                   </tr>
@@ -162,7 +162,7 @@ export default function ImportSheet() {
             name="file"
             type="file"
             accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
-            className="block font-['Office-Times-Round'] text-sm text-[#2A2A24] file:mr-3 file:rounded-2xl file:border file:border-[#C0B9A5]/60 file:bg-white file:px-3 file:pt-1.5 file:pb-1 file:font-['Monument-Grotesk'] file:text-[11px] file:uppercase file:text-[#010101] hover:file:bg-[#EEEBE3]"
+            className="block max-w-full font-body text-sm text-ink/85 file:mr-3 file:rounded-2xl file:border file:border-ink/15 file:bg-white file:px-3 file:pt-1.5 file:pb-1 file:font-ui file:text-[11px] file:uppercase file:text-ink hover:file:bg-paper-2"
           />
           <Button type="submit" variant="outline" size="sm" disabled={pending}>
             {pending ? "Reading…" : "Preview"}

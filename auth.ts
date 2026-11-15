@@ -4,6 +4,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/db";
 import { authConfig } from "@/auth.config";
 import { claimGuestOffers } from "@/lib/carpool/service";
+import { claimGuestAttendance } from "@/lib/attendance";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -56,6 +57,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           update: {},
         });
         await claimGuestOffers(user.id, user.email);
+        await claimGuestAttendance(user.id, user.email);
       } catch (e) {
         console.error("[auth] createUser profile bootstrap failed", e);
       }

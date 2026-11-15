@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { claimGuestOffers } from "@/lib/carpool/service";
+import { claimGuestAttendance } from "@/lib/attendance";
 
 type SessionUser = {
   id?: string | null;
@@ -40,8 +41,9 @@ export async function ensureProfile(userId: string, sessionUser?: SessionUser) {
   // Hosts may have written this person into a carpool before they signed up.
   try {
     await claimGuestOffers(userId, email);
+    await claimGuestAttendance(userId, email);
   } catch (e) {
-    console.warn("[profile] claiming guest carpool offers failed", e);
+    console.warn("[profile] claiming guest rows failed", e);
   }
 
   return profile;

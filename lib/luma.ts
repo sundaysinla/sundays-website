@@ -99,7 +99,11 @@ export type LumaGuest = {
   email?: string;
   user_email?: string;
   name?: string | null;
+  user_name?: string | null;
+  user_first_name?: string | null;
+  user_last_name?: string | null;
   approval_status?: string;
+  checked_in_at?: string | null;
   registration_answers?: unknown;
 };
 
@@ -152,6 +156,24 @@ export async function getEvent(eventIdParam: string) {
     return data.event;
   }
   return data as LumaEvent;
+}
+
+export type LumaHost = {
+  id?: string;
+  api_id?: string;
+  email?: string | null;
+  name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  avatar_url?: string | null;
+};
+
+/** The event's hosts as listed on Luma (the `hosts` array on events/get). */
+export async function getEventHosts(eventIdParam: string): Promise<LumaHost[]> {
+  const data = await lumaFetch<{ hosts?: LumaHost[]; event?: { hosts?: LumaHost[] } }>("/v1/events/get", {
+    query: { id: eventIdParam, event_id: eventIdParam },
+  });
+  return data?.hosts ?? data?.event?.hosts ?? [];
 }
 
 export async function listGuests(eventIdParam: string, approvalStatus?: string) {

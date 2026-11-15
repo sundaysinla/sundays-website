@@ -5,6 +5,7 @@
 
 # next.js
 /.next/
+/.next-demo/
 /out/
 
 # production
@@ -19,6 +20,7 @@ yarn-error.log*
 # env files (templates are committed)
 .env*
 !.env.example
+!demo/.env.demo
 
 # vercel
 .vercel

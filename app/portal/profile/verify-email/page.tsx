@@ -13,11 +13,11 @@ export default async function VerifyEmailPage({
 
   return (
     <div className="mx-auto max-w-md space-y-6 text-center">
-      <Eyebrow>Email</Eyebrow>
-      <h1 className="font-['Office-Times-Sharp-Regular'] text-3xl lowercase text-[#010101]">
+      <Eyebrow className="font-ui text-blueberry">Email</Eyebrow>
+      <h1 className="font-heading text-3xl lowercase text-ink">
         {result.ok ? "email confirmed" : "couldn't verify"}
       </h1>
-      <p className="font-['Office-Times-Round'] text-base text-[#3A372F]">
+      <p className="font-body text-base text-ink/75">
         {result.ok
           ? "Your contact email is updated. RSVP and carpool notices will go here."
           : result.error}
@@ -28,7 +28,7 @@ export default async function VerifyEmailPage({
       <div>
         <Link
           href="/portal"
-          className="font-['Monument-Grotesk'] text-[11px] uppercase text-[#C0B9A5] hover:text-[#8a8478]"
+          className="font-ui text-[11px] uppercase text-ink/55 hover:text-ink"
         >
           Portal home
         </Link>

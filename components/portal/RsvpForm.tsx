@@ -30,7 +30,7 @@ export default function RsvpForm({
   if (!hasEvent) {
     return (
       <div className="space-y-4">
-        <p className="font-['Office-Times-Round'] text-base text-[#3A372F]">
+        <p className="font-body text-base text-ink/75">
           No upcoming event is on the calendar yet. Sync from Luma, or open the calendar.
         </p>
         <div className="flex flex-wrap gap-3">
@@ -54,7 +54,7 @@ export default function RsvpForm({
           </Button>
         </div>
         {result && !result.ok && (
-          <p className="font-['Office-Times-Round'] text-sm text-red-700">{result.error}</p>
+          <p className="font-body text-sm text-red-700">{result.error}</p>
         )}
       </div>
     );
@@ -62,11 +62,11 @@ export default function RsvpForm({
 
   if (alreadyGoing) {
     return (
-      <div className="space-y-4 rounded-[24px] border border-dashed border-[#C0B9A5] bg-[#FCFAF7] px-6 py-6">
-        <p className="font-['Office-Times-Sharp-Regular'] text-2xl lowercase text-[#010101]">
+      <div className="space-y-4 rounded-[24px] border border-dashed border-ink/25 bg-paper-2 px-6 py-6">
+        <p className="font-heading text-2xl lowercase text-ink">
           you&apos;re going
         </p>
-        <p className="font-['Office-Times-Round'] text-sm text-[#3A372F]">
+        <p className="font-body text-sm text-ink/75">
           All set for this week. Need a ride across campus, or have seats to spare?
         </p>
         <div className="flex flex-wrap gap-3">
@@ -100,7 +100,7 @@ export default function RsvpForm({
       }}
     >
       <div className="space-y-3">
-        <span className="block font-['Monument-Grotesk'] text-[11px] uppercase tracking-wide text-[#C0B9A5]">
+        <span className="block font-ui text-[11px] uppercase tracking-wide text-ink/55">
           What are you working on?
         </span>
         {demos.length > 0 ? (
@@ -138,8 +138,8 @@ export default function RsvpForm({
 
       {result && (
         <p
-          className={`font-['Office-Times-Round'] text-sm ${
-            result.ok ? "text-[#3A372F]" : "text-red-700"
+          className={`font-body text-sm ${
+            result.ok ? "text-ink/75" : "text-red-700"
           }`}
           role="status"
         >

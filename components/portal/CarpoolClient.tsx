@@ -8,13 +8,14 @@ import AddressInput, { inputClass } from "@/components/portal/AddressInput";
 import CarpoolMap from "@/components/portal/CarpoolMap";
 import CarThread from "@/components/portal/CarThread";
 import { formatPhone } from "@/lib/phone";
-import type { EventView, MemberCarpool } from "@/lib/carpool/board";
+import { HUBS } from "@/lib/carpool/rideshare";
+import type { EventView, MemberCarpool, RideshareRide } from "@/lib/carpool/board";
 import type { MemberMap } from "@/lib/carpool/map-types";
 import { postCarMessage, upsertCarpoolOffer, withdrawCarpoolOffer } from "@/lib/actions/carpool";
 import { cn } from "@/lib/utils";
 
-const label = "font-['Monument-Grotesk'] text-[11px] uppercase tracking-wide text-[#C0B9A5]";
-const body = "font-['Office-Times-Round'] text-[#2A2A24]";
+const label = "font-ui text-[11px] uppercase tracking-wide text-ink/55";
+const body = "font-body text-ink/85";
 
 function when(iso: string) {
   return new Date(iso).toLocaleString("en-US", {
@@ -25,6 +26,91 @@ function when(iso: string) {
     minute: "2-digit",
     timeZone: "America/Los_Angeles",
   });
+}
+
+function clock(iso: string) {
+  return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" });
+}
+
+const linkClass = "underline decoration-blueberry-200 underline-offset-4 hover:decoration-blueberry";
+
+function Phone({ phone }: { phone: string | null }) {
+  return phone ? (
+    <a href={`tel:${phone}`} className={linkClass}>
+      {formatPhone(phone)}
+    </a>
+  ) : null;
+}
+
+/** An Uber group: walk to the meetup spot, meet the others, one person orders. */
+function RideshareDetails({ ride, event }: { ride: RideshareRide; event: EventView }) {
+  const meet = ride.meetAt ? clock(ride.meetAt) : null;
+  const to = event.address ?? event.title;
+  return (
+    <>
+      <p className="font-heading text-2xl lowercase leading-tight text-ink">
+        you&apos;re sharing an uber from {ride.hub.name}
+      </p>
+      <dl className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <dt className={label}>Meet</dt>
+          <dd className={cn(body, "text-base text-ink")}>
+            {meet ? `${meet} at ` : ""}
+            {ride.hub.name}
+          </dd>
+          <dd className={cn(body, "text-sm text-ink/55")}>
+            {ride.hub.where} · about {ride.walkKm < 1 ? `${Math.round(ride.walkKm * 1000)} m` : `${ride.walkKm.toFixed(1)} km`} from your pickup address
+          </dd>
+        </div>
+        <div>
+          <dt className={label}>Who orders it</dt>
+          {ride.booker.who === "you" ? (
+            <>
+              <dd className={cn(body, "text-base text-ink")}>You</dd>
+              <dd className={cn(body, "text-sm text-ink/55")}>
+                Order an {ride.coRiders.length + 1 > 4 ? "UberXL" : "UberX"} for {ride.coRiders.length + 1} to {to}.
+              </dd>
+            </>
+          ) : ride.booker.who === "rider" ? (
+            <>
+              <dd className={cn(body, "text-base text-ink")}>{ride.booker.name ?? ride.booker.firstName}</dd>
+              {ride.booker.phone ? (
+                <dd className={cn(body, "text-sm")}>
+                  <Phone phone={ride.booker.phone} />
+                </dd>
+              ) : null}
+            </>
+          ) : (
+            <dd className={cn(body, "text-base text-ink")}>A host orders it for you</dd>
+          )}
+        </div>
+        {ride.coRiders.length > 0 ? (
+          <div className="sm:col-span-2">
+            <dt className={label}>Riding with</dt>
+            <dd className={cn(body, "text-base text-ink")}>
+              {ride.coRiders.map((c, i) => (
+                <span key={i}>
+                  {i > 0 ? ", " : ""}
+                  {c.name ?? c.firstName}
+                  {c.phone ? (
+                    <span className="text-sm text-ink/55">
+                      {" "}
+                      (<Phone phone={c.phone} />)
+                    </span>
+                  ) : null}
+                </span>
+              ))}
+            </dd>
+          </div>
+        ) : null}
+      </dl>
+      <p className={cn(body, "text-sm text-ink/55")}>
+        {ride.status === "confirmed"
+          ? `Be at ${ride.hub.name}${meet ? ` by ${meet}` : ""}. Running late or can't make it? Say so in the chat below, or withdraw so hosts can fill your seat.`
+          : "Not enough drivers this week, so a host has you pencilled in for a shared Uber. You'll get the final plan by text or email once they confirm it."}
+      </p>
+    </>
+  );
 }
 
 export default function CarpoolClient({
@@ -57,9 +143,9 @@ export default function CarpoolClient({
 
   if (!event) {
     return (
-      <div className="space-y-3 rounded-[20px] border border-dashed border-[#C0B9A5] bg-[#FCFAF7] p-6">
-        <p className="font-['Office-Times-Sharp-Regular'] text-xl lowercase text-[#010101]">no sunday on the calendar yet</p>
-        <p className={cn(body, "text-sm text-[#8a8478]")}>
+      <div className="space-y-3 rounded-[20px] border border-dashed border-ink/25 bg-paper-2 p-6">
+        <p className="font-heading text-2xl lowercase text-ink">no sunday on the calendar yet</p>
+        <p className={cn(body, "text-sm text-ink/55")}>
           Carpool opens once the next session is posted on Luma. Check back in a day or two.
         </p>
       </div>
@@ -81,65 +167,71 @@ export default function CarpoolClient({
             unassigned={[]}
             self={map.self}
             ghosts={map.ghosts}
-            className="h-[340px] w-full overflow-hidden rounded-[24px] border border-[#C0B9A5]/50 bg-[#EEEBE3] md:h-[400px]"
+            className="h-[340px] w-full overflow-hidden rounded-[24px] border border-ink/15 bg-paper-2 md:h-[400px]"
           />
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
-            <span className={cn(label, "flex items-center gap-1.5")}><span className="inline-block h-2.5 w-2.5 rotate-45 border border-black bg-[#BDFF00]" /> venue</span>
-            {map.self ? <span className={cn(label, "flex items-center gap-1.5")}><span className="inline-block h-3 w-3 rounded-full border-2 border-[#BDFF00] bg-black" /> you</span> : null}
-            {map.car ? <span className={cn(label, "flex items-center gap-1.5")}><span className="inline-block h-3 w-3 rounded-full bg-black" /> your car</span> : null}
-            {map.ghosts.length > 0 ? <span className={cn(label, "flex items-center gap-1.5")}><span className="inline-block h-3 w-3 rounded-full border border-[#8a8478]/60 bg-[#C0B9A5]/50" /> others, to the nearest kilometer</span> : null}
+            <span className={cn(label, "flex items-center gap-1.5")}><span className="inline-block h-2.5 w-2.5 rotate-45 border border-ink bg-lime" /> venue</span>
+            {map.self ? <span className={cn(label, "flex items-center gap-1.5")}><span className="inline-block h-3 w-3 rounded-full border-2 border-lime bg-ink" /> you</span> : null}
+            {map.car?.hub ? (
+              <span className={cn(label, "flex items-center gap-1.5")}><span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-[3px] bg-ink text-[8px] text-lime">U</span> meetup spot</span>
+            ) : map.car ? (
+              <span className={cn(label, "flex items-center gap-1.5")}><span className="inline-block h-3 w-3 rounded-full bg-ink" /> your car</span>
+            ) : null}
+            {map.ghosts.length > 0 ? <span className={cn(label, "flex items-center gap-1.5")}><span className="inline-block h-3 w-3 rounded-full border border-blueberry/40 bg-blueberry-200/70" /> others, to the nearest kilometer</span> : null}
           </div>
         </section>
       ) : null}
 
       {/* the ride, if there is one */}
       {ride ? (
-        <section className="space-y-4 rounded-[24px] border border-[#C0B9A5]/60 bg-[#FCFAF7] p-6">
+        <section className="space-y-4 rounded-[24px] border border-ink/15 bg-paper-2 p-6">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className={label}>Your ride</h2>
-            <span className={cn("rounded-full px-2.5 pt-[4px] pb-[3px] font-['Monument-Grotesk'] text-[10px] uppercase tracking-wide", ride.status === "confirmed" ? "bg-[#BDFF00]/50 text-[#2A2A24]" : "bg-[#EEEBE3] text-[#8a8478]")}>
+            <span className={cn("rounded-full px-2.5 pt-[4px] pb-[3px] font-ui text-[10px] uppercase tracking-wide", ride.status === "confirmed" ? "bg-lime/70 text-ink/85" : "bg-paper-2 text-ink/55")}>
               {ride.status === "confirmed" ? (ride.changed ? "Updated" : "Set") : "Being arranged"}
             </span>
           </div>
 
-          {ride.kind === "rider" ? (
+          {ride.kind === "rideshare" ? (
+            <RideshareDetails ride={ride} event={event} />
+          ) : ride.kind === "rider" ? (
             <>
-              <p className="font-['Office-Times-Sharp-Regular'] text-2xl lowercase leading-tight text-[#010101]">
+              <p className="font-heading text-2xl lowercase leading-tight text-ink">
                 you&apos;re stop {ride.stopNumber} of {ride.stopCount} in {ride.driver.firstName}&apos;s car
               </p>
               <dl className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <dt className={label}>Driver</dt>
-                  <dd className={cn(body, "text-base text-[#010101]")}>
+                  <dd className={cn(body, "text-base text-ink")}>
                     {ride.driver.name ?? ride.driver.firstName}
-                    {ride.driver.neighborhood ? <span className="text-[#8a8478]"> · from {ride.driver.neighborhood}</span> : null}
+                    {ride.driver.neighborhood ? <span className="text-ink/55"> · from {ride.driver.neighborhood}</span> : null}
                   </dd>
                   {ride.driver.email ? (
                     <dd className={cn(body, "text-sm")}>
-                      <a href={`mailto:${ride.driver.email}`} className="underline decoration-[#C0B9A5] underline-offset-4 hover:decoration-black">{ride.driver.email}</a>
+                      <a href={`mailto:${ride.driver.email}`} className="underline decoration-blueberry-200 underline-offset-4 hover:decoration-blueberry">{ride.driver.email}</a>
                     </dd>
                   ) : null}
                   {ride.driver.phone ? (
                     <dd className={cn(body, "text-sm")}>
-                      <a href={`tel:${ride.driver.phone}`} className="underline decoration-[#C0B9A5] underline-offset-4 hover:decoration-black">{formatPhone(ride.driver.phone)}</a>
+                      <a href={`tel:${ride.driver.phone}`} className="underline decoration-blueberry-200 underline-offset-4 hover:decoration-blueberry">{formatPhone(ride.driver.phone)}</a>
                     </dd>
                   ) : null}
                 </div>
                 <div>
                   <dt className={label}>Pickup</dt>
-                  <dd className={cn(body, "text-base text-[#010101]")}>{offer?.address}</dd>
-                  <dd className={cn(body, "text-sm text-[#8a8478]")}>to {event.address ?? event.title}</dd>
+                  <dd className={cn(body, "text-base text-ink")}>{offer?.address}</dd>
+                  <dd className={cn(body, "text-sm text-ink/55")}>to {event.address ?? event.title}</dd>
                 </div>
                 {ride.coRiders.length > 0 ? (
                   <div className="sm:col-span-2">
                     <dt className={label}>Also riding</dt>
-                    <dd className={cn(body, "text-base text-[#010101]")}>
+                    <dd className={cn(body, "text-base text-ink")}>
                       {ride.coRiders.map((c) => `${c.firstName}${c.neighborhood ? ` (${c.neighborhood})` : ""}`).join(", ")}
                     </dd>
                   </div>
                 ) : null}
               </dl>
-              <p className={cn(body, "text-sm text-[#8a8478]")}>
+              <p className={cn(body, "text-sm text-ink/55")}>
                 {ride.status === "confirmed"
                   ? "Your driver has your address. If plans change, withdraw below so hosts can re-seat the car."
                   : "A host has you pencilled in. You'll get an email with your driver's details once they confirm the car."}
@@ -147,26 +239,26 @@ export default function CarpoolClient({
             </>
           ) : (
             <>
-              <p className="font-['Office-Times-Sharp-Regular'] text-2xl lowercase leading-tight text-[#010101]">
+              <p className="font-heading text-2xl lowercase leading-tight text-ink">
                 {ride.stops.length === 0
                   ? "no riders yet"
                   : `you're driving ${ride.stops.length} ${ride.stops.length === 1 ? "person" : "people"}`}
               </p>
               {ride.stops.length > 0 ? (
-                <ol className="divide-y divide-dashed divide-[#C0B9A5]/40">
+                <ol className="divide-y divide-dashed divide-ink/12">
                   {ride.stops.map((s) => (
                     <li key={s.order} className="flex items-start gap-3 py-2.5">
-                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white font-['Monument-Grotesk'] text-[10px]">{s.order + 1}</span>
+                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-white font-ui text-[10px]">{s.order + 1}</span>
                       <div className="min-w-0">
-                        <p className={cn(body, "text-base text-[#010101]")}>
+                        <p className={cn(body, "text-base text-ink")}>
                           {s.name ?? s.firstName}
-                          {s.neighborhood ? <span className="text-[#8a8478]"> · {s.neighborhood}</span> : null}
+                          {s.neighborhood ? <span className="text-ink/55"> · {s.neighborhood}</span> : null}
                         </p>
-                        {s.address ? <p className={cn(body, "text-sm text-[#8a8478]")}>{s.address}</p> : null}
+                        {s.address ? <p className={cn(body, "text-sm text-ink/55")}>{s.address}</p> : null}
                         {s.email || s.phone ? (
                           <p className={cn(body, "flex flex-wrap gap-x-3 text-sm")}>
-                            {s.email ? <a href={`mailto:${s.email}`} className="underline decoration-[#C0B9A5] underline-offset-4 hover:decoration-black">{s.email}</a> : null}
-                            {s.phone ? <a href={`tel:${s.phone}`} className="underline decoration-[#C0B9A5] underline-offset-4 hover:decoration-black">{formatPhone(s.phone)}</a> : null}
+                            {s.email ? <a href={`mailto:${s.email}`} className="underline decoration-blueberry-200 underline-offset-4 hover:decoration-blueberry">{s.email}</a> : null}
+                            {s.phone ? <a href={`tel:${s.phone}`} className="underline decoration-blueberry-200 underline-offset-4 hover:decoration-blueberry">{formatPhone(s.phone)}</a> : null}
                           </p>
                         ) : null}
                       </div>
@@ -174,7 +266,7 @@ export default function CarpoolClient({
                   ))}
                 </ol>
               ) : null}
-              <p className={cn(body, "text-sm text-[#8a8478]")}>
+              <p className={cn(body, "text-sm text-ink/55")}>
                 {ride.stops.length > 0 ? `About ${ride.routeKm.toFixed(0)} km with pickups, ${ride.detourKm.toFixed(1)} km more than driving straight there. ` : ""}
                 {ride.status === "confirmed"
                   ? "Stop order and addresses are final unless a host sends a change."
@@ -183,24 +275,24 @@ export default function CarpoolClient({
             </>
           )}
 
-          <div className="space-y-3 border-t border-dashed border-[#C0B9A5]/40 pt-4">
+          <div className="space-y-3 border-t border-dashed border-ink/12 pt-4">
             <div className="flex items-baseline justify-between">
-              <h3 className={label}>Car chat</h3>
-              <span className={cn(label, "text-[#8a8478]")}>everyone in the car gets a text or email</span>
+              <h3 className={label}>{ride.kind === "rideshare" ? "Uber chat" : "Car chat"}</h3>
+              <span className={cn(label, "text-ink/55")}>everyone in the {ride.kind === "rideshare" ? "group" : "car"} gets a text or email</span>
             </div>
             <CarThread carId={ride.carId} messages={ride.messages} post={postCarMessage} myOfferId={offer?.id ?? null} />
           </div>
         </section>
       ) : offer ? (
-        <section className="space-y-2 rounded-[24px] border border-dashed border-[#C0B9A5] bg-[#FCFAF7] p-6">
+        <section className="space-y-2 rounded-[24px] border border-dashed border-ink/25 bg-paper-2 p-6">
           <h2 className={label}>Your ride</h2>
-          <p className="font-['Office-Times-Sharp-Regular'] text-2xl lowercase leading-tight text-[#010101]">
+          <p className="font-heading text-2xl lowercase leading-tight text-ink">
             {offer.role === "driver" ? "you're on the board as a driver" : "you're on the list for a ride"}
           </p>
-          <p className={cn(body, "text-sm text-[#8a8478]")}>
+          <p className={cn(body, "text-sm text-ink/55")}>
             {offer.role === "driver"
               ? `Hosts will fill your ${offer.seatsTotal ?? 1} seat${offer.seatsTotal === 1 ? "" : "s"} and email you the pickup order.`
-              : "Hosts match riders to cars a day or two before Sunday and email you the details."}
+              : `Hosts match riders to cars a day or two before Sunday and email you the details. If there aren't enough drivers, you might share an Uber from ${HUBS.map((h) => h.name).join(" or ")} instead.`}
           </p>
         </section>
       ) : null}
@@ -210,7 +302,7 @@ export default function CarpoolClient({
         <div className="flex items-baseline justify-between">
           <h2 className={label}>{offer ? "Your details" : "Join this week's carpool"}</h2>
           {offer && !editing ? (
-            <button type="button" onClick={() => setEditing(true)} className="font-['Monument-Grotesk'] text-[11px] uppercase text-[#010101] underline decoration-[#C0B9A5] underline-offset-4 hover:decoration-black">
+            <button type="button" onClick={() => setEditing(true)} className="font-ui text-[11px] uppercase text-ink underline decoration-blueberry-200 underline-offset-4 hover:decoration-blueberry">
               Edit
             </button>
           ) : null}
@@ -220,22 +312,22 @@ export default function CarpoolClient({
           <dl className="grid gap-4 sm:grid-cols-2">
             <div>
               <dt className={label}>{offer.role === "driver" ? "Driving from" : "Pickup"}</dt>
-              <dd className={cn(body, "text-base text-[#010101]")}>{offer.address}</dd>
+              <dd className={cn(body, "text-base text-ink")}>{offer.address}</dd>
             </div>
             {offer.role === "driver" ? (
               <div>
                 <dt className={label}>Seats</dt>
-                <dd className={cn(body, "text-base text-[#010101]")}>{offer.seatsTotal}</dd>
+                <dd className={cn(body, "text-base text-ink")}>{offer.seatsTotal}</dd>
               </div>
             ) : null}
             <div>
               <dt className={label}>Phone</dt>
-              <dd className={cn(body, "text-base text-[#010101]")}>{data.phone ? formatPhone(data.phone) : <span className="text-[#8a8478]">none — add one for texts</span>}</dd>
+              <dd className={cn(body, "text-base text-ink")}>{data.phone ? formatPhone(data.phone) : <span className="text-ink/55">none — add one for texts</span>}</dd>
             </div>
             {offer.notes ? (
               <div className="sm:col-span-2">
                 <dt className={label}>Notes</dt>
-                <dd className={cn(body, "text-base text-[#010101]")}>{offer.notes}</dd>
+                <dd className={cn(body, "text-base text-ink")}>{offer.notes}</dd>
               </div>
             ) : null}
           </dl>
@@ -279,7 +371,7 @@ export default function CarpoolClient({
                 defaultCoords={offer ? { lat: offer.lat, lng: offer.lng, neighborhood: offer.neighborhood } : null}
                 placeholder="Street address, dorm, or a landmark"
               />
-              <span className={cn(body, "block text-xs text-[#8a8478]")}>
+              <span className={cn(body, "block text-xs text-ink/55")}>
                 Other members only see your neighborhood until a host confirms your car.
               </span>
             </label>
@@ -293,7 +385,7 @@ export default function CarpoolClient({
                 placeholder="(310) 555-0101"
                 className={inputClass}
               />
-              <span className={cn(body, "block text-xs text-[#8a8478]")}>
+              <span className={cn(body, "block text-xs text-ink/55")}>
                 For texts about your ride and last-minute changes. Shared with your car once a host confirms it.
               </span>
             </label>
@@ -301,9 +393,9 @@ export default function CarpoolClient({
             {role === "driver" ? (
               <div className="flex items-center gap-3">
                 <span className={label}>Seats for riders</span>
-                <button type="button" aria-label="Fewer seats" onClick={() => setSeats((s) => Math.max(1, s - 1))} className="h-9 w-9 rounded-full border border-[#C0B9A5]/60 bg-white font-['Monument-Grotesk'] hover:bg-[#EEEBE3]">−</button>
-                <span className="w-6 text-center font-['Office-Times-Round'] text-lg tabular-nums">{seats}</span>
-                <button type="button" aria-label="More seats" onClick={() => setSeats((s) => Math.min(8, s + 1))} className="h-9 w-9 rounded-full border border-[#C0B9A5]/60 bg-white font-['Monument-Grotesk'] hover:bg-[#EEEBE3]">+</button>
+                <button type="button" aria-label="Fewer seats" onClick={() => setSeats((s) => Math.max(1, s - 1))} className="h-9 w-9 rounded-full border border-ink/15 bg-white font-ui hover:bg-blueberry-200/30">−</button>
+                <span className="w-6 text-center font-body text-lg tabular-nums">{seats}</span>
+                <button type="button" aria-label="More seats" onClick={() => setSeats((s) => Math.min(8, s + 1))} className="h-9 w-9 rounded-full border border-ink/15 bg-white font-ui hover:bg-blueberry-200/30">+</button>
               </div>
             ) : null}
 
@@ -326,13 +418,13 @@ export default function CarpoolClient({
         )}
 
         {notice ? (
-          <p className={cn(body, "text-sm", notice.tone === "error" ? "text-red-700" : "text-[#3A372F]")} role="status">
+          <p className={cn(body, "text-sm", notice.tone === "error" ? "text-red-700" : "text-ink/75")} role="status">
             {notice.text}
           </p>
         ) : null}
 
         {offer ? (
-          <div className="border-t border-dashed border-[#C0B9A5]/50 pt-5">
+          <div className="border-t border-dashed border-ink/15 pt-5">
             <button
               type="button"
               disabled={pending}
@@ -347,7 +439,7 @@ export default function CarpoolClient({
                   } else setNotice({ tone: "error", text: r.error });
                 });
               }}
-              className="font-['Monument-Grotesk'] text-[11px] uppercase text-[#C0B9A5] hover:text-[#8a8478]"
+              className="font-ui text-[11px] uppercase text-ink/55 hover:text-ink"
             >
               Withdraw for this week
             </button>

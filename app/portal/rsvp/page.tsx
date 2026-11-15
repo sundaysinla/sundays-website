@@ -53,16 +53,16 @@ export default async function RsvpPage() {
     <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_460px] lg:gap-16">
       <div className="max-w-2xl space-y-10">
       <section className="space-y-3">
-        <Eyebrow>RSVP</Eyebrow>
-        <h1 className="font-['Office-Times-Sharp-Regular'] text-3xl lowercase text-[#010101] md:text-4xl">
+        <Eyebrow className="font-ui text-blueberry">RSVP</Eyebrow>
+        <h1 className="font-heading text-3xl lowercase text-ink md:text-4xl">
           this sunday
         </h1>
         {event ? (
           <div className="space-y-1">
-            <p className="font-['Office-Times-Round'] text-lg text-[#2A2A24]">
+            <p className="font-body text-lg text-ink/85">
               {event.title}
             </p>
-            <p className="font-['Office-Times-Round'] text-sm text-[#8a8478]">
+            <p className="font-body text-sm text-ink/55">
               {event.startAt.toLocaleString("en-US", {
                 weekday: "long",
                 month: "short",
@@ -74,12 +74,12 @@ export default async function RsvpPage() {
             </p>
           </div>
         ) : (
-          <p className="font-['Office-Times-Round'] text-base text-[#3A372F]">
+          <p className="font-body text-base text-ink/75">
             We couldn&apos;t load the next event yet.
           </p>
         )}
         {syncError && (
-          <p className="font-['Office-Times-Round'] text-sm text-[#8a8478]">
+          <p className="font-body text-sm text-ink/55">
             Sync note: {syncError}
           </p>
         )}
@@ -98,7 +98,6 @@ export default async function RsvpPage() {
           lumaEventId={event.lumaEventId}
           lumaUrl={event.lumaUrl}
           title={event.title}
-          coverUrl={event.coverUrl}
         />
       ) : null}
     </div>

@@ -18,7 +18,14 @@ import {
   suggestPlacements,
   type Pt,
 } from "@/lib/carpool/route";
-import type { CarpoolRole, CarStopSource } from "@prisma/client";
+import {
+  defaultMeetAt,
+  hubById,
+  planRideshare,
+  UBER_MAX_SEATS,
+  UBER_SEATS,
+} from "@/lib/carpool/rideshare";
+import type { CarKind, CarpoolRole, CarStopSource } from "@prisma/client";
 
 export type Venue = Pt;
 
@@ -124,6 +131,31 @@ export async function notifyOffer(
 }
 
 // ─── Cars ────────────────────────────────────────────────────────────────────
+//
+// A car is either driven by a member (kind "drive": the route starts at the
+// driver and picks riders up where they are) or a shared Uber (kind
+// "rideshare": riders walk to a campus hub and the route starts there).
+
+type CarShape = {
+  kind: CarKind;
+  hubId: string | null;
+  driverOffer: (OfferRow & { lat: number; lng: number }) | null;
+};
+
+/** Where the car's route begins: the driver's start, or the Uber's meetup spot. */
+export function carStart(car: { kind: CarKind; hubId: string | null; driverOffer: { lat: number; lng: number } | null }): Pt | null {
+  if (car.kind === "rideshare") {
+    const hub = hubById(car.hubId);
+    return hub ? { lat: hub.lat, lng: hub.lng } : null;
+  }
+  return car.driverOffer ? { lat: car.driverOffer.lat, lng: car.driverOffer.lng } : null;
+}
+
+/** "Maya's car" or "the De Neve turnaround Uber", for sentences. */
+export function carLabel(car: CarShape): string {
+  if (car.kind === "rideshare") return `the ${hubById(car.hubId)?.name ?? "shared"} Uber`;
+  return car.driverOffer ? `${firstName(offerName(car.driverOffer))}'s car` : "a car";
+}
 
 export async function ensureCarForOffer(offerId: string, venue: Venue | null) {
   const offer = await prisma.carpoolOffer.findUnique({ where: { id: offerId } });
@@ -162,10 +194,11 @@ export async function recomputeCar(carId: string, venue: Venue | null) {
     include: { driverOffer: true, stops: { include: { riderOffer: true }, orderBy: { order: "asc" } } },
   });
   if (!car) return null;
-  const start = { lat: car.driverOffer.lat, lng: car.driverOffer.lng };
-  const points = car.stops.map((s) => ({ lat: s.riderOffer.lat, lng: s.riderOffer.lng }));
-  const directKm = venue ? haversineKm(start, venue) : 0;
-  const route = venue ? routeKm(start, points, venue) : 0;
+  const start = carStart(car);
+  // Uber riders walk to the hub, so their homes aren't on the route.
+  const points = car.kind === "rideshare" ? [] : car.stops.map((s) => ({ lat: s.riderOffer.lat, lng: s.riderOffer.lng }));
+  const directKm = venue && start ? haversineKm(start, venue) : 0;
+  const route = venue && start ? routeKm(start, points, venue) : 0;
 
   // Renumber defensively so `order` is always 0..n-1.
   for (let i = 0; i < car.stops.length; i++) {
@@ -217,7 +250,8 @@ export async function placeRider(params: {
   const alreadyHere = existing?.carId === car.id;
   const occupied = car.stops.filter((s) => s.riderOfferId !== rider.id).length;
   if (occupied >= car.seatsTotal) {
-    throw new Error(`${firstName(offerName(car.driverOffer))}'s car is full`);
+    const name = carLabel(car);
+    throw new Error(`${name.charAt(0).toUpperCase()}${name.slice(1)} is full`);
   }
 
   if (existing && !alreadyHere) {
@@ -227,11 +261,11 @@ export async function placeRider(params: {
   }
 
   const others = car.stops.filter((s) => s.riderOfferId !== rider.id);
-  const start = { lat: car.driverOffer.lat, lng: car.driverOffer.lng };
+  const start = carStart(car);
   const points = others.map((s) => ({ lat: s.riderOffer.lat, lng: s.riderOffer.lng }));
   let index = params.index;
   let addedKm = 0;
-  if (params.venue) {
+  if (params.venue && start && car.kind === "drive") {
     const best = bestInsertion(start, points, params.venue, { lat: rider.lat, lng: rider.lng });
     if (index == null) index = best.index;
     addedKm = best.addedKm;
@@ -273,15 +307,17 @@ export async function unplaceRider(riderOfferId: string, venue: Venue | null, op
   });
   if (!stop) return null;
   await prisma.carStop.delete({ where: { id: stop.id } });
+  if (stop.car.bookerOfferId === riderOfferId) {
+    await prisma.car.update({ where: { id: stop.carId }, data: { bookerOfferId: null } });
+  }
   await recomputeCar(stop.carId, venue);
   await touchCar(stop.carId);
 
   if (opts?.notify && stop.confirmedAt) {
-    const driverName = firstName(offerName(stop.car.driverOffer));
     await notifyOffer(stop.riderOffer, {
       type: "carpool_removed",
       title: "Carpool changed",
-      body: `A host took you out of ${driverName}'s car for this Sunday. Check Carpool for your current ride.`,
+      body: `A host took you out of ${carLabel(stop.car)} for this Sunday. Check Carpool for your current ride.`,
       emailSubject: "Sundays carpool — your ride changed",
     });
   }
@@ -307,6 +343,7 @@ export async function optimizeCar(carId: string, venue: Venue | null) {
     include: { driverOffer: true, stops: { include: { riderOffer: true }, orderBy: { order: "asc" } } },
   });
   if (!car) throw new Error("Car not found");
+  if (car.kind === "rideshare" || !car.driverOffer) throw new Error("Uber riders all meet at one spot — there's no order to optimize");
   const ordered = optimizeOrder(
     { lat: car.driverOffer.lat, lng: car.driverOffer.lng },
     car.stops.map((s) => ({ id: s.id, point: { lat: s.riderOffer.lat, lng: s.riderOffer.lng } })),
@@ -318,21 +355,24 @@ export async function optimizeCar(carId: string, venue: Venue | null) {
 export async function setCarSeats(carId: string, seatsTotal: number, venue: Venue | null) {
   const car = await prisma.car.findUnique({ where: { id: carId }, include: { stops: true } });
   if (!car) throw new Error("Car not found");
-  const seats = Math.max(1, Math.min(8, Math.floor(seatsTotal)));
+  const seats = Math.max(1, Math.min(car.kind === "rideshare" ? UBER_MAX_SEATS : 8, Math.floor(seatsTotal)));
   if (seats < car.stops.length) {
     throw new Error(`${car.stops.length} riders are already in this car — move someone out first`);
   }
   await prisma.car.update({ where: { id: carId }, data: { seatsTotal: seats } });
-  await prisma.carpoolOffer.update({ where: { id: car.driverOfferId }, data: { seatsTotal: seats } });
+  if (car.driverOfferId) {
+    await prisma.carpoolOffer.update({ where: { id: car.driverOfferId }, data: { seatsTotal: seats } });
+  }
   await recomputeCar(carId, venue);
 }
 
 // ─── Matching ────────────────────────────────────────────────────────────────
 
 /**
- * Host-triggered. Drops unconfirmed matcher suggestions, then runs cheapest
- * insertion for every rider without a stop. Host placements and confirmed
- * stops are never touched.
+ * Host-triggered. Drops unconfirmed matcher suggestions (Uber groups included,
+ * so a new driver can absorb those riders), then runs cheapest insertion for
+ * every rider without a stop. Host placements and confirmed stops are never
+ * touched. Riders left over can go into Ubers with uberTheRest().
  */
 export async function suggestForEvent(lumaEventId: string) {
   const venue = await getVenue(lumaEventId);
@@ -341,10 +381,11 @@ export async function suggestForEvent(lumaEventId: string) {
   await prisma.carStop.deleteMany({
     where: { car: { lumaEventId }, source: "matcher", confirmedAt: null },
   });
+  await dropEmptyRideshares(lumaEventId);
 
   const [cars, riders] = await Promise.all([
     prisma.car.findMany({
-      where: { lumaEventId, driverOffer: { status: "open" } },
+      where: { lumaEventId, kind: "drive", driverOffer: { status: "open" } },
       include: { driverOffer: true, stops: { include: { riderOffer: true }, orderBy: { order: "asc" } } },
     }),
     prisma.carpoolOffer.findMany({
@@ -355,7 +396,7 @@ export async function suggestForEvent(lumaEventId: string) {
   const result = suggestPlacements(
     cars.map((c) => ({
       id: c.id,
-      start: { lat: c.driverOffer.lat, lng: c.driverOffer.lng },
+      start: { lat: c.driverOffer!.lat, lng: c.driverOffer!.lng },
       seatsTotal: c.seatsTotal,
       stops: c.stops.map((s) => ({
         riderId: s.riderOfferId,
@@ -411,18 +452,16 @@ export async function confirmCar(carId: string) {
   });
   if (!car) throw new Error("Car not found");
 
+  if (car.kind === "rideshare") return confirmRideshare(car);
+  if (!car.driverOffer) throw new Error("This car has no driver");
+
   const wasConfirmed = !!car.confirmedAt;
   const now = new Date();
   await prisma.car.update({ where: { id: carId }, data: { confirmedAt: now, changedAt: null } });
   await prisma.carStop.updateMany({ where: { carId }, data: { confirmedAt: now } });
 
   const driverName = firstName(offerName(car.driverOffer));
-  const when = car.event.startAt.toLocaleString("en-US", {
-    weekday: "long",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: car.event.timezone || "America/Los_Angeles",
-  });
+  const when = eventWhen(car.event);
   const subject = wasConfirmed
     ? "Sundays carpool — your ride changed"
     : "Sundays carpool — your ride is set";
@@ -441,8 +480,8 @@ export async function confirmCar(carId: string) {
     sms: `Sundays carpool: ${wasConfirmed ? "your car changed for" : "you're driving"} ${when}.\n${riderList}`,
   });
 
+  const driverPhone = offerPhone(car.driverOffer);
   for (const stop of car.stops) {
-    const driverPhone = offerPhone(car.driverOffer);
     await notifyOffer(stop.riderOffer, {
       type: wasConfirmed ? "carpool_changed" : "carpool_confirmed",
       title: wasConfirmed ? "Your ride changed" : "Your ride is set",
@@ -453,6 +492,216 @@ export async function confirmCar(carId: string) {
       sms: `Sundays carpool: ${wasConfirmed ? "your ride changed." : "your ride is set."} ${driverName} picks you up at ${stop.riderOffer.address} (stop ${stop.order + 1} of ${car.stops.length}) for ${when}.${driverPhone ? ` Driver: ${driverPhone}` : ""}`,
     });
   }
+}
+
+function eventWhen(event: { startAt: Date; timezone: string | null }) {
+  return event.startAt.toLocaleString("en-US", {
+    weekday: "long",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: event.timezone || "America/Los_Angeles",
+  });
+}
+
+function clock(d: Date, timeZone: string | null) {
+  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: timeZone || "America/Los_Angeles" });
+}
+
+function joinNames(names: string[]) {
+  if (names.length <= 1) return names.join("");
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+type RideshareForConfirm = {
+  id: string;
+  confirmedAt: Date | null;
+  hubId: string | null;
+  meetAt: Date | null;
+  bookerOfferId: string | null;
+  event: { startAt: Date; timezone: string | null; address: string | null; title: string };
+  stops: { order: number; riderOffer: OfferRow & { address: string } }[];
+};
+
+/** Tell each Uber rider where and when to meet, who they're riding with, and who orders the car. */
+async function confirmRideshare(car: RideshareForConfirm) {
+  const hub = hubById(car.hubId);
+  if (!hub) throw new Error("This Uber has no meetup spot — pick one first");
+  if (car.stops.length === 0) throw new Error("No one is in this Uber yet");
+
+  const wasConfirmed = !!car.confirmedAt;
+  const now = new Date();
+  await prisma.car.update({ where: { id: car.id }, data: { confirmedAt: now, changedAt: null } });
+  await prisma.carStop.updateMany({ where: { carId: car.id }, data: { confirmedAt: now } });
+
+  const tz = car.event.timezone;
+  const when = eventWhen(car.event);
+  const meet = car.meetAt ? clock(car.meetAt, tz) : null;
+  const booker = car.stops.find((s) => s.riderOffer.id === car.bookerOfferId)?.riderOffer ?? null;
+  const bookerFirst = booker ? firstName(offerName(booker)) : null;
+  const bookerPhone = booker ? offerPhone(booker) : null;
+  const to = car.event.address || car.event.title;
+  const subject = wasConfirmed ? "Sundays carpool — your Uber changed" : "Sundays carpool — your Uber is set";
+
+  for (const stop of car.stops) {
+    const me = stop.riderOffer;
+    const others = car.stops.filter((s) => s.riderOffer.id !== me.id).map((s) => firstName(offerName(s.riderOffer)));
+    const withWhom = others.length ? ` with ${joinNames(others)}` : "";
+    const meetLine = `Meet at ${hub.name} (${hub.where})${meet ? ` at ${meet}` : ""}.`;
+    const isBooker = booker?.id === me.id;
+    const orderLine = isBooker
+      ? `You're ordering the Uber${car.stops.length > 4 ? " (get an XL)" : ""} to ${to}.`
+      : bookerFirst
+        ? `${bookerFirst} is ordering it.`
+        : "A host is ordering it for you.";
+
+    await notifyOffer(me, {
+      type: wasConfirmed ? "carpool_changed" : "carpool_confirmed",
+      title: wasConfirmed ? "Your Uber changed" : "Your Uber is set",
+      body: `${wasConfirmed ? "A host updated your Uber." : `You're sharing an Uber to Sundays${withWhom} on ${when}.`} ${meetLine} ${orderLine} Details and a group chat are in Carpool.`,
+      emailSubject: subject,
+      sms: `Sundays carpool: ${wasConfirmed ? `your Uber for ${when} changed.` : `you're in a shared Uber${withWhom} for ${when}.`} ${meetLine} ${orderLine}${!isBooker && bookerPhone ? ` ${bookerFirst}: ${bookerPhone}` : ""}`,
+    });
+  }
+}
+
+// ─── Uber groups ─────────────────────────────────────────────────────────────
+
+export async function createRideshare(params: {
+  lumaEventId: string;
+  hubId: string;
+  venue: Venue | null;
+  seatsTotal?: number;
+}) {
+  const hub = hubById(params.hubId);
+  if (!hub) throw new Error("Unknown meetup spot");
+  const event = await prisma.eventCache.findUnique({ where: { lumaEventId: params.lumaEventId } });
+  if (!event) throw new Error("That event isn't cached");
+  const direct = params.venue ? haversineKm(hub, params.venue) : 0;
+  return prisma.car.create({
+    data: {
+      lumaEventId: params.lumaEventId,
+      kind: "rideshare",
+      hubId: hub.id,
+      meetAt: defaultMeetAt(event.startAt, hub, params.venue),
+      seatsTotal: params.seatsTotal ?? UBER_SEATS,
+      directKm: direct,
+      routeKm: direct,
+    },
+  });
+}
+
+/** Empty, unsent Uber groups with no chat are clutter after a re-suggest; drop them. */
+async function dropEmptyRideshares(lumaEventId: string) {
+  await prisma.car.deleteMany({
+    where: { lumaEventId, kind: "rideshare", confirmedAt: null, stops: { none: {} }, messages: { none: {} } },
+  });
+}
+
+/**
+ * Put every rider still without a ride into an Uber from their nearest hub:
+ * top up open seats in existing groups at that hub, then open even-sized new
+ * groups. Riders more than a walk from both hubs stay unassigned.
+ */
+export async function uberTheRest(lumaEventId: string) {
+  const venue = await getVenue(lumaEventId);
+  const [riders, groups] = await Promise.all([
+    prisma.carpoolOffer.findMany({
+      where: { lumaEventId, role: "rider", status: "open", stop: null },
+      include: offerWithUser,
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.car.findMany({
+      where: { lumaEventId, kind: "rideshare" },
+      include: { _count: { select: { stops: true } } },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
+  if (riders.length === 0) return { placed: 0, groups: 0, skipped: [] as string[] };
+
+  const plan = planRideshare(
+    riders.map((r) => ({ id: r.id, point: { lat: r.lat, lng: r.lng } })),
+    groups.filter((g) => g.hubId).map((g) => ({ id: g.id, hubId: g.hubId!, seatsTotal: g.seatsTotal, riders: g._count.stops }))
+  );
+
+  const touched = new Set<string>();
+  const append = async (carId: string, riderOfferId: string) => {
+    const order = await prisma.carStop.count({ where: { carId } });
+    await prisma.carStop.create({ data: { carId, riderOfferId, order, source: "matcher" } });
+    touched.add(carId);
+  };
+  for (const f of plan.fill) await append(f.groupId, f.riderId);
+  for (const g of plan.create) {
+    const car = await createRideshare({ lumaEventId, hubId: g.hubId, venue });
+    for (const id of g.riderIds) await append(car.id, id);
+  }
+  for (const id of touched) {
+    await recomputeCar(id, venue);
+    await touchCar(id);
+  }
+
+  const byId = new Map(riders.map((r) => [r.id, r]));
+  return {
+    placed: plan.fill.length + plan.create.reduce((n, g) => n + g.riderIds.length, 0),
+    groups: plan.create.length,
+    skipped: plan.skipped.map((id) => firstName(offerName(byId.get(id)!))),
+  };
+}
+
+/** Change an Uber's meetup spot, meet time, or who orders it. */
+export async function updateRideshare(
+  carId: string,
+  changes: { hubId?: string; meetAt?: Date; bookerOfferId?: string | null },
+  venue: Venue | null
+) {
+  const car = await prisma.car.findUnique({ where: { id: carId }, include: { stops: true, event: true } });
+  if (!car || car.kind !== "rideshare") throw new Error("That Uber no longer exists");
+
+  const data: { hubId?: string; meetAt?: Date; bookerOfferId?: string | null } = {};
+  if (changes.hubId !== undefined && changes.hubId !== car.hubId) {
+    const hub = hubById(changes.hubId);
+    if (!hub) throw new Error("Unknown meetup spot");
+    data.hubId = hub.id;
+    // Moving campuses changes the drive; keep a host-set time only if they're setting one now.
+    if (changes.meetAt === undefined) data.meetAt = defaultMeetAt(car.event.startAt, hub, venue);
+  }
+  if (changes.meetAt !== undefined) {
+    if (changes.meetAt.getTime() > car.event.startAt.getTime()) throw new Error("Meet time is after the event starts");
+    data.meetAt = changes.meetAt;
+  }
+  if (changes.bookerOfferId !== undefined) {
+    if (changes.bookerOfferId && !car.stops.some((s) => s.riderOfferId === changes.bookerOfferId)) {
+      throw new Error("Whoever orders has to be in this Uber");
+    }
+    data.bookerOfferId = changes.bookerOfferId;
+  }
+  if (Object.keys(data).length === 0) return car;
+
+  const updated = await prisma.car.update({ where: { id: carId }, data });
+  if (data.hubId) await recomputeCar(carId, venue);
+  await touchCar(carId);
+  return updated;
+}
+
+/** Cancel an Uber group. Its riders go back to needing a ride. */
+export async function removeRideshare(carId: string, opts?: { notify?: boolean }) {
+  const car = await prisma.car.findUnique({
+    where: { id: carId },
+    include: { stops: { include: { riderOffer: { include: offerWithUser } } } },
+  });
+  if (!car || car.kind !== "rideshare") throw new Error("That Uber no longer exists");
+  if (opts?.notify && car.confirmedAt) {
+    for (const s of car.stops) {
+      if (!s.confirmedAt) continue;
+      await notifyOffer(s.riderOffer, {
+        type: "carpool_removed",
+        title: "Your Uber was called off",
+        body: `Hosts cancelled ${carLabel({ ...car, driverOffer: null })} for this Sunday. They'll find you another ride — check Carpool.`,
+        emailSubject: "Sundays carpool — your ride changed",
+        sms: `Sundays carpool: the Uber from ${hubById(car.hubId)?.name ?? "campus"} is off. Hosts will find you another ride.`,
+      });
+    }
+  }
+  await prisma.car.delete({ where: { id: carId } });
 }
 
 // ─── Offers ──────────────────────────────────────────────────────────────────

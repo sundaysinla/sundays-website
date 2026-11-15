@@ -6,20 +6,20 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
-    'inline-flex items-center justify-center whitespace-nowrap font-["Monument-Grotesk"] uppercase transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+    'inline-flex items-center justify-center whitespace-nowrap font-ui uppercase transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
     {
         variants: {
             variant: {
                 default:
-                    'bg-[#EBEAE0] text-[#010101] border border-[#EBEAE0] hover:bg-[#E2E0D8]',
+                    'bg-paper-2 text-ink border border-paper-2 hover:bg-blueberry-200/40',
                 primary:
-                    'bg-[#C0B9A5] text-white border border-[#EBEAE0] hover:opacity-90',
+                    'bg-blueberry text-paper border border-blueberry hover:opacity-90',
                 dark:
-                    'bg-black text-[#EEEBE3] border border-transparent hover:bg-[#EEEBE3] hover:text-black',
+                    'bg-ink text-paper border border-transparent hover:bg-lime hover:text-ink',
                 ghost:
-                    'bg-transparent text-[#010101] hover:opacity-70',
+                    'bg-transparent text-ink hover:opacity-70',
                 outline:
-                    'bg-transparent text-[#010101] border border-[#C0B9A5] hover:bg-[#C0B9A5]/10',
+                    'bg-transparent text-ink border border-ink/30 hover:bg-blueberry-200/30',
             },
             size: {
                 sm: 'text-[11px] px-3 pt-1.5 pb-1 rounded-2xl',

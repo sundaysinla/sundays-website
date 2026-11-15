@@ -55,11 +55,11 @@ export default function PillToggle<T extends string>({
             style={squircle}
             title={o.hint}
             className={cn(
-              "rounded-2xl border font-['Monument-Grotesk'] uppercase transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#BDFF00]",
+              "rounded-2xl border font-ui uppercase transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime",
               pad,
               selected
-                ? "border-black bg-black text-[#EEEBE3]"
-                : "border-[#EBEAE0] bg-[#EBEAE0] text-[#010101] hover:bg-[#E2E0D8]"
+                ? "border-ink bg-ink text-paper"
+                : "border-paper-2 bg-paper-2 text-ink hover:bg-blueberry-200/30"
             )}
           >
             {o.label}

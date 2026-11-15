@@ -5,18 +5,23 @@ import { requireAdmin } from "@/lib/admin";
 import { getUpcomingCachedEvent, syncUpcomingEvents } from "@/lib/luma-sync";
 import {
   confirmCar,
+  createRideshare,
   getVenue,
   moveCarpoolToEvent,
   moveOfferPin,
   optimizeCar,
   placeRider,
   removeOffer,
+  removeRideshare,
   reorderCar,
   setCarSeats,
   suggestForEvent,
+  uberTheRest,
   unplaceRider,
+  updateRideshare,
   writeInPerson,
 } from "@/lib/carpool/service";
+import { fromWallTime } from "@/lib/carpool/rideshare";
 import type { ActionResult } from "@/lib/actions/profile";
 import { commitImport, previewImport, type ImportRow } from "@/lib/carpool/import";
 import { postCarMessage } from "@/lib/carpool/messages";
@@ -57,6 +62,69 @@ export async function adminSuggest(): Promise<ActionResult & { placed?: number; 
     return { ok: true, ...r };
   } catch (e) {
     return fail(e, "Couldn't suggest placements");
+  }
+}
+
+// ─── Uber groups ─────────────────────────────────────────────────────────────
+
+export async function adminUberTheRest(): Promise<ActionResult & { placed?: number; groups?: number; skipped?: string[] }> {
+  try {
+    const { event } = await eventContext();
+    const r = await uberTheRest(event.lumaEventId);
+    refresh();
+    return { ok: true, ...r };
+  } catch (e) {
+    return fail(e, "Couldn't group riders into Ubers");
+  }
+}
+
+export async function adminCreateRideshare(formData: FormData): Promise<ActionResult> {
+  try {
+    const { event, venue } = await eventContext();
+    const hubId = String(formData.get("hubId") || "");
+    await createRideshare({ lumaEventId: event.lumaEventId, hubId, venue });
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    return fail(e, "Couldn't start an Uber group");
+  }
+}
+
+/** Any of hubId, meetTime ("13:10", event timezone) or bookerOfferId ("host" = a host orders). */
+export async function adminUpdateRideshare(formData: FormData): Promise<ActionResult> {
+  try {
+    const { event, venue } = await eventContext();
+    const carId = String(formData.get("carId") || "");
+    if (!carId) return { ok: false, error: "Missing Uber" };
+    const changes: Parameters<typeof updateRideshare>[1] = {};
+    if (formData.has("hubId")) changes.hubId = String(formData.get("hubId"));
+    if (formData.has("meetTime")) {
+      const meetAt = fromWallTime(event.startAt, String(formData.get("meetTime")), event.timezone || "America/Los_Angeles");
+      if (!meetAt) return { ok: false, error: "Enter a time like 1:15 PM" };
+      changes.meetAt = meetAt;
+    }
+    if (formData.has("bookerOfferId")) {
+      const b = String(formData.get("bookerOfferId"));
+      changes.bookerOfferId = b === "host" ? null : b;
+    }
+    await updateRideshare(carId, changes, venue);
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    return fail(e, "Couldn't update that Uber");
+  }
+}
+
+export async function adminRemoveRideshare(formData: FormData): Promise<ActionResult> {
+  try {
+    await eventContext();
+    const carId = String(formData.get("carId") || "");
+    if (!carId) return { ok: false, error: "Missing Uber" };
+    await removeRideshare(carId, { notify: true });
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    return fail(e, "Couldn't cancel that Uber");
   }
 }
 

@@ -7,6 +7,8 @@
 import { prisma } from "@/lib/db";
 import { firstName, offerEmail, offerName, offerPhone } from "@/lib/carpool/service";
 import { listCarMessages, type MessageView } from "@/lib/carpool/messages";
+import { haversineKm } from "@/lib/carpool/route";
+import { HUBS, hubById, nearestHub, toWallTime, type Hub } from "@/lib/carpool/rideshare";
 import type { GhostPin, MapCar, MapPoint, MemberMap } from "@/lib/carpool/map-types";
 
 const offerWithUser = { user: { include: { profile: true } } } as const;
@@ -25,7 +27,11 @@ export type PersonView = {
   lng: number;
   notes: string | null;
   seatsTotal: number | null;
+  /** Riders only: the closest Uber meetup spot. */
+  nearHub: { name: string; km: number } | null;
 };
+
+export type HubView = Hub;
 
 export type StopView = {
   id: string;
@@ -33,12 +39,24 @@ export type StopView = {
   source: "matcher" | "host";
   confirmed: boolean;
   addedKm: number;
+  /** Uber groups: straight-line km from the rider's pickup to the hub. */
+  walkKm: number | null;
   rider: PersonView;
 };
 
 export type CarView = {
   id: string;
-  driver: PersonView;
+  kind: "drive" | "rideshare";
+  /** Short name for chips and menus: the driver's first name, or "Uber · UCLA". */
+  label: string;
+  /** Drive cars only. */
+  driver: PersonView | null;
+  /** Uber groups only. */
+  hub: HubView | null;
+  meetAt: string | null;
+  /** meetAt as "13:10" in the event's timezone, for the time input. */
+  meetTime: string | null;
+  bookerOfferId: string | null;
   seatsTotal: number;
   routeKm: number;
   directKm: number;
@@ -61,9 +79,11 @@ export type EventView = {
 
 export type HostBoard = {
   event: EventView;
+  /** Drive cars first, then Uber groups. */
   cars: CarView[];
   unassigned: PersonView[];
-  counts: { drivers: number; riders: number; seated: number; seats: number };
+  hubs: HubView[];
+  counts: { drivers: number; ubers: number; riders: number; seated: number; seats: number };
 };
 
 type OfferRow = Parameters<typeof offerName>[0] & {
@@ -79,6 +99,7 @@ type OfferRow = Parameters<typeof offerName>[0] & {
 
 function person(o: OfferRow): PersonView {
   const name = offerName(o);
+  const near = o.role === "rider" ? nearestHub(o) : null;
   return {
     offerId: o.id,
     role: o.role,
@@ -93,6 +114,7 @@ function person(o: OfferRow): PersonView {
     lng: o.lng,
     notes: o.notes,
     seatsTotal: o.seatsTotal,
+    nearHub: near ? { name: near.hub.name, km: near.km } : null,
   };
 }
 
@@ -118,7 +140,7 @@ export async function loadHostBoard(lumaEventId: string): Promise<HostBoard | nu
   const [event, cars, riders] = await Promise.all([
     prisma.eventCache.findUnique({ where: { lumaEventId } }),
     prisma.car.findMany({
-      where: { lumaEventId, driverOffer: { status: "open" } },
+      where: { lumaEventId, OR: [{ kind: "rideshare" }, { driverOffer: { status: "open" } }] },
       include: {
         driverOffer: { include: offerWithUser },
         stops: {
@@ -126,7 +148,7 @@ export async function loadHostBoard(lumaEventId: string): Promise<HostBoard | nu
           orderBy: { order: "asc" },
         },
       },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ kind: "asc" }, { createdAt: "asc" }],
     }),
     prisma.carpoolOffer.findMany({
       where: { lumaEventId, role: "rider", status: "open", stop: null },
@@ -137,36 +159,62 @@ export async function loadHostBoard(lumaEventId: string): Promise<HostBoard | nu
   if (!event) return null;
 
   const threads = await Promise.all(cars.map((c) => listCarMessages(c.id, { revealNames: true })));
+  const tz = event.timezone || "America/Los_Angeles";
 
-  const carViews: CarView[] = cars.map((c, i) => ({
-    id: c.id,
-    messages: threads[i],
-    driver: person(c.driverOffer),
-    seatsTotal: c.seatsTotal,
-    routeKm: c.routeKm,
-    directKm: c.directKm,
-    detourKm: Math.max(0, c.routeKm - c.directKm),
-    confirmedAt: c.confirmedAt?.toISOString() ?? null,
-    changedAt: c.changedAt?.toISOString() ?? null,
-    pendingStops: c.stops.filter((s) => !s.confirmedAt).length,
-    stops: c.stops.map((s) => ({
-      id: s.id,
-      order: s.order,
-      source: s.source,
-      confirmed: !!s.confirmedAt,
-      addedKm: s.addedKm,
-      rider: person(s.riderOffer),
-    })),
-  }));
+  // "Uber · UCLA", or "Uber · UCLA 2" when a hub has more than one group.
+  const perHub = new Map<string, number>();
+  for (const c of cars) if (c.kind === "rideshare") perHub.set(c.hubId ?? "", (perHub.get(c.hubId ?? "") ?? 0) + 1);
+  const seen = new Map<string, number>();
+  const labelOf = (c: (typeof cars)[number]) => {
+    if (c.kind === "drive") return c.driverOffer ? firstName(offerName(c.driverOffer)) : "Car";
+    const key = c.hubId ?? "";
+    const n = (seen.get(key) ?? 0) + 1;
+    seen.set(key, n);
+    const base = `Uber · ${hubById(c.hubId)?.campus ?? "?"}`;
+    return (perHub.get(key) ?? 0) > 1 ? `${base} ${n}` : base;
+  };
+
+  const carViews: CarView[] = cars.map((c, i) => {
+    const hub = c.kind === "rideshare" ? hubById(c.hubId) : null;
+    return {
+      id: c.id,
+      kind: c.kind,
+      label: labelOf(c),
+      messages: threads[i],
+      driver: c.driverOffer ? person(c.driverOffer) : null,
+      hub,
+      meetAt: c.meetAt?.toISOString() ?? null,
+      meetTime: c.meetAt ? toWallTime(c.meetAt, tz) : null,
+      bookerOfferId: c.bookerOfferId,
+      seatsTotal: c.seatsTotal,
+      routeKm: c.routeKm,
+      directKm: c.directKm,
+      detourKm: Math.max(0, c.routeKm - c.directKm),
+      confirmedAt: c.confirmedAt?.toISOString() ?? null,
+      changedAt: c.changedAt?.toISOString() ?? null,
+      pendingStops: c.stops.filter((s) => !s.confirmedAt).length,
+      stops: c.stops.map((s) => ({
+        id: s.id,
+        order: s.order,
+        source: s.source,
+        confirmed: !!s.confirmedAt,
+        addedKm: s.addedKm,
+        walkKm: hub ? haversineKm(s.riderOffer, hub) : null,
+        rider: person(s.riderOffer),
+      })),
+    };
+  });
 
   const seated = carViews.reduce((n, c) => n + c.stops.length, 0);
   const seats = carViews.reduce((n, c) => n + c.seatsTotal, 0);
+  const ubers = carViews.filter((c) => c.kind === "rideshare").length;
 
   return {
     event: eventView(event),
     cars: carViews,
     unassigned: riders.map(person),
-    counts: { drivers: carViews.length, riders: seated + riders.length, seated, seats },
+    hubs: HUBS,
+    counts: { drivers: carViews.length - ubers, ubers, riders: seated + riders.length, seated, seats },
   };
 }
 
@@ -216,9 +264,24 @@ export type DriverRide = {
   }[];
 };
 
+export type RideshareRide = {
+  kind: "rideshare";
+  carId: string;
+  messages: MessageView[];
+  status: "suggested" | "confirmed";
+  changed: boolean;
+  hub: HubView;
+  meetAt: string | null;
+  /** Straight-line km from the member's pickup address to the hub. */
+  walkKm: number;
+  /** Who orders the Uber. */
+  booker: { who: "you" } | { who: "host" } | { who: "rider"; firstName: string; name: string | null; phone: string | null };
+  coRiders: { firstName: string; name: string | null; phone: string | null }[];
+};
+
 export type MemberCarpool = {
   offer: MemberOffer | null;
-  ride: RiderRide | DriverRide | null;
+  ride: RiderRide | DriverRide | RideshareRide | null;
   /** The member's own phone, for the form. */
   phone: string | null;
 };
@@ -266,6 +329,45 @@ export async function loadMemberCarpool(userId: string, lumaEventId: string): Pr
     if (!stop) return { offer: offerView, ride: null, phone };
     const car = stop.car;
     const confirmed = !!stop.confirmedAt && !!car.confirmedAt;
+    const hub = car.kind === "rideshare" ? hubById(car.hubId) : null;
+
+    if (hub) {
+      const booker = car.stops.find((s) => s.riderOfferId === car.bookerOfferId) ?? null;
+      const reveal = (s: (typeof car.stops)[number]) => confirmed && !!s.confirmedAt;
+      return {
+        offer: offerView,
+        phone,
+        ride: {
+          kind: "rideshare",
+          carId: car.id,
+          messages: await listCarMessages(car.id, { revealNames: confirmed }),
+          status: confirmed ? "confirmed" : "suggested",
+          changed: !!car.changedAt,
+          hub,
+          meetAt: car.meetAt?.toISOString() ?? null,
+          walkKm: haversineKm(offer, hub),
+          booker: !booker
+            ? { who: "host" }
+            : booker.riderOfferId === offer.id
+              ? { who: "you" }
+              : {
+                  who: "rider",
+                  firstName: firstName(offerName(booker.riderOffer)),
+                  name: reveal(booker) ? offerName(booker.riderOffer) : null,
+                  phone: reveal(booker) ? offerPhone(booker.riderOffer) : null,
+                },
+          coRiders: car.stops
+            .filter((s) => s.riderOfferId !== offer.id)
+            .map((s) => ({
+              firstName: firstName(offerName(s.riderOffer)),
+              name: reveal(s) ? offerName(s.riderOffer) : null,
+              phone: reveal(s) ? offerPhone(s.riderOffer) : null,
+            })),
+        },
+      };
+    }
+
+    if (!car.driverOffer) return { offer: offerView, ride: null, phone };
     const driverName = offerName(car.driverOffer);
     return {
       offer: offerView,
@@ -380,8 +482,18 @@ export async function loadMemberMap(userId: string, lumaEventId: string): Promis
   if (me) {
     shown.add(me.id);
     const myCar = me.role === "driver" ? me.car : me.stop?.car ?? null;
-    if (myCar) {
-      const driver = me.role === "driver" ? me : me.stop!.car.driverOffer;
+    const myHub = myCar?.kind === "rideshare" ? hubById(myCar.hubId) : null;
+    if (myCar && myHub) {
+      // Uber riders meet at the hub, so everyone else in the group stays an anonymous dot.
+      car = {
+        id: myCar.id,
+        color: "#1A1A17",
+        driver: null,
+        hub: { lat: myHub.lat, lng: myHub.lng, label: myHub.name },
+        stops: [],
+      };
+    } else if (myCar && (me.role === "driver" || me.stop?.car.driverOffer)) {
+      const driver = me.role === "driver" ? me : me.stop!.car.driverOffer!;
       const stops = myCar.stops;
       const confirmed = !!myCar.confirmedAt && (me.role === "driver" || !!me.stop?.confirmedAt);
       shown.add(driver.id);
