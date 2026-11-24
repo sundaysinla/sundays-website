@@ -77,7 +77,7 @@ The Basket stores everything in Supabase Postgres. The schema lives in [`supabas
    | `SUGGESTIONS_BASKET_DATABASE_CA` | Supabase's root certificate, from **Project Settings → Database → SSL Configuration → Download certificate**. Paste the whole PEM file (escaped `\n` line breaks also work) |
    | `SUGGESTIONS_BASKET_SESSION_SECRET` | 32-byte random secret, encoded as base64url |
    | `SUGGESTIONS_BASKET_HOSTS` | JSON object mapping organizer IDs to SHA-256 hex digests of their keys |
-   | `SUGGESTIONS_BASKET_ORIGINS` | `https://your-project.vercel.app` (the exact production domain assigned to this Vercel project; add `https://www.sundays.rsvp` when that custom domain is in use) |
+   | `SUGGESTIONS_BASKET_ORIGINS` | `https://sundays-website-managementmos-projects.vercel.app` (the temporary production domain; add `https://www.sundays.rsvp` when that custom domain is in use) |
    | `SUGGESTIONS_BASKET_ENABLED` | `true` |
    | `CRON_SECRET` | Random string of at least 16 characters. Vercel Cron sends it to the daily keepalive |
 
