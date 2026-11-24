@@ -101,7 +101,7 @@ export default function Who() {
   }, [])
 
   return (
-    <section ref={sectionRef} className="text-[#3A372F] bg-[#F5F4EF]/80 py-56 md:py-40 lg:py-48 px-6 md:px-12 lg:px-16 relative overflow-hidden">
+    <section ref={sectionRef} className="text-[#3A372F] bg-[color:rgb(var(--sundays-stone)/.8)] py-56 md:py-40 lg:py-48 px-6 md:px-12 lg:px-16 relative overflow-hidden">
       {/* Dashed column grid */}
       <div
         className="absolute inset-0 pointer-events-none grid grid-cols-8 md:grid-cols-[repeat(16,1fr)]"

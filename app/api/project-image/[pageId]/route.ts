@@ -5,14 +5,13 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type Params = {
-  params: {
-    pageId: string;
-  };
+  params: Promise<{ pageId: string }>;
 };
 
 export async function GET(_request: Request, { params }: Params) {
   try {
-    const imageUrl = await getProjectImageUrl(decodeURIComponent(params.pageId));
+    const { pageId } = await params;
+    const imageUrl = await getProjectImageUrl(decodeURIComponent(pageId));
     if (!imageUrl) {
       return new NextResponse("Project image not found", { status: 404 });
     }

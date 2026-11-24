@@ -1,0 +1,159 @@
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+import { isIP } from 'node:net';
+import { postgresConnection, type PostgresConnection } from './database.ts';
+import { basketCookie, BasketError, VOTER_TOKEN_PATTERN } from './model.ts';
+
+const localCookie = 'sundays_basket_host';
+const hostedCookie = '__Host-sundays_basket_host';
+const sessionLifetime = 2 * 60 * 60_000;
+const organizerId = /^[a-z][a-z0-9-]{0,31}$/;
+const tokenPattern = /^[A-Za-z0-9_-]{43}$/;
+const digestPattern = /^[a-f0-9]{64}$/;
+const hostPattern = /^[a-z0-9-]+(?:\.[a-z0-9-]+)+$/i;
+const vercelHost = /^[a-z0-9-]+\.vercel\.app$/i;
+
+type LocalBasket = { mode: 'local'; key: string; connection: PostgresConnection };
+type HostedBasket = { mode: 'hosted'; hosts: Map<string, string>; secret: string; origins: Set<string>; connection: PostgresConnection };
+type BasketConfig = LocalBasket | HostedBasket;
+
+function organizerDigests(value: string | undefined) {
+  try {
+    const parsed: unknown = JSON.parse(value ?? '');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    const hosts = new Map<string, string>();
+    for (const [id, digest] of Object.entries(parsed)) {
+      if (!organizerId.test(id) || typeof digest !== 'string' || !digestPattern.test(digest)) return null;
+      hosts.set(id, digest);
+    }
+    return hosts.size ? hosts : null;
+  } catch {
+    return null;
+  }
+}
+
+export function basketConfig(env: NodeJS.ProcessEnv = process.env): BasketConfig | null {
+  if (!env.VERCEL) {
+    const key = env.SUGGESTIONS_BASKET_HOST_KEY;
+    // Locally, only an explicit database is used, never a production POSTGRES_URL pulled from Vercel.
+    const connection = postgresConnection(env.SUGGESTIONS_BASKET_DATABASE_URL, env.SUGGESTIONS_BASKET_DATABASE_CA);
+    if (env.NODE_ENV !== 'development' || env.NEXT_PUBLIC_SUGGESTIONS_BASKET !== 'true' ||
+      !key || key.length < 32 || key.length > 256 || !connection) return null;
+    return { mode: 'local', key, connection };
+  }
+
+  if (env.VERCEL !== '1' || env.SUGGESTIONS_BASKET_ENABLED !== 'true') return null;
+  // POSTGRES_URL is the pooled Supabase connection string that the Vercel integration sets.
+  const connection = postgresConnection(env.POSTGRES_URL, env.SUGGESTIONS_BASKET_DATABASE_CA);
+  const hosts = organizerDigests(env.SUGGESTIONS_BASKET_HOSTS);
+  const secret = env.SUGGESTIONS_BASKET_SESSION_SECRET;
+  if (!connection || !hosts || !secret || !tokenPattern.test(secret)) return null;
+
+  const origins = new Set<string>();
+  if (env.VERCEL_ENV === 'preview') {
+    for (const host of [env.VERCEL_URL, env.VERCEL_BRANCH_URL]) {
+      if (host && vercelHost.test(host)) origins.add(`https://${host.toLowerCase()}`);
+    }
+  }
+  if (env.VERCEL_ENV === 'production') {
+    for (const origin of (env.SUGGESTIONS_BASKET_ORIGINS ?? '').split(',').map(value => value.trim())) {
+      if (origin.startsWith('https://') && hostPattern.test(origin.slice(8))) origins.add(origin.toLowerCase());
+    }
+  }
+
+  return origins.size ? { mode: 'hosted', hosts, secret, origins, connection } : null;
+}
+
+export function localOrigin(host: string | null, protocol = 'http:'): string | null {
+  if (protocol !== 'http:' && protocol !== 'https:') return null;
+  if (!host || !/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/i.test(host)) return null;
+  try {
+    return new URL(`${protocol}//${host}`).origin;
+  } catch {
+    return null;
+  }
+}
+
+export function basketOrigin(config: BasketConfig, headers: Headers, protocol?: string) {
+  const host = headers.get('host');
+  if (config.mode === 'local') return localOrigin(host, protocol);
+  if (!host || headers.get('x-forwarded-proto') !== 'https') return null;
+  const origin = `https://${host.toLowerCase()}`;
+  return config.origins.has(origin) ? origin : null;
+}
+
+function digest(value: string) {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+export function sameSecret(actual: string, expected: string) {
+  return timingSafeEqual(Buffer.from(digest(actual), 'hex'), Buffer.from(digest(expected), 'hex'));
+}
+
+export function authenticateHost(config: BasketConfig, key: string) {
+  if (config.mode === 'local') return sameSecret(key, config.key) ? 'local' : null;
+  const [id, token, extra] = key.split('.');
+  if (extra !== undefined || !organizerId.test(id) || !token || !tokenPattern.test(token)) return null;
+  const expected = config.hosts.get(id);
+  return expected && sameSecret(digest(token), expected) ? id : null;
+}
+
+function sign(config: BasketConfig, id: string, expires: string) {
+  const credential = config.mode === 'local' ? (id === 'local' ? digest(config.key) : undefined) : config.hosts.get(id);
+  if (!credential) return null;
+  const secret = config.mode === 'local' ? config.key : config.secret;
+  return createHmac('sha256', secret).update(`sundays-basket-host\0${id}\0${expires}\0${credential}`).digest('base64url');
+}
+
+export function validHostSession(config: BasketConfig, cookies: string, now = Date.now()) {
+  const value = basketCookie(cookies, config.mode === 'hosted' ? hostedCookie : localCookie);
+  if (!value) return false;
+  const [id, expires, signature, extra] = value.split('.');
+  if (extra !== undefined || !organizerId.test(id) || !expires || !/^\d{13}$/.test(expires) ||
+    Number(expires) <= now || !signature || !tokenPattern.test(signature)) return false;
+  const expected = sign(config, id, expires);
+  return expected !== null && sameSecret(signature, expected);
+}
+
+export function voterHash(token: string | undefined) {
+  if (!token || !VOTER_TOKEN_PATTERN.test(token)) return null;
+  return digest('sundays-basket-voter\0' + token.toLowerCase());
+}
+
+export function hostSessionCookie(config: BasketConfig, id: string | null, now: number, secure: boolean) {
+  const name = config.mode === 'hosted' ? hostedCookie : localCookie;
+  const expires = String(now + sessionLifetime);
+  const signature = id && sign(config, id, expires);
+  const value = signature ? `${id}.${expires}.${signature}` : '';
+  const maxAge = signature ? sessionLifetime / 1000 : 0;
+  return `${name}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secure ? '; Secure' : ''}`;
+}
+
+// One connection usually owns a whole IPv6 /64, so rate limits bucket by that prefix.
+// IPv4-mapped IPv6 addresses count as the IPv4 address they carry.
+function rateBucket(address: string, version: number) {
+  if (version === 4) return address;
+  const compressed = new URL(`https://[${address}]`).hostname.slice(1, -1);
+  const [head, tail] = compressed.includes('::') ? compressed.split('::') : [compressed, undefined];
+  const left = head ? head.split(':') : [];
+  const right = tail ? tail.split(':') : [];
+  const groups = [...left, ...Array(8 - left.length - right.length).fill('0'), ...right].map(group => parseInt(group, 16));
+  if (groups.slice(0, 5).every(group => group === 0) && groups[5] === 0xffff) {
+    return [groups[6] >> 8, groups[6] & 255, groups[7] >> 8, groups[7] & 255].join('.');
+  }
+  return groups.slice(0, 4).map(group => group.toString(16)).join(':') + '::/64';
+}
+
+export function basketVisitor(config: BasketConfig, headers: Headers) {
+  if (config.mode === 'local') return undefined;
+  // Vercel overwrites this header at ingress. Ignore client-supplied forwarding chains.
+  const address = headers.get('x-vercel-forwarded-for');
+  const version = address ? isIP(address) : 0;
+  let bucket: string | undefined;
+  try {
+    bucket = address && version ? rateBucket(address, version) : undefined;
+  } catch {
+    bucket = undefined;
+  }
+  if (!bucket) throw new BasketError('The basket couldn’t verify this request. Try again.', 403);
+  return createHmac('sha256', config.secret).update('sundays-basket-visitor\0' + bucket).digest('hex');
+}

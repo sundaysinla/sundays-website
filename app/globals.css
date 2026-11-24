@@ -2,12 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --sundays-background: #fff;
+  --sundays-ink: #2a2a24;
+  --sundays-paper: 252 250 247;
+  --sundays-stone: 245 244 239;
+  --sundays-divider: rgb(192 185 165 / 40%);
+  --sundays-action-ink: #000;
+  --sundays-action-paper: #eeebe3;
+}
+
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  background-color: #ffffff;
+  background-color: var(--sundays-background);
 }
 
 .container-grid {
