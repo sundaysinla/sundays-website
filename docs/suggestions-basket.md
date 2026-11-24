@@ -61,7 +61,7 @@ Without that variable the database tests are skipped. Run `./node_modules/.bin/t
 
 The Basket stores everything in Supabase Postgres. The schema lives in [`supabase/migrations/20261115000000_suggestions_basket.sql`](../supabase/migrations/20261115000000_suggestions_basket.sql). It creates a private `basket` schema with row level security on every table and revokes access from Supabase's `anon` and `authenticated` roles, so the publishable key that the integration exposes to browsers cannot read or write notes. Only the server reaches the tables, through the Postgres connection string. Running the file again is safe.
 
-1. **Create the database.** In the Vercel project that serves `www.sundays.rsvp`, open **Storage** (or the Marketplace), choose **Supabase**, and create a project on the Free plan in a West Coast region. Connect it to the Production environment. The integration adds `POSTGRES_URL` (the pooled connection the Basket uses), `POSTGRES_URL_NON_POOLING`, and the Supabase API keys. [Supabase on the Vercel Marketplace](https://supabase.com/docs/guides/integrations/vercel-marketplace)
+1. **Create the database.** In your Sundays Vercel project, open **Storage** (or the Marketplace), choose **Supabase**, and create a project on the Free plan in a West Coast region. Connect it to the Production environment. The integration adds `POSTGRES_URL` (the pooled connection the Basket uses), `POSTGRES_URL_NON_POOLING`, and the Supabase API keys. [Supabase on the Vercel Marketplace](https://supabase.com/docs/guides/integrations/vercel-marketplace)
 2. **Create the tables.** In the Supabase dashboard, open **SQL Editor**, paste the migration file, and run it. From a checkout you can instead pull the production variables into an ignored file and run the setup script, which prefers the direct connection:
 
    ```sh
@@ -77,7 +77,7 @@ The Basket stores everything in Supabase Postgres. The schema lives in [`supabas
    | `SUGGESTIONS_BASKET_DATABASE_CA` | Supabase's root certificate, from **Project Settings → Database → SSL Configuration → Download certificate**. Paste the whole PEM file (escaped `\n` line breaks also work) |
    | `SUGGESTIONS_BASKET_SESSION_SECRET` | 32-byte random secret, encoded as base64url |
    | `SUGGESTIONS_BASKET_HOSTS` | JSON object mapping organizer IDs to SHA-256 hex digests of their keys |
-   | `SUGGESTIONS_BASKET_ORIGINS` | `https://www.sundays.rsvp` |
+   | `SUGGESTIONS_BASKET_ORIGINS` | `https://your-project.vercel.app` (the exact production domain assigned to this Vercel project; add `https://www.sundays.rsvp` when that custom domain is in use) |
    | `SUGGESTIONS_BASKET_ENABLED` | `true` |
    | `CRON_SECRET` | Random string of at least 16 characters. Vercel Cron sends it to the daily keepalive |
 
